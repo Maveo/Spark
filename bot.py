@@ -47,7 +47,7 @@ class DiscordBot:
         if member.nick is not None:
             name = member.nick
         description = 'LVL: ' + str(data['lvl']) \
-                      + '\nXP: ' + str(data['xp']) + ' / ' + str(self.max_xp_for(data['lvl'])) \
+                      + '\nXP: ' + str(round(data['xp'])) + ' / ' + str(self.max_xp_for(data['lvl'])) \
                       + '\nXP Multiplier: ' + str(data['xp_multiplier']) + 'x' \
                       + '\nJoin Date: ' + str(member.joined_at)
         embed = discord.Embed(title=str(name),
@@ -68,7 +68,7 @@ class DiscordBot:
         ])
         await self.member_role_manage(guild, member, lvl)
 
-    async def member_joined(self, guild, member):
+    async def update_member(self, guild, member):
         await self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
         await self.member_role_manage(guild, member, data['lvl'])
@@ -126,16 +126,15 @@ class DiscordBot:
         if 'lvlsys' not in data:
             data['lvlsys'] = {}
         lvlsys_list = sorted(map(lambda x: (int(x[0]), x[1]), data['lvlsys'].items()), key=lambda x: x[0])
+        role_to_give = None
         for i in range(len(lvlsys_list)):
-            if i == len(lvlsys_list) - 1:
-                if lvl >= lvlsys_list[i][0]:
-                    await self.give_role(guild, member, lvlsys_list[i][1])
-                    return
+            is_last = i == len(lvlsys_list) - 1
+            if (is_last and lvl >= lvlsys_list[i][0]) or ((not is_last) and lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]):
+                role_to_give = lvlsys_list[i][1]
             else:
-                if lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]:
-                    await self.give_role(guild, member, lvlsys_list[i][1])
-                    return
-            await self.remove_role(guild, member, lvlsys_list[i][0])
+                await self.remove_role(guild, member, lvlsys_list[i][0])
+        if role_to_give is not None:
+            await self.give_role(guild, member, role_to_give)
 
     async def lvlsys_set(self, guild_id, role_id, lvl):
         lvl = str(lvl)
@@ -195,13 +194,13 @@ class DiscordBot:
                 search = ' '.join(args)
                 if search.isnumeric():
                     member = get(ctx.message.guild.members, id=int(search))
-                    if member is not None:
+                    if member is not None and not member.bot:
                         return await ctx.send(embed=await self.parent.member_get_embed(member))
                 member = get(ctx.message.guild.members, nick=search)
-                if member is not None:
+                if member is not None and not member.bot:
                     return await ctx.send(embed=await self.parent.member_get_embed(member))
                 member = get(ctx.message.guild.members, name=search)
-                if member is not None:
+                if member is not None and not member.bot:
                     return await(ctx.send(embed=await self.parent.member_get_embed(member)))
 
             return await ctx.send(embed=discord.Embed(title='Error',
@@ -234,13 +233,13 @@ class DiscordBot:
                 search = ' '.join(args[1:])
                 if search.isnumeric():
                     member = get(ctx.message.guild.members, id=int(search))
-                    if member is not None:
+                    if member is not None and not member.bot:
                         return await __setlvl(member)
                 member = get(ctx.message.guild.members, nick=search)
-                if member is not None:
+                if member is not None and not member.bot:
                     return await __setlvl(member)
                 member = get(ctx.message.guild.members, name=search)
-                if member is not None:
+                if member is not None and not member.bot:
                     return await __setlvl(member)
 
             return await ctx.send(embed=discord.Embed(title='Error',
@@ -255,7 +254,8 @@ class DiscordBot:
             await ctx.trigger_typing()
 
             embed = discord.Embed(title='Help',
-                                  description='"lvlsys get" to display the levelsystem\n'
+                                  description='"lvlsys update" to update the users to the new levelsystem\n'
+                                              '"lvlsys get" to display the levelsystem\n'
                                               '"lvlsys set {level} {role_id}" to set a role for a level\n'
                                               '"lvlsys remove {level}" to remove the level\n'
                                               '"lvlsys blacklist {search}" to blacklist a user\n'
@@ -264,6 +264,14 @@ class DiscordBot:
 
             if len(args) == 0:
                 pass
+
+            elif args[0] in ['update', 'u']:
+                for member in ctx.message.guild.members:
+                    if not member.bot:
+                        await self.parent.update_member(ctx.message.guild, member)
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Successfully updated levelsystem!',
+                                                          color=discord.Color.green()))
 
             elif args[0] in ['get']:
                 return await ctx.send(embed=await self.parent.lvlsys_get_embed(ctx.message.guild))
@@ -308,13 +316,13 @@ class DiscordBot:
                     search = ' '.join(args[1:])
                     if search.isnumeric():
                         member = get(ctx.message.guild.members, id=int(search))
-                        if member is not None:
+                        if member is not None and not member.bot:
                             return await __blacklist(member)
                     member = get(ctx.message.guild.members, nick=search)
-                    if member is not None:
+                    if member is not None and not member.bot:
                         return await __blacklist(member)
                     member = get(ctx.message.guild.members, name=search)
-                    if member is not None:
+                    if member is not None and not member.bot:
                         return await __blacklist(member)
 
                 return await ctx.send(embed=discord.Embed(title='Error',
@@ -346,7 +354,7 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
-            await self.parent.member_joined(member.guild, member)
+            await self.parent.update_member(member.guild, member)
             await member.send('Private message')
 
         @commands.Cog.listener()
