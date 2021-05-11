@@ -48,7 +48,8 @@ class DiscordBot:
             name = member.nick
         description = 'LVL: ' + str(data['lvl']) \
                       + '\nXP: ' + str(data['xp']) + ' / ' + str(self.max_xp_for(data['lvl'])) \
-                      + '\nXP Multiplier: ' + str(data['xp_multiplier']) + 'x'
+                      + '\nXP Multiplier: ' + str(data['xp_multiplier']) + 'x' \
+                      + '\nJoin Date: ' + str(member.joined_at)
         embed = discord.Embed(title=str(name), description=description,
                               color=discord.Color.green())
         embed.set_footer(text='ID: ' + str(member.id))
