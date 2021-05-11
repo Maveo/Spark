@@ -39,7 +39,7 @@ class DiscordBot:
 
     @staticmethod
     def xp_for(ctime, boost):
-        return round((ctime * boost) / 60, 2)
+        return round(ctime * boost, 2)
 
     async def member_get_embed(self, member):
         await self.check_member(member)
@@ -101,12 +101,26 @@ class DiscordBot:
         if 'xp_multiplier' in data:
             xp_multiplier = data['xp_multiplier']
         if 'joined' in data:
-            xp_earned = self.xp_for(t - data['joined'], xp_multiplier)
+            xp_earned = self.xp_for((t - data['joined']) / 60, xp_multiplier)
             data['xp'] += xp_earned
             while data['xp'] > self.max_xp_for(data['lvl']):
                 data['xp'] -= self.max_xp_for(data['lvl'])
                 data['lvl'] += 1
             await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
+
+    async def member_message_xp(self, guild, member):
+        data = self.user_db.get(query.uid == member.id)
+        if 'blacklist' in data and data['blacklist'] is True:
+            return
+        xp_multiplier = 1
+        if 'xp_multiplier' in data:
+            xp_multiplier = data['xp_multiplier']
+        xp_earned = self.xp_for(2.5, xp_multiplier)
+        data['xp'] += xp_earned
+        while data['xp'] > self.max_xp_for(data['lvl']):
+            data['xp'] -= self.max_xp_for(data['lvl'])
+            data['lvl'] += 1
+        await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
 
     @staticmethod
     async def give_role(guild, member, role_id):
@@ -369,6 +383,10 @@ class DiscordBot:
         async def on_member_join(self, member):
             await self.parent.update_member(member.guild, member)
             await member.send('Private message')
+
+        @commands.Cog.listener()
+        async def on_message(self, message):
+            await self.parent.member_message_xp(message.guild, message.author)
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
