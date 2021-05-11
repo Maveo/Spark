@@ -319,7 +319,7 @@ class DiscordBot:
             await ctx.send(embed=embed)
 
         @commands.command(name='help', aliases=['h'], description="gives you help")
-        async def help(self, ctx):
+        async def _help(self, ctx):
             embed = discord.Embed(title='Help',
                                   description='',
                                   color=discord.Color.red())
