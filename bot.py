@@ -40,8 +40,8 @@ class DiscordBot:
     def xp_for(ctime, boost):
         return round((ctime * boost) / 60, 2)
 
-    def member_get_embed(self, member):
-        self.check_member(member)
+    async def member_get_embed(self, member):
+        await self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
         name = member.name
         if member.nick is not None:
