@@ -50,7 +50,8 @@ class DiscordBot:
                       + '\nXP: ' + str(data['xp']) + ' / ' + str(self.max_xp_for(data['lvl'])) \
                       + '\nXP Multiplier: ' + str(data['xp_multiplier']) + 'x' \
                       + '\nJoin Date: ' + str(member.joined_at)
-        embed = discord.Embed(title=str(name), description=description,
+        embed = discord.Embed(title=str(name),
+                              description=description,
                               color=discord.Color.green())
         embed.set_footer(text='ID: ' + str(member.id))
         embed.set_thumbnail(url=member.avatar_url)
@@ -58,7 +59,7 @@ class DiscordBot:
 
     def check_member(self, member):
         if not self.user_db.contains(query.uid == member.id):
-            self.user_db.insert({'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1})
+            self.user_db.insert({'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False})
 
     def member_set_lvl_xp(self, guild, member, lvl, xp=0):
         self.user_db.update_multiple([
@@ -67,6 +68,20 @@ class DiscordBot:
         ])
         self.member_role_manage(guild, member, lvl)
 
+    def blacklist_get_embed(self, members):
+        description = []
+        for user in self.user_db.search(query.blacklist == True):
+            member = get(members, id=int(user['uid']))
+            if member is not None:
+                description.append(str(member))
+        return discord.Embed(title="Blacklist",
+                             description='\n'.join(description),
+                             color=discord.Color.green())
+
+    def member_set_blacklist(self, member, blacklist):
+        self.check_member(member)
+        self.user_db.update(operations.set('blacklist', blacklist), query.uid == member.id)
+
     def member_joined_vc(self, member, t):
         self.check_member(member)
         self.user_db.update(operations.set('joined', t), query.uid == member.id)
@@ -74,6 +89,8 @@ class DiscordBot:
     def member_left_vc(self, guild, member, t):
         self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
+        if 'blacklist' in data and data['blacklist'] is True:
+            return
         xp_multiplier = 1
         if 'xp_multiplier' in data:
             xp_multiplier = data['xp_multiplier']
@@ -84,7 +101,6 @@ class DiscordBot:
                 data['xp'] -= self.max_xp_for(data['lvl'])
                 data['lvl'] += 1
             self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
-
 
     @staticmethod
     def give_role(guild, member, role_id):
@@ -236,7 +252,9 @@ class DiscordBot:
             embed = discord.Embed(title='Help',
                                   description='"lvlsys get" to display the levelsystem\n'
                                               '"lvlsys set {level} {role_id}" to set a role for a level\n'
-                                              '"lvlsys remove {level}" to remove the level\n',
+                                              '"lvlsys remove {level}" to remove the level\n'
+                                              '"lvlsys blacklist {search}" to blacklist a user\n'
+                                              '"lvlsys whitelist {search}" to whitelist a user\n',
                                   color=discord.Color.red())
 
             if len(args) == 0:
@@ -271,6 +289,33 @@ class DiscordBot:
                     await ctx.send(embed=embed)
                     return await(ctx.send(embed=self.parent.lvlsys_get_embed(ctx.message.guild)))
 
+            elif args[0] in ['blacklist', 'whitelist']:
+                async def __blacklist(m):
+                    self.parent.member_set_blacklist(m, args[0] == 'blacklist')
+                    await ctx.send(embed=discord.Embed(title='',
+                                                       description='Successfully edited blacklist!',
+                                                       color=discord.Color.green()))
+                    await ctx.send(embed=self.parent.blacklist_get_embed(ctx.message.guild.members))
+
+                if len(args) == 1:
+                    return await __blacklist(ctx.message.author)
+                else:
+                    search = ' '.join(args[1:])
+                    if search.isnumeric():
+                        member = get(ctx.message.guild.members, id=int(search))
+                        if member is not None:
+                            return await __blacklist(member)
+                    member = get(ctx.message.guild.members, nick=search)
+                    if member is not None:
+                        return await __blacklist(member)
+                    member = get(ctx.message.guild.members, name=search)
+                    if member is not None:
+                        return await __blacklist(member)
+
+                return await(ctx.send(embed=discord.Embed(title='Error',
+                                                          description='No user was found!',
+                                                          color=discord.Color.red())))
+
             await ctx.send(embed=embed)
 
         @commands.command(name='help', aliases=['h'], description="gives you help")
@@ -279,7 +324,7 @@ class DiscordBot:
                                   description='',
                                   color=discord.Color.red())
             for command in self.parent.bot.commands:
-                embed.add_field(name=str(command.name), value=' - '+str(command.description), inline=False)
+                embed.add_field(name=str(command.name), value=' - ' + str(command.description), inline=False)
             await ctx.send(embed=embed)
 
     class Events(commands.Cog):
