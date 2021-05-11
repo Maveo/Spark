@@ -1,6 +1,27 @@
+class RoleDummy:
+    def __init__(self, uid):
+        self.id = uid
+
+
 class MemberDummy:
     def __init__(self, uid):
         self.id = uid
+        self.roles = {}
+
+    def add_roles(self, role):
+        self.roles[role.id] = True
+
+    def remove_roles(self, role):
+        if role.id in self.roles:
+            del self.roles[role.id]
+
+
+class GuildDummy:
+    def __init__(self, uid, roles=None):
+        self.id = uid
+        self.roles = roles
+        if self.roles is None:
+            self.roles = []
 
 
 class Tests:
@@ -21,13 +42,13 @@ class Tests:
     # test leveling 1
     def test_3(self):
         self.bot.member_joined_vc(MemberDummy(0), 0)
-        self.bot.member_left_vc(0, MemberDummy(0), 60 * 60 * 1)
+        self.bot.member_left_vc(GuildDummy(0), MemberDummy(0), 60 * 60 * 1)
         return self.user_db.all() == [{'uid': 0, 'lvl': 1, 'xp': 60.0, 'xp_multiplier': 1, 'joined': 0}]
 
     # test leveling 2
     def test_4(self):
         self.bot.member_joined_vc(MemberDummy(0), 0)
-        self.bot.member_left_vc(0, MemberDummy(0), 60 * 60 * 5)
+        self.bot.member_left_vc(GuildDummy(0), MemberDummy(0), 60 * 60 * 5)
         return self.user_db.all() == [{'uid': 0, 'lvl': 3, 'xp': 90.0, 'xp_multiplier': 1, 'joined': 0}]
 
     # test set lvlsys point
@@ -41,6 +62,21 @@ class Tests:
         self.bot.lvlsys_set(0, 0, 6)
         self.bot.lvlsys_remove(0, 5)
         return self.lvlsys_db.all() == [{'gid': 0, 'lvlsys': {'6': 0}}]
+
+    # test role
+    def test_7(self):
+        self.bot.lvlsys_set(0, 0, 0)
+        self.bot.lvlsys_set(0, 1, 2)
+        self.bot.lvlsys_set(0, 2, 5)
+        self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
+        m = MemberDummy(0)
+        self.bot.member_joined_vc(m, 0)
+        self.bot.member_left_vc(GuildDummy(0, [
+            RoleDummy(0),
+            RoleDummy(1),
+            RoleDummy(2)
+        ]), m, 0)
+        return m.roles == {1: True}
 
 
 def main():

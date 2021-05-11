@@ -59,7 +59,7 @@ class DiscordBot:
         self.check_member(member)
         self.user_db.update(operations.set('joined', t), query.uid == member.id)
 
-    def member_left_vc(self, guild_id, member, t):
+    def member_left_vc(self, guild, member, t):
         self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
         xp_multiplier = 1
@@ -75,14 +75,37 @@ class DiscordBot:
                 (operations.set('xp', data['xp']), query.uid == member.id),
                 (operations.set('lvl', data['lvl']), query.uid == member.id)
             ])
-            self.member_role_manage(guild_id, member, data['lvl'])
+            self.member_role_manage(guild, member, data['lvl'])
 
-    def member_role_manage(self, guild_id, member, lvl):
-        data = self.lvlsys_db.get(query.gid == guild_id)
+    @staticmethod
+    def give_role(guild, member, role_id):
+        role = get(guild.roles, id=role_id)
+        if role is not None:
+            member.add_roles(role)
+
+    @staticmethod
+    def remove_role(guild, member, role_id):
+        role = get(guild.roles, id=role_id)
+        if role is not None:
+            member.remove_roles(role)
+
+    def member_role_manage(self, guild, member, lvl):
+        data = self.lvlsys_db.get(query.gid == guild.id)
+        if data is None:
+            data = {}
         if 'lvlsys' not in data:
             data['lvlsys'] = {}
-        lvlsys_list = sorted(data['lvlsys'].items(), key=lambda l: int(l[0]))
-        print(lvlsys_list)
+        lvlsys_list = sorted(map(lambda x: (int(x[0]), x[1]), data['lvlsys'].items()), key=lambda x: x[0])
+        for i in range(len(lvlsys_list)):
+            if i == len(lvlsys_list) - 1:
+                if lvl >= lvlsys_list[i][0]:
+                    self.give_role(guild, member, lvlsys_list[i][1])
+                    return
+            else:
+                if lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]:
+                    self.give_role(guild, member, lvlsys_list[i][1])
+                    return
+            self.remove_role(guild, member, lvlsys_list[i][0])
 
     def lvlsys_set(self, guild_id, role_id, lvl):
         lvl = str(lvl)
@@ -227,7 +250,7 @@ class DiscordBot:
                 self.parent.lprint(member, 'joined', after.channel)
             elif before.channel is not None and after.channel is None:
                 # when leaving
-                self.parent.member_left_vc(before.channel.guild.id, member, t)
+                self.parent.member_left_vc(before.channel.guild, member, t)
                 self.parent.lprint(member, 'left', before.channel)
             else:
                 # when moving
