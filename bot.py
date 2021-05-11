@@ -338,13 +338,14 @@ class DiscordBot:
 
         @commands.command(name='dice', aliases=[], description="Roll a dice to your Witcher!")
         async def _dice(self, ctx, *args):
+            dice_string = 'Rolled a **{}**'
             if len(args) == 1:
                 if args[0].isnumeric():
-                    return await ctx.send('Rolled a **{}**'.format(random.randint(1, int(args[0]))))
+                    return await ctx.send(dice_string.format(random.randint(1, int(args[0]))))
             elif len(args) == 2:
                 if args[0].isnumeric() and args[1].isnumeric():
-                    opts = [x for x in map(int, [args[0], args[1]])]
-                    return await ctx.send('Rolled a **{}**'.format(random.randint(min(opts), max(opts))))
+                    opts = [int(args[0]), int(args[1])]
+                    return await ctx.send(dice_string.format(random.randint(min(opts), max(opts))))
             await ctx.send('http://roll.diceapi.com/images/poorly-drawn/d6/{}.png'.format(random.randint(1, 6)))
 
         @commands.command(name='help', aliases=['h'], description="gives you help")
