@@ -60,6 +60,13 @@ class DiscordBot:
         if not self.user_db.contains(query.uid == member.id):
             self.user_db.insert({'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1})
 
+    def member_set_lvl_xp(self, guild, member, lvl, xp=0):
+        self.user_db.update_multiple([
+            (operations.set('xp', xp), query.uid == member.id),
+            (operations.set('lvl', lvl), query.uid == member.id)
+        ])
+        self.member_role_manage(guild, member, lvl)
+
     def member_joined_vc(self, member, t):
         self.check_member(member)
         self.user_db.update(operations.set('joined', t), query.uid == member.id)
@@ -76,11 +83,8 @@ class DiscordBot:
             while data['xp'] > self.max_xp_for(data['lvl']):
                 data['xp'] -= self.max_xp_for(data['lvl'])
                 data['lvl'] += 1
-            self.user_db.update_multiple([
-                (operations.set('xp', data['xp']), query.uid == member.id),
-                (operations.set('lvl', data['lvl']), query.uid == member.id)
-            ])
-            self.member_role_manage(guild, member, data['lvl'])
+            self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
+
 
     @staticmethod
     def give_role(guild, member, role_id):
@@ -183,10 +187,49 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red())))
 
+        @commands.command(name='setlvl',
+                          aliases=['setlevel', 'sl'],
+                          description="set level command")
+        @commands.has_permissions(administrator=True)
+        async def _setlvl(self, ctx, *args):
+            if len(args) == 0 or not args[0].isnumeric():
+                return await(ctx.send(embed=discord.Embed(title='Help',
+                                                          description='"setlvl {level}" to set your level\n'
+                                                                      '"setlvl {level} {search}" to set a level for a '
+                                                                      'specific user',
+                                                          color=discord.Color.red())))
+
+            async def __setlvl(m):
+                lvl = int(args[0])
+                self.parent.member_set_lvl_xp(ctx.message.guild, m, lvl, xp=0)
+                await(ctx.send(embed=discord.Embed(title='Success',
+                                                   description='Level was set successfully!',
+                                                   color=discord.Color.green())))
+                await(ctx.send(embed=self.parent.member_get_embed(m)))
+
+            if len(args) == 1:
+                return await __setlvl(ctx.message.author)
+            else:
+                search = ' '.join(args[1:])
+                if search.isnumeric():
+                    member = get(ctx.message.guild.members, id=int(search))
+                    if member is not None:
+                        return await __setlvl(member)
+                member = get(ctx.message.guild.members, nick=search)
+                if member is not None:
+                    return await __setlvl(member)
+                member = get(ctx.message.guild.members, name=search)
+                if member is not None:
+                    return await __setlvl(member)
+
+            return await(ctx.send(embed=discord.Embed(title='Error',
+                                                      description='No user was found!',
+                                                      color=discord.Color.red())))
+
         @commands.command(name='lvlsys',
-                          aliases=['levelsystem', 'lvlsystem', 'levelsys'],
+                          aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description="level system commands")
-        @commands.has_permissions(manage_roles=True)
+        @commands.has_permissions(administrator=True)
         async def _lvlsys(self, ctx, *args):
             await ctx.trigger_typing()
 
