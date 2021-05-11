@@ -59,15 +59,16 @@ class DiscordBot:
         return embed
 
     async def check_member(self, member):
-        if not self.user_db.contains(query.uid == member.id):
+        if not member.bot and not self.user_db.contains(query.uid == member.id):
             self.user_db.insert({'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False})
 
     async def member_set_lvl_xp(self, guild, member, lvl, xp=0):
-        self.user_db.update_multiple([
-            (operations.set('xp', xp), query.uid == member.id),
-            (operations.set('lvl', lvl), query.uid == member.id)
-        ])
-        await self.member_role_manage(guild, member, lvl)
+        if not member.bot:
+            self.user_db.update_multiple([
+                (operations.set('xp', xp), query.uid == member.id),
+                (operations.set('lvl', lvl), query.uid == member.id)
+            ])
+            await self.member_role_manage(guild, member, lvl)
 
     async def update_member(self, guild, member):
         await self.check_member(member)
@@ -109,6 +110,7 @@ class DiscordBot:
             await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
 
     async def member_message_xp(self, guild, member):
+        await self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
         if 'blacklist' in data and data['blacklist'] is True:
             return
