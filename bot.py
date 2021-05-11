@@ -21,7 +21,7 @@ class DiscordBot:
         self.user_db = user_db
         self.lvlsys_db = lvlsys_db
 
-        self.bot = commands.Bot(command_prefix=PREFIX, description=DESCRIPTION, intents=intents)
+        self.bot = commands.Bot(command_prefix=PREFIX, description=DESCRIPTION, intents=intents, help_command=None)
         self.bot.add_cog(self.Events(self))
         self.bot.add_cog(self.Commands(self))
 
@@ -273,11 +273,14 @@ class DiscordBot:
 
             await ctx.send(embed=embed)
 
-        @commands.command(name='member',
-                          aliases=['user', 'player'],
-                          description="member system commands")
-        async def _member(self, ctx, *args):
-            pass
+        @commands.command(name='help', aliases=['h'], description="gives you help")
+        async def help(self, ctx):
+            embed = discord.Embed(title='Help',
+                                  description='',
+                                  color=discord.Color.red())
+            for command in self.parent.bot.commands:
+                embed.add_field(name=str(command.name), value=' - '+str(command.description), inline=False)
+            await ctx.send(embed=embed)
 
     class Events(commands.Cog):
         def __init__(self, parent):
