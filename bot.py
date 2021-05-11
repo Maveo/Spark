@@ -7,6 +7,7 @@ from discord.utils import get
 from tinydb import TinyDB, Query, operations
 
 import time
+import random
 
 query = Query()
 
@@ -334,6 +335,17 @@ class DiscordBot:
         @commands.command(name='coinflip', aliases=['cf', 'coin'], description="Toss a coin to your Witcher!")
         async def _coinflip(self, ctx):
             await ctx.send('https://media.tenor.com/images/60b3d58b8161ad9b03675abf301e8fb4/tenor.gif', delete_after=1)
+
+        @commands.command(name='dice', aliases=[], description="Roll a dice to your Witcher!")
+        async def _dice(self, ctx, *args):
+            if len(args) == 1:
+                if args[0].isnumeric():
+                    return await ctx.send('Rolled a **{}**'.format(random.randint(1, int(args[0]))))
+            elif len(args) == 2:
+                if args[0].isnumeric() and args[1].isnumeric():
+                    opts = [x for x in map(int, [args[0], args[1]])]
+                    return await ctx.send('Rolled a **{}**'.format(random.randint(min(opts), max(opts))))
+            await ctx.send('http://roll.diceapi.com/images/poorly-drawn/d6/{}.png'.format(random.randint(1, 6)))
 
         @commands.command(name='help', aliases=['h'], description="gives you help")
         async def _help(self, ctx):
