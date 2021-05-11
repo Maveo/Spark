@@ -369,7 +369,7 @@ class DiscordBot:
             embed = discord.Embed(title='Help',
                                   description='',
                                   color=discord.Color.red())
-            for command in self.parent.bot.commands:
+            for command in sorted(self.parent.bot.commands, key=lambda x: x.name):
                 embed.add_field(name=str(command.name), value=' - ' + str(command.description), inline=False)
             await ctx.send(embed=embed)
 
