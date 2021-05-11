@@ -34,7 +34,7 @@ class DiscordBot:
 
     @staticmethod
     def max_xp_for(lvl):
-        return (lvl-1) * 10 + 100
+        return (lvl - 1) * 10 + 100
 
     @staticmethod
     def xp_for(ctime, boost):
@@ -43,12 +43,16 @@ class DiscordBot:
     def member_get_embed(self, member):
         self.check_member(member)
         data = self.user_db.get(query.uid == member.id)
-        description = 'LVL: ' + str(data['lvl'])\
-                      + '\nXP: ' + str(data['xp']) + ' / ' + str(self.max_xp_for(data['lvl']))\
-                      + '\nXP Multiplier: ' + str(data['xp_multiplier'])\
-                      + 'x\n\nID: ' + str(member.id)
-        embed = discord.Embed(title='Name: ' + str(member.name), description=description,
+        name = member.name
+        if member.nick is not None:
+            name = member.nick
+        description = 'LVL: ' + str(data['lvl']) \
+                      + '\nXP: ' + str(data['xp']) + ' / ' + str(self.max_xp_for(data['lvl'])) \
+                      + '\nXP Multiplier: ' + str(data['xp_multiplier']) + 'x'
+        embed = discord.Embed(title=str(name), description=description,
                               color=discord.Color.green())
+        embed.set_footer(text='ID: ' + str(member.id))
+        embed.set_thumbnail(url=member.avatar_url)
         return embed
 
     def check_member(self, member):
@@ -153,37 +157,35 @@ class DiscordBot:
         def __init__(self, parent):
             self.parent = parent
 
-        @commands.command(name='get',
-                          aliases=['g'],
-                          description="get commands")
-        async def _get(self, ctx, *args):
+        @commands.command(name='profile',
+                          aliases=['p'],
+                          description="show user profile")
+        async def _profile(self, ctx, *args):
             await ctx.trigger_typing()
 
-            embed = discord.Embed(title='Help',
-                                  description='"get members" to display members\n'
-                                              '"get allroles" to display all roles',
-                                  color=discord.Color.red())
             if len(args) == 0:
-                pass
+                return await(ctx.send(embed=self.parent.member_get_embed(ctx.message.author)))
+            else:
+                search = ' '.join(args)
+                if search.isnumeric():
+                    member = get(ctx.message.guild.members, id=int(search))
+                    if member is not None:
+                        return await(ctx.send(embed=self.parent.member_get_embed(member)))
+                member = get(ctx.message.guild.members, nick=search)
+                if member is not None:
+                    return await(ctx.send(embed=self.parent.member_get_embed(member)))
+                member = get(ctx.message.guild.members, name=search)
+                if member is not None:
+                    return await(ctx.send(embed=self.parent.member_get_embed(member)))
 
-            elif args[0] in ['members', 'players', 'users']:
-                for member in ctx.message.guild.members:
-                    if member.id != self.parent.bot.user.id:
-                        await ctx.send(embed=self.parent.member_get_embed(member))
-                return
-
-            elif args[0] in ['serverroles', 'allroles']:
-                for role in ctx.message.guild.roles:
-                    embed = discord.Embed(title='Role: ' + str(role.name), description='ID: ' + str(role.id),
-                                          color=role.color)
-                    await ctx.send(embed=embed)
-                return
-
-            await ctx.send(embed=embed)
+            return await(ctx.send(embed=discord.Embed(title='Error',
+                                                      description='No user was found!',
+                                                      color=discord.Color.red())))
 
         @commands.command(name='lvlsys',
                           aliases=['levelsystem', 'lvlsystem', 'levelsys'],
                           description="level system commands")
+        @commands.has_permissions(manage_roles=True)
         async def _lvlsys(self, ctx, *args):
             await ctx.trigger_typing()
 
@@ -258,7 +260,5 @@ class DiscordBot:
 
 
 if __name__ == '__main__':
-    user_db = TinyDB('dbs/users.json')
-    lvlsys_db = TinyDB('dbs/lvlsys.json')
-    b = DiscordBot(user_db, lvlsys_db, PRINT_LOGGING)
+    b = DiscordBot(TinyDB('dbs/users.json'), TinyDB('dbs/lvlsys.json'), PRINT_LOGGING)
     b.run(TOKEN)
