@@ -6,6 +6,7 @@ from discord.utils import get
 
 from tinydb import TinyDB, Query, operations
 
+import os
 import time
 import random
 
@@ -350,7 +351,10 @@ class DiscordBot:
 
         @commands.command(name='coinflip', aliases=['cf', 'coin'], description="Toss a coin to your Witcher!")
         async def _coinflip(self, ctx):
-            await ctx.send('https://media.tenor.com/images/60b3d58b8161ad9b03675abf301e8fb4/tenor.gif', delete_after=1)
+            if random.randint(0, 1) == 0:
+                await ctx.send(file=discord.File(os.path.join('images', 'kopf.gif')))
+            else:
+                await ctx.send(file=discord.File(os.path.join('images', 'zahl.gif')))
 
         @commands.command(name='dice', aliases=[], description="Roll a dice to your Witcher!")
         async def _dice(self, ctx, *args):
@@ -362,7 +366,7 @@ class DiscordBot:
                 if args[0].isnumeric() and args[1].isnumeric():
                     opts = [int(args[0]), int(args[1])]
                     return await ctx.send(dice_string.format(random.randint(min(opts), max(opts))))
-            await ctx.send('http://roll.diceapi.com/images/poorly-drawn/d6/{}.png'.format(random.randint(1, 6)))
+            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(random.randint(1, 6)))))
 
         @commands.command(name='help', aliases=['h'], description="gives you help")
         async def _help(self, ctx):
