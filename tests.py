@@ -107,7 +107,7 @@ class Tests:
     async def test_b3(self):
         m = MemberDummy(0)
         await self.bot.member_joined_vc(m, 0)
-        await self.bot.member_left_vc(GuildDummy(0), m, 60 * 60 * 1)
+        await self.bot.member_left_vc(m, 60 * 60 * 1)
         user = await self.bot.get_user(m)
         return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 60
 
@@ -125,7 +125,7 @@ class Tests:
     async def test_b3_2(self):
         m = MemberDummy(0)
         await self.bot.member_joined_vc(m, 0)
-        await self.bot.member_left_vc(GuildDummy(0), m, 60 * 60 * 5)
+        await self.bot.member_left_vc(m, 60 * 60 * 5)
         user = await self.bot.get_user(m)
         return user['uid'] == 0 and user['lvl'] == 3 and user['xp'] == 90
 
@@ -154,7 +154,7 @@ class Tests:
         m = MemberDummy(0, guild=g)
         await self.bot.member_joined_vc(m, 0)
         await self.bot.update_user(m, {'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
-        await self.bot.member_left_vc(g, m, 0)
+        await self.bot.member_left_vc(m, 0)
         return m.roles == {1: True}
 
     # test leaderboard
@@ -164,8 +164,8 @@ class Tests:
         m1 = MemberDummy(1, guild=g)
         await self.bot.member_joined_vc(m0, 0)
         await self.bot.member_joined_vc(m1, 0)
-        await self.bot.member_left_vc(g, m0, 60 * 60 * 1)
-        await self.bot.member_left_vc(g, m1, 60 * 60 * 5)
+        await self.bot.member_left_vc(m0, 60 * 60 * 1)
+        await self.bot.member_left_vc( m1, 60 * 60 * 5)
 
         l = await self.bot.get_ranking(g)
         return l[0]['uid'] == 1 and l[1]['uid'] == 0
@@ -177,14 +177,16 @@ class Tests:
         m1 = MemberDummy(1)
         await self.bot.member_joined_vc(m0, 0)
         await self.bot.member_joined_vc(m1, 0)
-        await self.bot.member_left_vc(g, m0, 60 * 60 * 1)
-        await self.bot.member_left_vc(g, m1, 60 * 60 * 5)
+        await self.bot.member_left_vc(m0, 60 * 60 * 1)
+        await self.bot.member_left_vc(m1, 60 * 60 * 5)
         rank = await self.bot.get_ranking_rank(m0)
         return rank == 2
 
     # test image creation
     async def test_b_1(self):
         m = MemberDummy(0)
+        await self.bot.member_joined_vc(m, 0)
+        await self.bot.member_set_lvl_xp(m, 5, 50)
         # self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 50, 'xp_multiplier': 1.5})
         image_buffer = (await self.bot.member_create_get_image(m)).fp.getbuffer()
         image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -203,7 +205,7 @@ async def run_test(test_name):
     lvlsys_db = TinyDB(storage=MemoryStorage)
 
     b = DiscordBot(user_db, lvlsys_db)
-    b.session = aiohttp.ClientSession()
+    b.image_creator.session = aiohttp.ClientSession()
 
     t = Tests(b, user_db, lvlsys_db)
 
@@ -215,7 +217,7 @@ async def run_test(test_name):
     else:
         print("FAILED! elapsed {}ms".format(round((time.time() - start) * 1000, 1)))
 
-    await b.stop()
+    await b.image_creator.session.close()
 
 
 def main():

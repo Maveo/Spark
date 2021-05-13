@@ -11,16 +11,6 @@ from helpers import tools, imgtools
 import os
 import time
 import random
-import aiohttp
-import numpy as np
-import cv2
-import pygame
-import pygame.freetype
-import io
-
-os.environ['SDL_AUDIODRIVER'] = 'dsp'
-
-pygame.init()
 
 query = Query()
 
@@ -37,32 +27,13 @@ class DiscordBot:
 
         self.bot = commands.Bot(command_prefix=PREFIX, description=DESCRIPTION, intents=intents, help_command=None)
 
-        self.session = None
-
         self.events = self.Events(self)
         self.commands = self.Commands(self)
 
         self.bot.add_cog(self.events)
         self.bot.add_cog(self.commands)
 
-        self.fonts = {
-            'default': pygame.freetype.Font(os.path.join('fonts', 'Product_Sans_Regular.ttf'))
-        }
-        for font in self.fonts.values():
-            font.antialiased = True
-
-        self.emojis = {}
-        emoji_path = os.path.join('images', 'emojis')
-        for f in os.listdir(emoji_path):
-            if f.endswith('.png'):
-                img = cv2.imread(os.path.join(emoji_path, f), cv2.IMREAD_UNCHANGED)
-                img = cv2.resize(img, (PROFILE_EMOJI_POSITION[3], PROFILE_EMOJI_POSITION[2]))
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
-                self.emojis[f[:-4]] = img
-
-    async def stop(self):
-        if self.session is not None:
-            await self.session.close()
+        self.image_creator = imgtools.ImageCreator(loop=self.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY)
 
     def run(self, token):
         self.bot.run(token)
@@ -154,132 +125,19 @@ class DiscordBot:
         data_percentage = data_xp / data_max_xp
         data_rank = await self.get_ranking_rank(member)
 
-        data_obj = {'name': name,
+        data_obj = {'member': member,
+                    'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
                     'lvl': data['lvl'],
                     'xp': data_xp,
                     'max_xp': data_max_xp,
+                    'xp_percentage': data_percentage,
                     'rank': data_rank,
-                    'xp_multiplier': data_xp_multiplier}
+                    'xp_multiplier': data_xp_multiplier,
+                    'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        #
-        # Load Template Image
-        #
-        img = cv2.imread(os.path.join('images', 'profile_template.png'), cv2.IMREAD_UNCHANGED)
-        mask = img[:, :, 3]
-
-        #
-        # Add Avatar to Image
-        #
-        if self.session is None:
-            self.session = aiohttp.ClientSession(loop=self.bot.loop)
-
-        async with self.session.get(str(member.avatar_url_as(format="png"))) as response:
-            avatar_bytes = await response.read()
-        avatar_image = cv2.imdecode(np.frombuffer(avatar_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
-
-        avatar_image = cv2.resize(avatar_image, (PROFILE_AVATAR_POSITION[3], PROFILE_AVATAR_POSITION[2]))
-        if avatar_image.shape[2] == 3:
-            avatar_image = cv2.cvtColor(avatar_image, cv2.COLOR_RGB2RGBA)
-
-        avatar_full = np.zeros(img.shape, dtype=np.uint8)
-        avatar_full[
-        PROFILE_AVATAR_POSITION[1]:PROFILE_AVATAR_POSITION[3] + PROFILE_AVATAR_POSITION[1],
-        PROFILE_AVATAR_POSITION[0]:PROFILE_AVATAR_POSITION[2] + PROFILE_AVATAR_POSITION[0],
-        :
-        ] = avatar_image[:, :, :]
-
-        img[np.where(mask == 0)] = avatar_full[np.where(mask == 0)]
-
-        #
-        # Add Progress Bar to Image
-        #
-        progress_img = np.zeros((img.shape[0], img.shape[1], 4), dtype=np.uint8)
-
-        start_pos = (PROFILE_PROGRESS_POSITION[0], PROFILE_PROGRESS_POSITION[1])
-        end_pos = (int(PROFILE_PROGRESS_POSITION[0] + (PROFILE_PROGRESS_POSITION[2] * data_percentage)),
-                   int(PROFILE_PROGRESS_POSITION[1] + (PROFILE_PROGRESS_POSITION[3] * data_percentage)))
-
-        progress_img = imgtools.progress_bar(progress_img,
-                                             start_pos,
-                                             end_pos,
-                                             PROFILE_PROGRESS_RADIUS,
-                                             PROFILE_PROGRESS_COLOR(data_obj))
-
-        mask = progress_img[:, :, 3]
-        img[np.where(mask != 0)] = progress_img[np.where(mask != 0)]
-
-        #
-        # Add Emoji To Image
-        #
-        emoji_id = tools.from_char(member.top_role.name[0])
-        if emoji_id not in self.emojis:
-            emoji_id = '0'
-        img[
-        PROFILE_EMOJI_POSITION[1]:PROFILE_EMOJI_POSITION[3] + PROFILE_EMOJI_POSITION[1],
-        PROFILE_EMOJI_POSITION[0]:PROFILE_EMOJI_POSITION[2] + PROFILE_EMOJI_POSITION[0],
-        :
-        ] = self.emojis[emoji_id]
-
-        #
-        # Add Texts to Image
-        #
-        for text_call in PROFILE_TEXTS:
-            text_obj = text_call(data_obj)
-            text_full = np.zeros(img.shape, dtype=np.uint8)
-            text_surf, _ = self.fonts[text_obj['font']].render(text_obj['text'],
-                                                               text_obj['color'],
-                                                               size=text_obj['size'])
-            text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
-            text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
-            text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
-            text_img[:, :, 3] = text_alpha
-            text_img[:, :, :3] = text_img_t
-            text_size = (min(text_img.shape[1], text_obj['pos'][2]), min(text_img.shape[0], text_obj['pos'][3]))
-            if 'align_right' in text_obj and text_obj['align_right']:
-                text_full[
-                text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
-                text_obj['pos'][0] - text_size[0]:text_obj['pos'][0],
-                :
-                ] = text_img[:text_size[1], :text_size[0], :]
-            else:
-                text_full[
-                text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
-                text_obj['pos'][0]:text_obj['pos'][0] + text_size[0],
-                :
-                ] = text_img[:text_size[1], :text_size[0], :]
-            mask = text_full[:, :, 3]
-            img[np.where(mask != 0)] = text_full[np.where(mask != 0)]
-
-        #
-        # Draw Debug Rectangles for texts
-        #
-        if PROFILE_TEXTS_DEBUG:
-            for text_call in PROFILE_TEXTS:
-                text_obj = text_call({'name': name,
-                                      'color': member.color.to_rgb(),
-                                      'lvl': data['lvl'],
-                                      'xp': data_xp,
-                                      'max_xp': data_max_xp,
-                                      'rank': data_rank,
-                                      'xp_multiplier': data_xp_multiplier})
-
-                if 'align_right' in text_obj and text_obj['align_right']:
-                    cv2.rectangle(img,
-                                  (text_obj['pos'][0] - text_obj['pos'][2], text_obj['pos'][1]),
-                                  (text_obj['pos'][0], text_obj['pos'][1] + text_obj['pos'][3]),
-                                  (0, 255, 255, 255),
-                                  3)
-                else:
-                    cv2.rectangle(img,
-                                  (text_obj['pos'][0], text_obj['pos'][1]),
-                                  (text_obj['pos'][0] + text_obj['pos'][2], text_obj['pos'][1] + text_obj['pos'][3]),
-                                  (0, 255, 255, 255),
-                                  3)
-
-        is_success, buffer = cv2.imencode('.png', img)
-        io_buf = io.BytesIO(buffer)
-        return discord.File(filename="member.png", fp=io_buf)
+        img_buf = await self.image_creator.create(PROFILE_IMAGE(data_obj))
+        return discord.File(filename="member.png", fp=img_buf)
 
     async def check_member(self, member):
         await self.check_guild(member.guild)
@@ -290,6 +148,8 @@ class DiscordBot:
 
     async def member_set_lvl_xp(self, member, lvl, xp=0):
         if not member.bot:
+            previous_level = lvl
+
             while xp > self.max_xp_for(lvl):
                 xp -= self.max_xp_for(lvl)
                 lvl += 1
@@ -297,8 +157,15 @@ class DiscordBot:
                 lvl -= 1
                 xp += self.max_xp_for(lvl)
 
+            if previous_level > lvl:
+                print('level up')
+
             await self.update_user(member, {'xp': xp, 'lvl': lvl})
+
+            previous_role = member.top_role
             await self.member_role_manage(member, lvl)
+            if previous_role != member.top_role:
+                print('rank change')
 
     async def update_member(self, member):
         await self.check_member(member)
@@ -327,7 +194,7 @@ class DiscordBot:
         await self.check_member(member)
         await self.update_user(member, {'joined': t})
 
-    async def member_left_vc(self, guild, member, t):
+    async def member_left_vc(self, member, t):
         await self.check_member(member)
         data = await self.get_user(member)
         if 'blacklist' in data and data['blacklist'] is True:
@@ -662,7 +529,7 @@ class DiscordBot:
                 self.parent.lprint(member, 'joined', after.channel)
             elif before.channel is not None and after.channel is None:
                 # when leaving
-                await self.parent.member_left_vc(before.channel.guild, member, t)
+                await self.parent.member_left_vc(member, t)
                 self.parent.lprint(member, 'left', before.channel)
             else:
                 # when moving
