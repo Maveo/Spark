@@ -192,20 +192,47 @@ class DiscordBot:
             text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
             text_img[:, :, 3] = text_alpha
             text_img[:, :, :3] = text_img_t
+            text_size = (min(text_img.shape[1], text_obj['pos'][2]), min(text_img.shape[0], text_obj['pos'][3]))
             if 'align_right' in text_obj and text_obj['align_right']:
                 text_full[
-                    text_obj['pos'][1]:text_obj['pos'][1] + text_img.shape[0],
-                    text_obj['pos'][0] - text_img.shape[1]:text_obj['pos'][0],
+                    text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
+                    text_obj['pos'][0] - text_size[0]:text_obj['pos'][0],
                     :
-                ] = text_img[:, :, :]
+                ] = text_img[:text_size[1], :text_size[0], :]
             else:
                 text_full[
-                    text_obj['pos'][1]:text_obj['pos'][1] + text_img.shape[0],
-                    text_obj['pos'][0]:text_obj['pos'][0] + text_img.shape[1],
+                    text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
+                    text_obj['pos'][0]:text_obj['pos'][0] + text_size[0],
                     :
-                ] = text_img[:, :, :]
+                ] = text_img[:text_size[1], :text_size[0], :]
             mask = text_full[:, :, 3]
             img[np.where(mask != 0)] = text_full[np.where(mask != 0)]
+
+        #
+        # Draw Debug Rectangles for texts
+        #
+        if PROFILE_TEXTS_DEBUG:
+            for text_call in PROFILE_TEXTS:
+                text_obj = text_call({'name': name,
+                                      'color': member.color.to_rgb(),
+                                      'lvl': data['lvl'],
+                                      'xp': data_xp,
+                                      'max_xp': data_max_xp,
+                                      'rank': data_rank,
+                                      'xp_multiplier': data_xp_multiplier})
+
+                if 'align_right' in text_obj and text_obj['align_right']:
+                    cv2.rectangle(img,
+                                  (text_obj['pos'][0] - text_obj['pos'][2], text_obj['pos'][1]),
+                                  (text_obj['pos'][0], text_obj['pos'][1] + text_obj['pos'][3]),
+                                  (0, 255, 255, 255),
+                                  3)
+                else:
+                    cv2.rectangle(img,
+                                  (text_obj['pos'][0], text_obj['pos'][1]),
+                                  (text_obj['pos'][0] + text_obj['pos'][2], text_obj['pos'][1] + text_obj['pos'][3]),
+                                  (0, 255, 255, 255),
+                                  3)
 
         is_success, buffer = cv2.imencode('.png', img)
         io_buf = io.BytesIO(buffer)
