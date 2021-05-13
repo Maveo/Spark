@@ -31,6 +31,10 @@ class MemberDummy:
         self.guild = guild
         self.bot = bot
         self.color = ColorDummy()
+        self.messages = []
+
+    async def send(self, msg):
+        self.messages.append(msg)
 
     async def add_roles(self, role):
         self.roles[role.id] = True
@@ -67,6 +71,24 @@ class Tests:
     async def test_b1(self):
         return self.user_db.all() == []
 
+    # test join server
+    async def test_b1_1(self):
+        m = MemberDummy(0)
+        await self.bot.events.on_member_join(m)
+        user = await self.bot.get_user(m)
+        return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0 and len(m.messages) == 1
+
+    # test leave server
+    async def test_b1_2(self):
+        m = MemberDummy(0)
+        await self.bot.events.on_member_join(m)
+        await self.bot.events.on_member_remove(m)
+        try:
+            await self.bot.get_user(m)
+            return False
+        except KeyError:
+            return True
+
     # test join vc
     async def test_b2(self):
         m = MemberDummy(0)
@@ -96,7 +118,7 @@ class Tests:
         try:
             await self.bot.get_user(m)
             return False
-        except:
+        except TypeError:
             return True
 
     # test leveling 2

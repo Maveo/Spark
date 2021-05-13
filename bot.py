@@ -112,6 +112,16 @@ class DiscordBot:
             query.gid == member.guild.id
         )
 
+    async def remove_member(self, member):
+        users_data = await self.get_users(member.guild)
+        str_uid = str(member.id)
+        if str_uid in users_data:
+            del users_data[str_uid]
+        self.user_db.update(
+            operations.set('users', users_data),
+            query.gid == member.guild.id
+        )
+
     async def check_guild(self, guild):
         if not self.user_db.contains(query.gid == guild.id):
             self.user_db.insert({'gid': guild.id, 'users': {}})
@@ -458,7 +468,7 @@ class DiscordBot:
                           description="set level command")
         @commands.has_permissions(administrator=True)
         async def _setlvl(self, ctx, *args):
-            if len(args) == 0 or not args[0].isnumeric():
+            if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"setlvl {level}" to set your level\n'
                                                                       '"setlvl {level} {search}" to set a level for a '
@@ -466,12 +476,17 @@ class DiscordBot:
                                                           color=discord.Color.red()))
 
             async def __setlvl(m):
-                lvl = int(args[0])
-                await self.parent.member_set_lvl_xp(m, lvl, xp=0)
-                await ctx.send(embed=discord.Embed(title='Success',
-                                                   description='Level was set successfully!',
-                                                   color=discord.Color.green()))
-                await ctx.send(file=await self.parent.member_create_get_image(m))
+                try:
+                    lvl = int(args[0])
+                    await self.parent.member_set_lvl_xp(m, lvl, xp=0)
+                    await ctx.send(embed=discord.Embed(title='Success',
+                                                       description='Level was set successfully!',
+                                                       color=discord.Color.green()))
+                    await ctx.send(file=await self.parent.member_create_get_image(m))
+                except ValueError:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='Level must be an integer!',
+                                                       color=discord.Color.red()))
 
             if len(args) == 1:
                 return await __setlvl(ctx.message.author)
@@ -507,7 +522,7 @@ class DiscordBot:
             elif args[0] in ['update', 'u']:
                 for member in ctx.message.guild.members:
                     if not member.bot:
-                        await self.parent.update_member(ctx.message.guild, member)
+                        await self.parent.update_member(member)
                 return await ctx.send(embed=discord.Embed(title='',
                                                           description='Successfully updated levelsystem!',
                                                           color=discord.Color.green()))
@@ -626,8 +641,12 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
-            await self.parent.update_member(member.guild, member)
+            await self.parent.update_member(member)
             await member.send('Private message')
+
+        @commands.Cog.listener()
+        async def on_member_remove(self, member):
+            await self.parent.remove_member(member)
 
         @commands.Cog.listener()
         async def on_message(self, message):
