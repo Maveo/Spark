@@ -147,11 +147,13 @@ async def run_test(test_name):
 
     t = Tests(b, user_db, lvlsys_db)
 
+    print("TEST {}: ".format(test_name[5:]), end='')
+
     start = time.time()
     if await getattr(t, test_name)():
-        print("TEST {}: SUCCESS! elapsed {}ms".format(test_name[5:], round((time.time() - start) * 1000, 1)))
+        print("SUCCESS! elapsed {}ms".format(round((time.time() - start) * 1000, 1)))
     else:
-        print("TEST {}: FAILED! elapsed {}ms".format(test_name[5:], round((time.time() - start) * 1000, 1)))
+        print("FAILED! elapsed {}ms".format(round((time.time() - start) * 1000, 1)))
 
     await b.stop()
 
