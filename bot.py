@@ -70,7 +70,7 @@ class DiscordBot:
 
     @staticmethod
     def max_xp_for(lvl):
-        return (lvl - 1) * 10 + 100
+        return max(100, (lvl - 1) * 10 + 100)
 
     @staticmethod
     def xp_for(ctime, boost):
@@ -217,6 +217,13 @@ class DiscordBot:
 
     async def member_set_lvl_xp(self, guild, member, lvl, xp=0):
         if not member.bot:
+            while xp > self.max_xp_for(lvl):
+                xp -= self.max_xp_for(lvl)
+                lvl += 1
+            while xp < 0:
+                lvl -= 1
+                xp += self.max_xp_for(lvl)
+
             self.user_db.update_multiple([
                 (operations.set('xp', xp), query.uid == member.id),
                 (operations.set('lvl', lvl), query.uid == member.id)
@@ -261,9 +268,6 @@ class DiscordBot:
         if 'joined' in data:
             xp_earned = self.xp_for((t - data['joined']) / 60, xp_multiplier)
             data['xp'] += xp_earned
-            while data['xp'] > self.max_xp_for(data['lvl']):
-                data['xp'] -= self.max_xp_for(data['lvl'])
-                data['lvl'] += 1
             await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
 
     async def member_message_xp(self, guild, member):
@@ -276,22 +280,24 @@ class DiscordBot:
             xp_multiplier = data['xp_multiplier']
         xp_earned = self.xp_for(2.5, xp_multiplier)
         data['xp'] += xp_earned
-        while data['xp'] > self.max_xp_for(data['lvl']):
-            data['xp'] -= self.max_xp_for(data['lvl'])
-            data['lvl'] += 1
         await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
 
     @staticmethod
     async def give_role(guild, member, role_id):
         role = get(guild.roles, id=role_id)
         if role is not None:
+            for r in member.roles:
+                if r.id == role.id:
+                    return
             await member.add_roles(role)
 
     @staticmethod
     async def remove_role(guild, member, role_id):
         role = get(guild.roles, id=role_id)
-        if role is not None:
-            await member.remove_roles(role)
+        if role is not None and role in member.roles:
+            for r in member.roles:
+                if r.id == role.id:
+                    return await member.remove_roles(role)
 
     async def member_role_manage(self, guild, member, lvl):
         data = self.lvlsys_db.get(query.gid == guild.id)
@@ -307,7 +313,7 @@ class DiscordBot:
                     (not is_last) and lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]):
                 role_to_give = lvlsys_list[i][1]
             else:
-                await self.remove_role(guild, member, lvlsys_list[i][0])
+                await self.remove_role(guild, member, lvlsys_list[i][1])
         if role_to_give is not None:
             await self.give_role(guild, member, role_to_give)
 
