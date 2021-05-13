@@ -240,8 +240,6 @@ class ImageCreator:
         img = None
         for layer in layers:
             img = await self.overlay_layer(img, layer)
-            # cv2.imshow('test', img)
-            # cv2.waitKey(0)
 
         is_success, buffer = cv2.imencode('.png', img)
         io_buf = io.BytesIO(buffer)
