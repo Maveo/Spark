@@ -129,8 +129,12 @@ class Tests:
     # test image creation
     async def test_b_1(self):
         m = MemberDummy(0)
-        self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1.5})
-        image = await self.bot.member_create_get_image(m)
+        self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 50, 'xp_multiplier': 1.5})
+        image_buffer = (await self.bot.member_create_get_image(m)).fp.getbuffer()
+        image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
+
+        cv2.imshow('test', image)
+        cv2.waitKey(0)
         # print(dir(image))
         # print(image.fp)
         # with open("output.png", "wb") as f:
@@ -168,6 +172,8 @@ if __name__ == '__main__':
     from bot import DiscordBot
     from tinydb import TinyDB, Query, operations
     from tinydb.storages import MemoryStorage
+    import numpy as np
+    import cv2
     import time
     import os
     import asyncio

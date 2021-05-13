@@ -113,6 +113,14 @@ class DiscordBot:
         data_percentage = data_xp / data_max_xp
         data_rank = await self.get_leaderboard_rank(member)
 
+        data_obj = {'name': name,
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'lvl': data['lvl'],
+                    'xp': data_xp,
+                    'max_xp': data_max_xp,
+                    'rank': data_rank,
+                    'xp_multiplier': data_xp_multiplier}
+
         #
         # Load Template Image
         #
@@ -155,7 +163,7 @@ class DiscordBot:
                                              start_pos,
                                              end_pos,
                                              PROFILE_PROGRESS_RADIUS,
-                                             imgtools.LinearGradientColor((255, 0, 0, 255), (0, 255, 0, 255), 1))
+                                             PROFILE_PROGRESS_COLOR(data_obj))
 
         mask = progress_img[:, :, 3]
         img[np.where(mask != 0)] = progress_img[np.where(mask != 0)]
@@ -176,16 +184,10 @@ class DiscordBot:
         # Add Texts to Image
         #
         for text_call in PROFILE_TEXTS:
-            text_obj = text_call({'name': name,
-                                  'color': member.color.to_rgb(),
-                                  'lvl': data['lvl'],
-                                  'xp': data_xp,
-                                  'max_xp': data_max_xp,
-                                  'rank': data_rank,
-                                  'xp_multiplier': data_xp_multiplier})
+            text_obj = text_call(data_obj)
             text_full = np.zeros(img.shape, dtype=np.uint8)
             text_surf, _ = self.fonts[text_obj['font']].render(text_obj['text'],
-                                                               imgtools.rgb_to_bgr(text_obj['color']),
+                                                               text_obj['color'],
                                                                size=text_obj['size'])
             text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
             text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
