@@ -18,6 +18,8 @@ import pygame
 import pygame.freetype
 import io
 
+os.environ['SDL_AUDIODRIVER'] = 'dsp'
+
 pygame.init()
 
 query = Query()
