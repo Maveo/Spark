@@ -39,8 +39,11 @@ class DiscordBot:
 
         self.session = None
 
-        self.bot.add_cog(self.Events(self))
-        self.bot.add_cog(self.Commands(self))
+        self.events = self.Events(self)
+        self.commands = self.Commands(self)
+
+        self.bot.add_cog(self.events)
+        self.bot.add_cog(self.commands)
 
         self.fonts = {
             'default': pygame.freetype.Font(os.path.join('fonts', 'Product_Sans_Regular.ttf'))
@@ -90,11 +93,39 @@ class DiscordBot:
             return member
         return None
 
-    async def get_leaderboard(self):
-        return sorted(self.user_db.all(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+    async def get_users(self, guild):
+        return self.user_db.get(query.gid == guild.id)['users']
 
-    async def get_leaderboard_rank(self, member):
-        return list(map(lambda x: x['uid'], await self.get_leaderboard())).index(member.id) + 1
+    async def get_user(self, member):
+        data = await self.get_users(member.guild)
+        return data[str(member.id)]
+
+    async def update_user(self, member, data):
+        users_data = await self.get_users(member.guild)
+        str_uid = str(member.id)
+        if str_uid not in users_data:
+            users_data[str_uid] = {}
+        for k, v in data.items():
+            users_data[str_uid][k] = v
+        self.user_db.update(
+            operations.set('users', users_data),
+            query.gid == member.guild.id
+        )
+
+    async def check_guild(self, guild):
+        if not self.user_db.contains(query.gid == guild.id):
+            self.user_db.insert({'gid': guild.id, 'users': {}})
+
+    async def get_blacklisted_users(self, guild):
+        users = await self.get_users(guild)
+        return filter(lambda x: x['blacklist'], users.values())
+
+    async def get_ranking(self, guild):
+        users = await self.get_users(guild)
+        return sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+
+    async def get_ranking_rank(self, member):
+        return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
 
     async def member_create_get_image(self, member):
         await self.check_member(member)
@@ -102,7 +133,7 @@ class DiscordBot:
         #
         # Retrieve user data
         #
-        data = self.user_db.get(query.uid == member.id)
+        data = await self.get_user(member)
         name = member.name
         if member.nick is not None:
             name = member.nick
@@ -111,7 +142,7 @@ class DiscordBot:
         data_xp = int(data['xp'])
         data_max_xp = int(self.max_xp_for(data['lvl']))
         data_percentage = data_xp / data_max_xp
-        data_rank = await self.get_leaderboard_rank(member)
+        data_rank = await self.get_ranking_rank(member)
 
         data_obj = {'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
@@ -143,9 +174,9 @@ class DiscordBot:
 
         avatar_full = np.zeros(img.shape, dtype=np.uint8)
         avatar_full[
-            PROFILE_AVATAR_POSITION[1]:PROFILE_AVATAR_POSITION[3] + PROFILE_AVATAR_POSITION[1],
-            PROFILE_AVATAR_POSITION[0]:PROFILE_AVATAR_POSITION[2] + PROFILE_AVATAR_POSITION[0],
-            :
+        PROFILE_AVATAR_POSITION[1]:PROFILE_AVATAR_POSITION[3] + PROFILE_AVATAR_POSITION[1],
+        PROFILE_AVATAR_POSITION[0]:PROFILE_AVATAR_POSITION[2] + PROFILE_AVATAR_POSITION[0],
+        :
         ] = avatar_image[:, :, :]
 
         img[np.where(mask == 0)] = avatar_full[np.where(mask == 0)]
@@ -175,9 +206,9 @@ class DiscordBot:
         if emoji_id not in self.emojis:
             emoji_id = '0'
         img[
-            PROFILE_EMOJI_POSITION[1]:PROFILE_EMOJI_POSITION[3] + PROFILE_EMOJI_POSITION[1],
-            PROFILE_EMOJI_POSITION[0]:PROFILE_EMOJI_POSITION[2] + PROFILE_EMOJI_POSITION[0],
-            :
+        PROFILE_EMOJI_POSITION[1]:PROFILE_EMOJI_POSITION[3] + PROFILE_EMOJI_POSITION[1],
+        PROFILE_EMOJI_POSITION[0]:PROFILE_EMOJI_POSITION[2] + PROFILE_EMOJI_POSITION[0],
+        :
         ] = self.emojis[emoji_id]
 
         #
@@ -197,15 +228,15 @@ class DiscordBot:
             text_size = (min(text_img.shape[1], text_obj['pos'][2]), min(text_img.shape[0], text_obj['pos'][3]))
             if 'align_right' in text_obj and text_obj['align_right']:
                 text_full[
-                    text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
-                    text_obj['pos'][0] - text_size[0]:text_obj['pos'][0],
-                    :
+                text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
+                text_obj['pos'][0] - text_size[0]:text_obj['pos'][0],
+                :
                 ] = text_img[:text_size[1], :text_size[0], :]
             else:
                 text_full[
-                    text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
-                    text_obj['pos'][0]:text_obj['pos'][0] + text_size[0],
-                    :
+                text_obj['pos'][1]:text_obj['pos'][1] + text_size[1],
+                text_obj['pos'][0]:text_obj['pos'][0] + text_size[0],
+                :
                 ] = text_img[:text_size[1], :text_size[0], :]
             mask = text_full[:, :, 3]
             img[np.where(mask != 0)] = text_full[np.where(mask != 0)]
@@ -241,10 +272,13 @@ class DiscordBot:
         return discord.File(filename="member.png", fp=io_buf)
 
     async def check_member(self, member):
-        if not member.bot and not self.user_db.contains(query.uid == member.id):
-            self.user_db.insert({'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False})
+        await self.check_guild(member.guild)
+        users = await self.get_users(member.guild)
+        if not member.bot and str(member.id) not in users:
+            await self.update_user(member,
+                                   {'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False})
 
-    async def member_set_lvl_xp(self, guild, member, lvl, xp=0):
+    async def member_set_lvl_xp(self, member, lvl, xp=0):
         if not member.bot:
             while xp > self.max_xp_for(lvl):
                 xp -= self.max_xp_for(lvl)
@@ -253,21 +287,18 @@ class DiscordBot:
                 lvl -= 1
                 xp += self.max_xp_for(lvl)
 
-            self.user_db.update_multiple([
-                (operations.set('xp', xp), query.uid == member.id),
-                (operations.set('lvl', lvl), query.uid == member.id)
-            ])
-            await self.member_role_manage(guild, member, lvl)
+            await self.update_user(member, {'xp': xp, 'lvl': lvl})
+            await self.member_role_manage(member, lvl)
 
-    async def update_member(self, guild, member):
+    async def update_member(self, member):
         await self.check_member(member)
-        data = self.user_db.get(query.uid == member.id)
-        await self.member_role_manage(guild, member, data['lvl'])
+        data = await self.get_user(member)
+        await self.member_role_manage(member, data['lvl'])
 
-    async def blacklist_get_embed(self, members):
+    async def blacklist_get_embed(self, guild):
         description = []
-        for user in self.user_db.search(query.blacklist == True):
-            member = get(members, id=int(user['uid']))
+        for user in await self.get_blacklisted_users(guild):
+            member = get(guild.members, id=int(user['uid']))
             if member is not None:
                 description.append(str(member))
         return discord.Embed(title="Blacklist",
@@ -276,19 +307,19 @@ class DiscordBot:
 
     async def member_set_xp_multiplier(self, member, xp_multiplier):
         await self.check_member(member)
-        self.user_db.update(operations.set('xp_multiplier', xp_multiplier), query.uid == member.id)
+        await self.update_user(member, {'xp_multiplier': xp_multiplier})
 
     async def member_set_blacklist(self, member, blacklist):
         await self.check_member(member)
-        self.user_db.update(operations.set('blacklist', blacklist), query.uid == member.id)
+        await self.update_user(member, {'blacklist': blacklist})
 
     async def member_joined_vc(self, member, t):
         await self.check_member(member)
-        self.user_db.update(operations.set('joined', t), query.uid == member.id)
+        await self.update_user(member, {'joined': t})
 
     async def member_left_vc(self, guild, member, t):
         await self.check_member(member)
-        data = self.user_db.get(query.uid == member.id)
+        data = await self.get_user(member)
         if 'blacklist' in data and data['blacklist'] is True:
             return
         xp_multiplier = 1
@@ -297,11 +328,11 @@ class DiscordBot:
         if 'joined' in data:
             xp_earned = self.xp_for((t - data['joined']) / 60, xp_multiplier)
             data['xp'] += xp_earned
-            await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
+            await self.member_set_lvl_xp(member, data['lvl'], data['xp'])
 
-    async def member_message_xp(self, guild, member):
+    async def member_message_xp(self, member):
         await self.check_member(member)
-        data = self.user_db.get(query.uid == member.id)
+        data = await self.get_user(member)
         if 'blacklist' in data and data['blacklist'] is True:
             return
         xp_multiplier = 1
@@ -309,7 +340,7 @@ class DiscordBot:
             xp_multiplier = data['xp_multiplier']
         xp_earned = self.xp_for(2.5, xp_multiplier)
         data['xp'] += xp_earned
-        await self.member_set_lvl_xp(guild, member, data['lvl'], data['xp'])
+        await self.member_set_lvl_xp(member, data['lvl'], data['xp'])
 
     @staticmethod
     async def give_role(guild, member, role_id):
@@ -328,8 +359,8 @@ class DiscordBot:
                 if r.id == role.id:
                     return await member.remove_roles(role)
 
-    async def member_role_manage(self, guild, member, lvl):
-        data = self.lvlsys_db.get(query.gid == guild.id)
+    async def member_role_manage(self, member, lvl):
+        data = self.lvlsys_db.get(query.gid == member.guild.id)
         if data is None:
             data = {}
         if 'lvlsys' not in data:
@@ -338,13 +369,13 @@ class DiscordBot:
         role_to_give = None
         for i in range(len(lvlsys_list)):
             is_last = i == len(lvlsys_list) - 1
-            if (is_last and lvl >= lvlsys_list[i][0]) or (
-                    (not is_last) and lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]):
+            if (i == 0) or \
+                    (is_last and lvl >= lvlsys_list[i][0]) or \
+                    ((not is_last) and lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]):
                 role_to_give = lvlsys_list[i][1]
             else:
-                await self.remove_role(guild, member, lvlsys_list[i][1])
-        if role_to_give is not None:
-            await self.give_role(guild, member, role_to_give)
+                await self.remove_role(member.guild, member, lvlsys_list[i][1])
+        await self.give_role(member.guild, member, role_to_give)
 
     async def lvlsys_set(self, guild_id, role_id, lvl):
         lvl = str(lvl)
@@ -409,11 +440,11 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
 
-        @commands.command(name='leaderboard',
+        @commands.command(name='ranking',
                           aliases=[],
-                          description="show the leaderboard")
-        async def _leaderboard(self, ctx, *args):
-            self.lb = await self.parent.get_leaderboard()
+                          description="show the ranking")
+        async def _ranking(self, ctx, *args):
+            self.lb = await self.parent.get_ranking(ctx.message.guild)
             for user in self.lb:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
                 if member is not None and not member.bot:
@@ -436,7 +467,7 @@ class DiscordBot:
 
             async def __setlvl(m):
                 lvl = int(args[0])
-                await self.parent.member_set_lvl_xp(ctx.message.guild, m, lvl, xp=0)
+                await self.parent.member_set_lvl_xp(m, lvl, xp=0)
                 await ctx.send(embed=discord.Embed(title='Success',
                                                    description='Level was set successfully!',
                                                    color=discord.Color.green()))
@@ -542,7 +573,7 @@ class DiscordBot:
                     await ctx.send(embed=discord.Embed(title='',
                                                        description='Successfully edited blacklist!',
                                                        color=discord.Color.green()))
-                    await ctx.send(embed=await self.parent.blacklist_get_embed(ctx.message.guild.members))
+                    await ctx.send(embed=await self.parent.blacklist_get_embed(ctx.message.guild))
 
                 if len(args) == 1:
                     return await __blacklist(ctx.message.author)
@@ -600,7 +631,8 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_message(self, message):
-            await self.parent.member_message_xp(message.guild, message.author)
+            if not message.author.bot:
+                await self.parent.member_message_xp(message.author)
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
@@ -621,4 +653,3 @@ class DiscordBot:
 if __name__ == '__main__':
     b = DiscordBot(TinyDB('dbs/users.json'), TinyDB('dbs/lvlsys.json'), PRINT_LOGGING)
     b.run(TOKEN)
-

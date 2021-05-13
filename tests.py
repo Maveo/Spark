@@ -12,14 +12,23 @@ class RoleDummy:
         self.name = name
 
 
+class GuildDummy:
+    def __init__(self, uid, roles=None):
+        self.id = uid
+        self.roles = roles
+        if self.roles is None:
+            self.roles = []
+
+
 class MemberDummy:
-    def __init__(self, uid, name='Dummy', nick='Dummy', bot=False):
+    def __init__(self, uid, name='Dummy', nick='Dummy', guild=GuildDummy(0), bot=False):
         self.id = uid
         self.name = name
         self.nick = nick
         self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
         self.roles = {}
         self.top_role = RoleDummy(0)
+        self.guild = guild
         self.bot = bot
         self.color = ColorDummy()
 
@@ -34,12 +43,14 @@ class MemberDummy:
         return self.avatar_url
 
 
-class GuildDummy:
-    def __init__(self, uid, roles=None):
-        self.id = uid
-        self.roles = roles
-        if self.roles is None:
-            self.roles = []
+class MessageDummy:
+    def __init__(self, author=MemberDummy(0)):
+        self.author = author
+
+
+class ChannelDummy:
+    def __init__(self, channel=None):
+        self.channel = channel
 
 
 class Tests:
@@ -56,24 +67,45 @@ class Tests:
     async def test_b1(self):
         return self.user_db.all() == []
 
-    # test join
+    # test join vc
     async def test_b2(self):
-        await self.bot.member_joined_vc(MemberDummy(0), 0)
-        return self.user_db.all() == [{'uid': 0, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False, 'joined': 0}]
+        m = MemberDummy(0)
+        await self.bot.events.on_voice_state_update(MemberDummy(0), ChannelDummy(), ChannelDummy(1))
+        user = await self.bot.get_user(m)
+        return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0
+
+    # test write message
+    async def test_b2_1(self):
+        m = MemberDummy(0)
+        await self.bot.events.on_message(MessageDummy(author=m))
+        user = await self.bot.get_user(m)
+        return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 2.5
 
     # test leveling 1
     async def test_b3(self):
         m = MemberDummy(0)
         await self.bot.member_joined_vc(m, 0)
         await self.bot.member_left_vc(GuildDummy(0), m, 60 * 60 * 1)
-        return self.user_db.all() == [{'uid': 0, 'lvl': 1, 'xp': 60.0, 'xp_multiplier': 1, 'blacklist': False, 'joined': 0}]
+        user = await self.bot.get_user(m)
+        return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 60
+
+    # test bot not leveling
+    async def test_b3_1(self):
+        m = MemberDummy(0, bot=True)
+        await self.bot.events.on_message(MessageDummy(author=m))
+        try:
+            await self.bot.get_user(m)
+            return False
+        except:
+            return True
 
     # test leveling 2
-    async def test_b4(self):
+    async def test_b3_2(self):
         m = MemberDummy(0)
         await self.bot.member_joined_vc(m, 0)
         await self.bot.member_left_vc(GuildDummy(0), m, 60 * 60 * 5)
-        return self.user_db.all() == [{'uid': 0, 'lvl': 3, 'xp': 90.0, 'xp_multiplier': 1, 'blacklist': False, 'joined': 0}]
+        user = await self.bot.get_user(m)
+        return user['uid'] == 0 and user['lvl'] == 3 and user['xp'] == 90
 
     # test set lvlsys point
     async def test_b5(self):
@@ -92,26 +124,28 @@ class Tests:
         await self.bot.lvlsys_set(0, 0, 0)
         await self.bot.lvlsys_set(0, 1, 2)
         await self.bot.lvlsys_set(0, 2, 5)
-        self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
-        m = MemberDummy(0)
-        await self.bot.member_joined_vc(m, 0)
-        await self.bot.member_left_vc(GuildDummy(0, [
+        g = GuildDummy(0, [
             RoleDummy(0),
             RoleDummy(1),
             RoleDummy(2)
-        ]), m, 0)
+        ])
+        m = MemberDummy(0, guild=g)
+        await self.bot.member_joined_vc(m, 0)
+        await self.bot.update_user(m, {'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
+        await self.bot.member_left_vc(g, m, 0)
         return m.roles == {1: True}
 
     # test leaderboard
     async def test_b8(self):
         g = GuildDummy(0)
-        m0 = MemberDummy(0)
-        m1 = MemberDummy(1)
+        m0 = MemberDummy(0, guild=g)
+        m1 = MemberDummy(1, guild=g)
         await self.bot.member_joined_vc(m0, 0)
         await self.bot.member_joined_vc(m1, 0)
         await self.bot.member_left_vc(g, m0, 60 * 60 * 1)
         await self.bot.member_left_vc(g, m1, 60 * 60 * 5)
-        l = await self.bot.get_leaderboard()
+
+        l = await self.bot.get_ranking(g)
         return l[0]['uid'] == 1 and l[1]['uid'] == 0
 
     # test leaderboard rank
@@ -123,13 +157,13 @@ class Tests:
         await self.bot.member_joined_vc(m1, 0)
         await self.bot.member_left_vc(g, m0, 60 * 60 * 1)
         await self.bot.member_left_vc(g, m1, 60 * 60 * 5)
-        rank = await self.bot.get_leaderboard_rank(m0)
+        rank = await self.bot.get_ranking_rank(m0)
         return rank == 2
 
     # test image creation
     async def test_b_1(self):
         m = MemberDummy(0)
-        self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 50, 'xp_multiplier': 1.5})
+        # self.user_db.insert({'uid': 0, 'lvl': 3, 'xp': 50, 'xp_multiplier': 1.5})
         image_buffer = (await self.bot.member_create_get_image(m)).fp.getbuffer()
         image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
