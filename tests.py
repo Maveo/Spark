@@ -221,12 +221,6 @@ async def run_test(test_name):
 
 
 def main():
-    for method_name in sorted(dir(Tests)):
-        if callable(getattr(Tests, method_name)) and method_name[:5] == 'test_':
-            asyncio.run(run_test(method_name))
-
-
-if __name__ == '__main__':
     from bot import DiscordBot
     from tinydb import TinyDB, Query, operations
     from tinydb.storages import MemoryStorage
@@ -241,4 +235,10 @@ if __name__ == '__main__':
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+    for method_name in sorted(dir(Tests)):
+        if callable(getattr(Tests, method_name)) and method_name[:5] == 'test_':
+            asyncio.run(run_test(method_name))
+
+
+if __name__ == '__main__':
     main()
