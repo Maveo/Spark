@@ -414,6 +414,7 @@ class DiscordBot:
 
             embed = discord.Embed(title='Help',
                                   description='"lvlsys update" to update the users to the new levelsystem\n'
+                                              '"lvlsys boost {multiplier} {search}" to boost a user\n'
                                               '"lvlsys get" to display the levelsystem\n'
                                               '"lvlsys set {level} {role_id}" to set a role for a level\n'
                                               '"lvlsys remove {level}" to remove the level\n'
