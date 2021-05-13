@@ -108,7 +108,7 @@ class DiscordBot:
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
 
-    async def member_create_get_image(self, member):
+    async def member_create_profile_image(self, member):
         await self.check_member(member)
 
         #
@@ -139,6 +139,19 @@ class DiscordBot:
         img_buf = await self.image_creator.create(PROFILE_IMAGE(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
+    async def member_create_lvl_image(self, member, old_lvl, new_lvl):
+        name = member.name
+        if member.nick is not None:
+            name = member.nick
+
+        data_obj = {'member': member,
+                    'old_lvl': old_lvl,
+                    'new_lvl': new_lvl,
+                    'name': name}
+
+        img_buf = await self.image_creator.create(LEVEL_UP_IMAGE(data_obj))
+        return discord.File(filename="lvlup.png", fp=img_buf)
+
     async def check_member(self, member):
         await self.check_guild(member.guild)
         users = await self.get_users(member.guild)
@@ -148,7 +161,7 @@ class DiscordBot:
 
     async def member_set_lvl_xp(self, member, lvl, xp=0):
         if not member.bot:
-            previous_level = lvl
+            previous_level = int(lvl)
 
             while xp > self.max_xp_for(lvl):
                 xp -= self.max_xp_for(lvl)
@@ -157,15 +170,17 @@ class DiscordBot:
                 lvl -= 1
                 xp += self.max_xp_for(lvl)
 
-            if previous_level > lvl:
-                print('level up')
-
             await self.update_user(member, {'xp': xp, 'lvl': lvl})
 
             previous_role = member.top_role
             await self.member_role_manage(member, lvl)
             if previous_role != member.top_role:
-                print('rank change')
+                return await member.guild.system_channel.send('Ranked Up!')
+
+            if previous_level < lvl:
+                await member.guild.system_channel.send(file=await self.member_create_lvl_image(member,
+                                                                                               previous_level,
+                                                                                               lvl))
 
     async def update_member(self, member):
         await self.check_member(member)
@@ -307,11 +322,11 @@ class DiscordBot:
             await ctx.trigger_typing()
 
             if len(args) == 0:
-                return await ctx.send(file=await self.parent.member_create_get_image(ctx.message.author))
+                return await ctx.send(file=await self.parent.member_create_profile_image(ctx.message.author))
             else:
                 member = await self.parent.search_member(ctx, ' '.join(args))
                 if member is not None:
-                    return await ctx.send(file=await self.parent.member_create_get_image(member))
+                    return await ctx.send(file=await self.parent.member_create_profile_image(member))
 
             return await ctx.send(embed=discord.Embed(title='Error',
                                                       description='No user was found!',
@@ -326,7 +341,7 @@ class DiscordBot:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
                 if member is not None and not member.bot:
                     await ctx.trigger_typing()
-                    await ctx.send(file=await self.parent.member_create_get_image(member))
+                    await ctx.send(file=await self.parent.member_create_profile_image(member))
                 else:
                     pass
 
@@ -349,7 +364,7 @@ class DiscordBot:
                     await ctx.send(embed=discord.Embed(title='Success',
                                                        description='Level was set successfully!',
                                                        color=discord.Color.green()))
-                    await ctx.send(file=await self.parent.member_create_get_image(m))
+                    await ctx.send(file=await self.parent.member_create_profile_image(m))
                 except ValueError:
                     await ctx.send(embed=discord.Embed(title='Error',
                                                        description='Level must be an integer!',
@@ -421,7 +436,7 @@ class DiscordBot:
                         await ctx.send(embed=discord.Embed(title='',
                                                            description='Successfully set multiplier!',
                                                            color=discord.Color.green()))
-                        await ctx.send(file=await self.parent.member_create_get_image(m))
+                        await ctx.send(file=await self.parent.member_create_profile_image(m))
                     except ValueError:
                         await ctx.send(embed=discord.Embed(title='Error',
                                                            description='Multiplier must be in the format x.xx!',
