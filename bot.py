@@ -409,6 +409,19 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
 
+        @commands.command(name='leaderboard',
+                          aliases=[],
+                          description="show the leaderboard")
+        async def _leaderboard(self, ctx, *args):
+            self.lb = await self.parent.get_leaderboard()
+            for user in self.lb:
+                member = get(ctx.message.guild.members, id=int(user['uid']))
+                if member is not None and not member.bot:
+                    await ctx.trigger_typing()
+                    await ctx.send(file=await self.parent.member_create_get_image(member))
+                else:
+                    pass
+
         @commands.command(name='setlvl',
                           aliases=['setlevel', 'sl'],
                           description="set level command")
@@ -608,3 +621,4 @@ class DiscordBot:
 if __name__ == '__main__':
     b = DiscordBot(TinyDB('dbs/users.json'), TinyDB('dbs/lvlsys.json'), PRINT_LOGGING)
     b.run(TOKEN)
+
