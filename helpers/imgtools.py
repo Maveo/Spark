@@ -13,7 +13,15 @@ os.environ['SDL_AUDIODRIVER'] = 'dsp'
 pygame.init()
 
 
-class SingleColor(np.ndarray):
+ALPHA_COLOR = (255, 255, 255, 255)
+LINE_TYPE = cv2.LINE_4
+
+
+class Color:
+    pass
+
+
+class SingleColor(Color, np.ndarray):
     def __new__(cls, color):
         if len(color) == 1:
             color = (color, color, color, 255)
@@ -28,11 +36,14 @@ class SingleColor(np.ndarray):
     def darkened(self, factor):
         return self.lightened(1 - factor)
 
+    def alpha(self, alpha):
+        return SingleColor([self[0], self[1], self[2], alpha])
+
     def create(self, size):
         return np.full((size[0], size[1], self.shape[0]), self, dtype=np.uint8)
 
 
-class LinearGradientColor:
+class LinearGradientColor(Color):
     def __init__(self, color1, color2, axis=0):
         self.color1 = SingleColor(color1)
         self.color2 = SingleColor(color2)
@@ -59,44 +70,6 @@ def rgb_to_bgr(rgb):
     return rgb[2], rgb[1], rgb[0]
 
 
-def progress_bar(size, radius, color_creator):
-    start_pos = (radius, radius)
-    end_pos = (size[0] + radius, size[1] + radius)
-
-    progress_crop = 2
-
-    alpha_color = (255, 255, 255, 255)
-    lineType = cv2.LINE_4
-
-    diameter = radius * 2
-    hard_radius = int(radius)
-
-    progress_bar_size = (end_pos[1] - start_pos[1] + diameter + progress_crop,
-                         end_pos[0] - start_pos[0] + diameter + progress_crop)
-
-    img = np.zeros((progress_bar_size[0], progress_bar_size[1], 4), dtype=np.uint8)
-
-    if hard_radius > 0:
-        cv2.circle(img, start_pos, hard_radius, alpha_color, -1, lineType=lineType)
-
-    cv2.line(img, start_pos, end_pos, alpha_color, diameter, lineType=lineType)
-
-    if hard_radius > 0:
-        cv2.circle(img, end_pos, hard_radius, alpha_color, -1, lineType=lineType)
-
-    bar_color_overlay = np.zeros(img.shape, dtype=np.uint8)
-    bar_color = color_creator.create(progress_bar_size)
-    bar_color_overlay[
-        start_pos[1] - radius:end_pos[1] + radius + progress_crop,
-        start_pos[0] - radius:end_pos[0] + radius + progress_crop,
-        :
-    ] = bar_color
-
-    img[np.where(img == alpha_color)] = bar_color_overlay[np.where(img == alpha_color)]
-
-    return img
-
-
 def overlay(background, foreground, x, y, max_size, align_x, align_y):
     if background is None:
         return foreground
@@ -104,15 +77,31 @@ def overlay(background, foreground, x, y, max_size, align_x, align_y):
     h, w = foreground.shape[0], foreground.shape[1]
 
     if align_y == 'bottom':
-        by_start = y
-        by_end = min(y+h, background.shape[0])
+        n_h = h
+        if max_size[1] >= 0:
+            n_h = min(max_size[1], h)
+        by_start = max(0, y-n_h)
+        by_end = min(y, background.shape[0])
+        fy_start = h-n_h
+        fy_end = by_end
+    elif align_y == 'center':
+        n_h = h
+        if max_size[1] >= 0:
+            n_h = min(max_size[1], h)
+        hh_a = int(n_h / 2)
+        hh_b = n_h - hh_a
+        by_start = max(0, y - hh_a)
+        by_end = min(y + hh_b, background.shape[0])
         fy_start = 0
-        fy_end = by_end-y
+        fy_end = by_end - by_start
+    # Default alignment top
     else:
-        by_start = y
+        if max_size[1] >= 0:
+            h = min(max_size[1], h)
+        by_start = max(0, y)
         by_end = min(y + h, background.shape[0])
         fy_start = 0
-        fy_end = by_end - y
+        fy_end = by_end - by_start
 
     if align_x == 'right':
         n_w = w
@@ -122,13 +111,26 @@ def overlay(background, foreground, x, y, max_size, align_x, align_y):
         bx_end = min(x, background.shape[1])
         fx_start = w-n_w
         fx_end = bx_end
+
+    elif align_x == 'center':
+        n_w = w
+        if max_size[0] >= 0:
+            n_w = min(max_size[0], w)
+        hw_a = int(n_w / 2)
+        hw_b = n_w - hw_a
+        bx_start = max(0, x - hw_a)
+        bx_end = min(x + hw_b, background.shape[1])
+        fx_start = 0
+        fx_end = bx_end - bx_start
+
+    # Default alignment left
     else:
         if max_size[0] >= 0:
             w = min(max_size[0], w)
-        bx_start = x
+        bx_start = max(0, x)
         bx_end = min(x+w, background.shape[1])
         fx_start = 0
-        fx_end = bx_end-x
+        fx_end = bx_end - bx_start
 
     if by_end - by_start < 0 or bx_end - bx_start < 0:
         return background
@@ -192,6 +194,8 @@ class AlignLayer:
         self.max_size = self.get_kwarg('max_size', (-1, -1))
 
     def _init_finished(self):
+        if 'no-check' in self.kwargs and self.kwargs['no-check'] is True:
+            return
         for key in self.kwargs.keys():
             if key not in self.used_kwargs:
                 warnings.warn(type(self).__name__ + ' "' + key + '" was not used')
@@ -204,15 +208,30 @@ class AlignLayer:
         return overlay(kwargs['background'], layer, self.pos[0], self.pos[1], self.max_size, self.align_x, self.align_y)
 
 
-class ColorLayer(AlignLayer):
+class ColoredLayer(AlignLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.color = self.get_kwarg('color', (0, 0, 0, 0))
+        if not issubclass(type(self.color), Color):
+            self.color = SingleColor(self.color)
+
+    async def create(self, **kwargs):
+        raise Exception('Raw usage of Colored Layer forbidden, use Color Layer!')
+
+    def colored(self, img):
+        color_overlay = self.color.create(img.shape)
+        img[np.where(img == ALPHA_COLOR)] = color_overlay[np.where(img == ALPHA_COLOR)]
+        return img
+
+
+class ColorLayer(ColoredLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.resize = self.get_kwarg('resize', (1, 1))
-        self.color = SingleColor(self.get_kwarg('color', (0, 0, 0, 0)))
         super()._init_finished()
 
     async def create(self, **kwargs):
-        return np.full((self.resize[1], self.resize[0], 4), self.color, dtype=np.uint8)
+        return self.colored(np.full((self.resize[1], self.resize[0], 4), ALPHA_COLOR, dtype=np.uint8))
 
 
 class EmptyLayer(ColorLayer):
@@ -293,41 +312,114 @@ class WebImageLayer(ImageLayer):
         return self.resized(img)
 
 
-class TextLayer(AlignLayer):
+class TextLayer(ColoredLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.font = self.get_kwarg('font')
         self.font_size = self.get_kwarg('font_size', 16)
         self.text = self.get_kwarg('text')
-        self.color = SingleColor(self.get_kwarg('color', (0, 0, 0)))
         self.max_size = self.get_kwarg('max_size')
         super()._init_finished()
 
     async def create(self, **kwargs):
         if self.font not in kwargs['fonts']:
             raise Exception('Error font: "' + self.font + '" was not found!')
-        text_surf, _ = kwargs['fonts'][self.font].render(self.text, self.color, size=self.font_size)
+
+        text_surf, _ = kwargs['fonts'][self.font].render(self.text, ALPHA_COLOR, size=self.font_size)
 
         text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
         text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
         text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
         text_img[:, :, 3] = text_alpha
         text_img[:, :, :3] = text_img_t
-        return text_img
+        return self.colored(text_img)
 
 
-class ProgressLayer(AlignLayer):
+class RectangleLayer(ColoredLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.percentage = self.get_kwarg('percentage')
-        self.width = self.get_kwarg('width')
-        self.size = self.get_kwarg('size')
-        self.color = self.get_kwarg('color')
+        self.size = self.get_kwarg('size', (0, 0))
+        self.radius = self.get_kwarg('radius', 0)
+        self.line_width = self.get_kwarg('line_width', -1)
         super()._init_finished()
 
     async def create(self, **kwargs):
-        adj_size = (int(self.size[0] * self.percentage), int(self.size[1] * self.percentage))
-        return progress_bar(adj_size, self.width, self.color)
+        top_left = (0, 0)
+        diameter = self.radius * 2
+        bottom_right = (max(1, diameter - 1, self.size[1] - 1), max(1, diameter - 1, self.size[0] - 1))
+
+        src = np.zeros((bottom_right[0] + 1, bottom_right[1] + 1, 4), dtype=np.uint8)
+
+        #  corners:
+        #  p1 - p2
+        #  |     |
+        #  p4 - p3
+
+        p1 = top_left
+        p2 = (bottom_right[1], top_left[1])
+        p3 = (bottom_right[1], bottom_right[0])
+        p4 = (top_left[0], bottom_right[0])
+
+        corner_radius = self.radius
+
+        thickness = self.line_width
+
+        if thickness < 0:
+            # big rect
+            start_pos = (p1[0]+corner_radius, p1[1])
+            end_pos = (p3[0]-corner_radius, p3[1])
+            cv2.rectangle(src, start_pos, end_pos, ALPHA_COLOR, thickness=thickness, lineType=LINE_TYPE)
+            start_pos = (p1[0], p1[1]+corner_radius)
+            end_pos = (p3[0], p3[1]-corner_radius)
+            cv2.rectangle(src, start_pos, end_pos, ALPHA_COLOR, thickness=thickness, lineType=LINE_TYPE)
+
+        else:
+            # draw straight lines
+            cv2.line(src, (p1[0] + corner_radius, p1[1]), (p2[0] - corner_radius, p2[1]), ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.line(src, (p2[0], p2[1] + corner_radius), (p3[0], p3[1] - corner_radius), ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.line(src, (p3[0] - corner_radius, p4[1]), (p4[0] + corner_radius, p3[1]), ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.line(src, (p4[0], p4[1] - corner_radius), (p1[0], p1[1] + corner_radius), ALPHA_COLOR, thickness, LINE_TYPE)
+
+        if corner_radius > 0:
+            # draw arcs
+            cv2.ellipse(src, (p1[0] + corner_radius, p1[1] + corner_radius), (corner_radius, corner_radius),
+                        180.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.ellipse(src, (p2[0] - corner_radius, p2[1] + corner_radius), (corner_radius, corner_radius),
+                        270.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.ellipse(src, (p3[0] - corner_radius, p3[1] - corner_radius), (corner_radius, corner_radius),
+                        0.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.ellipse(src, (p4[0] + corner_radius, p4[1] - corner_radius), (corner_radius, corner_radius),
+                        90.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
+
+        return self.colored(src)
+
+
+# class LineLayer(RectangleLayer):
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+
+
+class ProgressLayer(RectangleLayer):
+    def __init__(self, **kwargs):
+        direction = 'x'
+        percentage = 1
+        if 'direction' in kwargs:
+            direction = kwargs['direction']
+        if 'percentage' in kwargs:
+            percentage = kwargs['percentage']
+
+        if direction == 'y':
+            kwargs['size'] = (kwargs['size'][0],
+                              int(kwargs['size'][1] * percentage))
+        else:
+            kwargs['size'] = (int(kwargs['size'][0] * percentage),
+                              kwargs['size'][1])
+
+        if 'percentage' in kwargs:
+            del kwargs['percentage']
+        if 'direction' in kwargs:
+            del kwargs['direction']
+        super().__init__(**kwargs)
 
 
 class ImageCreator:
