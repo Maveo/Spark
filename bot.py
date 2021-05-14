@@ -165,8 +165,8 @@ class DiscordBot:
                     'new_lvl': new_lvl,
                     'old_role': old_role,
                     'new_role': new_role,
-                    'old_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
-                    'new_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
+                    'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
+                    'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
                     'name': name}
 
         img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
