@@ -14,7 +14,7 @@ pygame.init()
 
 
 ALPHA_COLOR = (255, 255, 255, 255)
-LINE_TYPE = cv2.LINE_4
+LINE_TYPE = cv2.LINE_AA
 
 
 class Color:
@@ -220,7 +220,9 @@ class ColoredLayer(AlignLayer):
 
     def colored(self, img):
         color_overlay = self.color.create(img.shape)
-        img[np.where(img == ALPHA_COLOR)] = color_overlay[np.where(img == ALPHA_COLOR)]
+
+        color_overlay[..., 3:] = img[..., 3:]
+        img[np.where(img != (0, 0, 0, 0))] = color_overlay[np.where(img != (0, 0, 0, 0))]
         return img
 
 
