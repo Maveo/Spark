@@ -1,3 +1,5 @@
+import asyncio
+
 from settings import *
 
 import discord
@@ -488,9 +490,13 @@ class DiscordBot:
         @commands.command(name='coinflip', aliases=['cf', 'coin'], description="Toss a coin to your Witcher!")
         async def _coinflip(self, ctx):
             if random.randint(0, 1) == 0:
-                await ctx.send(file=discord.File(os.path.join('images', 'kopf.gif')))
+                res = 'kopf'
             else:
-                await ctx.send(file=discord.File(os.path.join('images', 'zahl.gif')))
+                res = 'zahl'
+            message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
+            await asyncio.sleep(5)
+            await message.delete()
+            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(res))))
 
         @commands.command(name='dice', aliases=[], description="Roll a dice to your Witcher!")
         async def _dice(self, ctx, *args):
