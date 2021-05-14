@@ -344,11 +344,12 @@ class RectangleLayer(ColoredLayer):
         super()._init_finished()
 
     async def create(self, **kwargs):
-        thick_offset = max(1, self.line_width)
-        double_thickoff = thick_offset * 2
+        diameter = self.radius * 2
+
+        thick_offset = max(0, self.line_width)
+        double_thickoff = max(1, thick_offset * 2)
 
         top_left = (thick_offset, thick_offset)
-        diameter = self.radius * 2
         bottom_right = (max(1, diameter - thick_offset, self.size[1] - thick_offset),
                         max(1, diameter - thick_offset, self.size[0] - thick_offset))
 
