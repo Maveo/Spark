@@ -75,6 +75,16 @@ def main():
     import aiohttp
     from helpers import tools
 
+    SHOW_IMAGES = True
+
+    def show_image(img):
+        if SHOW_IMAGES:
+            try:
+                cv2.imshow('test', img)
+                cv2.waitKey(0)
+            except:
+                pass
+
     class Tests:
         def __init__(self, bot, user_db, lvlsys_db):
             self.bot = bot
@@ -208,8 +218,7 @@ def main():
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
-            cv2.imshow('test', image)
-            cv2.waitKey(0)
+            show_image(image)
             return True
 
         # test levelup image creation
@@ -218,8 +227,7 @@ def main():
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
-            cv2.imshow('test', image)
-            cv2.waitKey(0)
+            # show_image(image)
             return True
 
         # test rankup image creation
@@ -230,8 +238,7 @@ def main():
             image_buffer = (await self.bot.member_create_rank_up_image(m, 1, 2, r1, r2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
-            cv2.imshow('test', image)
-            cv2.waitKey(0)
+            show_image(image)
             return True
 
     async def run_test(test_name):
