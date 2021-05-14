@@ -371,8 +371,8 @@ class DiscordBot:
                           aliases=[],
                           description="show the ranking")
         async def _ranking(self, ctx, *args):
-            self.lb = await self.parent.get_ranking(ctx.message.guild)
-            for user in self.lb:
+            lb = await self.parent.get_ranking(ctx.message.guild)
+            for user in lb:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
                 if member is not None and not member.bot:
                     await ctx.trigger_typing()
