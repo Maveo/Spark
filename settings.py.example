@@ -6,28 +6,27 @@ DESCRIPTION = 'This is a KGS501 Productions bot!'
 PRINT_LOGGING = True
 
 FONTS = {
-    'default': os.path.join('fonts', 'Product_Sans_Regular.ttf')
+    'regular': os.path.join('fonts', 'Product_Sans_Regular.ttf'),
+    'bold': os.path.join('fonts', 'Product_Sans_Bold.ttf'),
 }
 
 IMAGES_LOAD_MEMORY = [
-    DirectoryImageLoader(prefix='emojis', directory=os.path.join('images', 'emojis')),
-    FileImageLoader(prefix='', file=os.path.join('images', 'profile_template.png')),
-    FileImageLoader(prefix='', file=os.path.join('images', 'levelup_template.png')),
+    DirectoryImageLoader(prefix='emojis', directory=os.path.join('images', 'emojis'))
 ]
 
 PROFILE_IMAGE = lambda x: [
-    EmptyLayer(
+    RectangleLayer(
         pos=(0, 0),
-        resize=(600, 150)
+        line_width=-1,
+        size=(600, 150),
+        radius=20,
+        color=(55, 50, 48),
     ),
     WebImageLayer(
         pos=(15, 14),
         resize=(123, 123),
         url=x['avatar_url']
     ),
-    MemoryImageLayer(
-        pos=(0, 0),
-        memory='/profile_template.png'),
     EmojiLayer(
         pos=(147, 9),
         resize=(40, 40),
@@ -36,15 +35,18 @@ PROFILE_IMAGE = lambda x: [
     ProgressLayer(
         pos=(145, 111),
         percentage=x['xp_percentage'],
-        width=10,
-        size=(414, 0),
+        line_width=-1,
+        direction='x',
+        size=(414, 20),
+        radius=10,
         color=LinearGradientColor((24,  110, 241, 255),
                                   (7, 222, 255, 255),
                                   1)
     ),
     TextLayer(
-        pos=(200, 16),
-        font='default',
+        pos=(200, 30),
+        align_y='center',
+        font='regular',
         font_size=min(35, max(10, int(520 / len(str(x['name']))))),
         text=str(x['name']),
         color=x['color'],
@@ -52,7 +54,7 @@ PROFILE_IMAGE = lambda x: [
     ),
     TextLayer(
         pos=(150, 87),
-        font='default',
+        font='regular',
         font_size=22,
         text='Lvl.',
         color=(103, 103, 103),
@@ -60,7 +62,7 @@ PROFILE_IMAGE = lambda x: [
     ),
     TextLayer(
         pos=(185, 83),
-        font='default',
+        font='regular',
         font_size=28,
         text=str(x['lvl']),
         color=(255, 255, 255),
@@ -68,9 +70,8 @@ PROFILE_IMAGE = lambda x: [
     ),
     TextLayer(
         pos=(578, 16),
-        align='right',
-        text_align='right',
-        font='default',
+        align_x='right',
+        font='regular',
         font_size=28,
         text='#' + str(x['rank']),
         color=x['color'],
@@ -78,19 +79,17 @@ PROFILE_IMAGE = lambda x: [
     ),
     TextLayer(
         pos=(580, 66),
-        align='right',
-        text_align='right',
-        font='default',
+        align_x='right',
+        font='regular',
         font_size=20,
         text='{:.2f}x'.format(x['xp_multiplier']) if x['xp_multiplier'] != 1 else '',
-        color=(102, 172, 47) if x['xp_multiplier'] > 1 else (60, 20, 220),
+        color=(102, 172, 47) if x['xp_multiplier'] > 1 else ((60, 20, 220) if x['xp_multiplier'] < 0 else (0, 128, 255)),
         max_size=(150, 20)
     ),
     TextLayer(
         pos=(580, 90),
-        align='right',
-        text_align='right',
-        font='default',
+        align_x='right',
+        font='regular',
         font_size=18,
         text=str(x['xp']) + ' / ' + str(x['max_xp']) + ' XP',
         color=(170, 170, 170),
@@ -99,17 +98,81 @@ PROFILE_IMAGE = lambda x: [
 ]
 
 LEVEL_UP_IMAGE = lambda x: [
-    EmptyLayer(
+    RectangleLayer(
         pos=(0, 0),
-        resize=(200, 100),
-    ),
-    MemoryImageLayer(
-        pos=(0, 0),
-        memory='/levelup_template.png'
+        line_width=-1,
+        size=(200, 100),
+        radius=20,
+        color=(55, 50, 48),
     ),
     EmojiLayer(
-        pos=(55, 43),
-        emoji='👑',
-        resize=(16, 16)
-    )
+        pos=(58, 70),
+        resize=(16, 16),
+        emoji=x['member'].top_role.name[0],
+    ),
+
+    EmojiLayer(
+        pos=(125, 70),
+        resize=(16, 16),
+        emoji=x['member'].top_role.name[0],
+    ),
+
+    ProgressLayer(
+        pos=(80, 77),
+        percentage=1,
+        line_width=-1,
+        size=(34, 4),
+        radius=2,
+        color=LinearGradientColor(SingleColor(x['color']).alpha(0),
+                                  SingleColor(x['color']),
+                                  1)
+    ),
+
+    TextLayer(
+        pos=(53, 73),
+        align_x='right',
+        font='regular',
+        font_size=12,
+        text='Lvl. ' + str(x['old_lvl']),
+        color=x['color'],
+        max_size=(50, 22)
+    ),
+
+    TextLayer(
+        pos=(145, 73),
+        font='regular',
+        font_size=12,
+        text='Lvl. ' + str(x['new_lvl']),
+        color=x['color'],
+        max_size=(50, 22)
+    ),
+
+    TextLayer(
+        pos=(100, 43),
+        font='regular',
+        font_size=13,
+        align_x='center',
+        text=x['name'],
+        color=(255, 255, 255),
+        max_size=(180, 16)
+    ),
+]
+
+RANK_UP_IMAGE = lambda x: [
+    RectangleLayer(
+        pos=(0, 0),
+        line_width=-1,
+        size=(200, 100),
+        radius=20,
+        color=(55, 50, 48),
+    ),
+    RectangleLayer(
+        pos=(1, 1),
+        line_width=2,
+        size=(198, 98),
+        radius=20,
+        color=LinearGradientColor(SingleColor(x['old_color']),
+                                  SingleColor(x['new_color']),
+                                  1)
+    ),
 ]

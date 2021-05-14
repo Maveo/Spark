@@ -148,11 +148,27 @@ class DiscordBot:
 
         data_obj = {'member': member,
                     'old_lvl': old_lvl,
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
                     'new_lvl': new_lvl,
                     'name': name}
 
         img_buf = await self.image_creator.create(LEVEL_UP_IMAGE(data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
+
+    async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
+        name = member.name
+        if member.nick is not None:
+            name = member.nick
+
+        data_obj = {'member': member,
+                    'old_lvl': old_lvl,
+                    'new_lvl': new_lvl,
+                    'old_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
+                    'new_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
+                    'name': name}
+
+        img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
+        return discord.File(filename="rankup.png", fp=img_buf)
 
     async def check_member(self, member):
         await self.check_guild(member.guild)
@@ -176,13 +192,19 @@ class DiscordBot:
 
             previous_role = member.top_role
             await self.member_role_manage(member, lvl)
-            if previous_role != member.top_role:
-                return await member.guild.system_channel.send('Ranked Up!')
 
             if previous_level < lvl:
-                await member.guild.system_channel.send(file=await self.member_create_lvl_image(member,
-                                                                                               previous_level,
-                                                                                               lvl))
+                if previous_role != member.top_role:
+                    return await member.guild.system_channel.send(
+                        file=await self.member_create_rank_up_image(member,
+                                                                    previous_level,
+                                                                    lvl,
+                                                                    previous_role,
+                                                                    member.top_role))
+                await member.guild.system_channel.send(
+                    file=await self.member_create_lvl_image(member,
+                                                            previous_level,
+                                                            lvl))
 
     async def update_member(self, member):
         await self.check_member(member)
