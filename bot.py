@@ -375,6 +375,33 @@ class DiscordBot:
                 else:
                     pass
 
+        @commands.command(name='send',
+                          aliases=['s'],
+                          description="send through the bot")
+        @commands.has_permissions(administrator=True)
+        async def _send(self, ctx, *args):
+            if len(args) == 0:
+                return await ctx.send(embed=discord.Embed(title='Help',
+                                                          description='"send {msg}" to send into the system channel\n'
+                                                                      '"send {channel_id} {msg}" to send'
+                                                                      'into a specific channel',
+                                                          color=discord.Color.red()))
+            elif len(args) == 1:
+                return await ctx.author.guild.system_channel.send(args[0])
+            else:
+                try:
+                    channel = get(ctx.guild.text_channels, id=int(args[0]))
+                    if channel is not None:
+                        return await channel.send(' '.join(args[1:]))
+                except ValueError:
+                    pass
+                channel = get(ctx.guild.text_channels, name=args[0])
+                if channel is not None:
+                    return await channel.send(' '.join(args[1:]))
+                return await ctx.send(embed=discord.Embed(title='Error',
+                                                          description='Channel "{}" was not found!'.format(args[0]),
+                                                          color=discord.Color.red()))
+
         @commands.command(name='setlvl',
                           aliases=['setlevel', 'sl'],
                           description="set level command")
