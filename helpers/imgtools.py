@@ -105,7 +105,7 @@ def overlay(background, foreground, x, y, align):
         by_start = y
         bx_start = max(0, x-w)
         by_end = min(y+h, background.shape[0])
-        bx_end = min(bx_start+w, background.shape[1])
+        bx_end = min(x, background.shape[1])
         fy_start = 0
         fx_start = 0
         fy_end = by_end-y
