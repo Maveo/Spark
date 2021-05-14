@@ -220,10 +220,8 @@ class ColoredLayer(AlignLayer):
 
     def colored(self, img):
         color_overlay = self.color.create(img.shape)
-
         color_overlay[..., 3:] = img[..., 3:]
-        img[np.where(img != (0, 0, 0, 0))] = color_overlay[np.where(img != (0, 0, 0, 0))]
-        return img
+        return color_overlay
 
 
 class ColorLayer(ColoredLayer):
