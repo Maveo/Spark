@@ -261,14 +261,20 @@ class DiscordBot:
             data['lvlsys'] = {}
         lvlsys_list = sorted(map(lambda x: (int(x[0]), x[1]), data['lvlsys'].items()), key=lambda x: x[0])
         role_to_give = None
+        roles_to_remove = []
         for i in range(len(lvlsys_list)):
             is_last = i == len(lvlsys_list) - 1
-            if (i == 0) or \
-                    (is_last and lvl >= lvlsys_list[i][0]) or \
+            if (is_last and lvl >= lvlsys_list[i][0]) or \
                     ((not is_last) and lvlsys_list[i][0] <= lvl < lvlsys_list[i + 1][0]):
                 role_to_give = lvlsys_list[i][1]
             else:
-                await self.remove_role(member.guild, member, lvlsys_list[i][1])
+                roles_to_remove.append(lvlsys_list[i][1])
+
+        for role in roles_to_remove:
+            await self.remove_role(member.guild, member, role)
+
+        if role_to_give is None and len(lvlsys_list) != 0:
+            role_to_give = lvlsys_list[0][1]
         await self.give_role(member.guild, member, role_to_give)
 
     async def lvlsys_set(self, guild_id, role_id, lvl):
