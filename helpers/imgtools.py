@@ -360,7 +360,7 @@ class RectangleLayer(ColoredLayer):
         p3 = (bottom_right[1], bottom_right[0])
         p4 = (top_left[0], bottom_right[0])
 
-        corner_radius = self.radius
+        corner_radius = abs(self.radius)
 
         thickness = self.line_width
 
@@ -390,6 +390,9 @@ class RectangleLayer(ColoredLayer):
                         0.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
             cv2.ellipse(src, (p4[0] + corner_radius, p4[1] - corner_radius), (corner_radius, corner_radius),
                         90.0, 0, 90, ALPHA_COLOR, thickness, LINE_TYPE)
+
+        if self.radius < 0:
+            src = 255 - src
 
         return self.colored(src)
 
