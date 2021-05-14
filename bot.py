@@ -308,7 +308,7 @@ class DiscordBot:
         data = self.lvlsys_db.get(query.gid == guild.id)
         if data is not None and 'lvlsys' in data:
             description = []
-            for lvl, role_id in data['lvlsys'].items():
+            for lvl, role_id in reversed(sorted(data['lvlsys'].items(), key=lambda x: x[0])):
                 role = get(guild.roles, id=role_id)
                 if role is None:
                     await self.lvlsys_remove(guild.id, lvl)
