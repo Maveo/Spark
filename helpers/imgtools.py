@@ -121,6 +121,9 @@ def overlay(background, foreground, x, y, align):
         fy_end = by_end-y
         fx_end = bx_end-x
 
+    if by_end - by_start < 0 or bx_end - bx_start < 0:
+        return background
+
     overlay_image = foreground[fy_start:fy_end, fx_start:fx_end, :]
     mask = overlay_image[..., 3:] / 255.0
 
