@@ -7,7 +7,6 @@ import io
 import os
 import aiohttp
 
-
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 pygame.init()
@@ -60,7 +59,6 @@ def rgb_to_bgr(rgb):
 
 
 def progress_bar(size, radius, color_creator):
-
     start_pos = (radius, radius)
     end_pos = (size[0] + radius, size[1] + radius)
 
@@ -69,7 +67,7 @@ def progress_bar(size, radius, color_creator):
     alpha_color = (255, 255, 255, 255)
     lineType = cv2.LINE_4
 
-    diameter = radius*2
+    diameter = radius * 2
     hard_radius = int(radius)
 
     progress_bar_size = (end_pos[1] - start_pos[1] + diameter + progress_crop,
@@ -102,20 +100,10 @@ def overlay(background, foreground, x, y, align):
     if background is None:
         return foreground
 
-    background_width = background.shape[1]
-    background_height = background.shape[0]
-
-    if align == 'right':
-        if x < 0 or y >= background_height:
-            return background
-    else:
-        if x >= background_width or y >= background_height:
-            return background
-
-    h, w = foreground.shape[0], foreground.shape[1]
-
     overlay_image = foreground[..., :]
     mask = foreground[..., 3:] / 255.0
+
+    h, w = foreground.shape[0], foreground.shape[1]
 
     if align == 'right':
         background[y:y+h, x-w:x] = (1.0 - mask) * background[y:y+h, x-w:x] + mask * overlay_image
@@ -123,6 +111,189 @@ def overlay(background, foreground, x, y, align):
         background[y:y+h, x:x+w] = (1.0 - mask) * background[y:y+h, x:x+w] + mask * overlay_image
 
     return background
+
+
+class ImageLoader:
+    def load_into(self, func):
+        raise Exception('Raw usage of Image Loader forbidden, use FileImageLoader')
+
+
+class FileImageLoader(ImageLoader):
+    def __init__(self, file=None, prefix=''):
+        self.file = file
+        self.prefix = prefix
+
+    def load_into(self, func):
+        img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+        func(self.prefix + '/' + os.path.basename(self.file), img)
+
+
+class DirectoryImageLoader(ImageLoader):
+    def __init__(self, directory=None, prefix=''):
+        self.directory = directory
+        self.prefix = prefix
+
+    def load_into(self, func):
+        for f in os.listdir(self.directory):
+            if f.endswith('.png'):
+                img = cv2.imread(os.path.join(self.directory, f), cv2.IMREAD_UNCHANGED)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+                func(self.prefix + '/' + f, img)
+
+
+class AlignLayer:
+    def get_kwarg(self, key, default=None):
+        if default is not None and key not in self.kwargs:
+            return default
+        return self.kwargs[key]
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.pos = self.get_kwarg('pos', (0, 0))
+        self.align = self.get_kwarg('align', 'left')
+
+    async def create(self, **kwargs):
+        raise Exception('Raw usage of Align Layer forbidden!')
+
+    async def overlay(self, **kwargs):
+        layer = await self.create(**kwargs)
+        return overlay(kwargs['background'], layer, self.pos[0], self.pos[1], self.align)
+
+
+class ColorLayer(AlignLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.resize = self.get_kwarg('resize', (1, 1))
+        self.color = SingleColor(self.get_kwarg('color', (0, 0, 0, 0)))
+
+    async def create(self, **kwargs):
+        return np.full((self.resize[1], self.resize[0], 4), self.color, dtype=np.uint8)
+
+
+class EmptyLayer(ColorLayer):
+    def __init__(self, **kwargs):
+        kwargs['color'] = (0, 0, 0, 0)
+        super().__init__(**kwargs)
+
+
+class ImageLayer(AlignLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.resize = self.get_kwarg('resize', False)
+
+    def validated(self, img):
+        if img.shape[2] == 3:
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+        return img
+
+    def resized(self, img):
+        if self.resize == False:
+            return img
+        return cv2.resize(img, self.resize)
+
+    async def create(self, **kwargs):
+        raise Exception('Raw usage of Image Layer forbidden, use File Image Layer')
+
+
+class FileImageLayer(ImageLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.file = self.get_kwarg('file')
+
+    async def create(self, **kwargs):
+        img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
+        img = self.validated(img)
+        return self.resized(img)
+
+
+class MemoryImageLayer(ImageLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.memory = self.get_kwarg('memory')
+
+    async def create(self, **kwargs):
+        img = kwargs['image_memory'][self.memory]
+        img = self.validated(img)
+        return self.resized(img)
+
+
+class EmojiLayer(MemoryImageLayer):
+    def __init__(self, **kwargs):
+        kwargs['memory'] = ''
+        super().__init__(**kwargs)
+        self.emoji = self.get_kwarg('emoji')
+
+    async def create(self, **kwargs):
+        emoji_id = tools.from_char(self.emoji)
+        if 'emojis/' + emoji_id + '.png' not in kwargs['image_memory']:
+            emoji_id = '0'
+        self.memory = 'emojis/' + emoji_id + '.png'
+        return await super().create(**kwargs)
+
+
+class WebImageLayer(ImageLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.url = self.get_kwarg('url')
+
+    async def create(self, **kwargs):
+        async with kwargs['session'].get(self.url) as response:
+            img_bytes = await response.read()
+        img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
+        img = self.validated(img)
+        return self.resized(img)
+
+
+class TextLayer(AlignLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.font = self.get_kwarg('font')
+        self.font_size = self.get_kwarg('font_size', 16)
+        self.text_align = self.get_kwarg('text_align', 'left')
+        self.text = self.get_kwarg('text')
+        self.color = SingleColor(self.get_kwarg('color', (0, 0, 0)))
+        self.max_size = self.get_kwarg('max_size')
+
+    async def create(self, **kwargs):
+        text_full = np.zeros((self.max_size[1], self.max_size[0], 4), dtype=np.uint8)
+
+        if self.font not in kwargs['fonts']:
+            raise Exception('Error font: "' + self.font + '" was not found!')
+        text_surf, _ = kwargs['fonts'][self.font].render(self.text, self.color, size=self.font_size)
+
+        text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
+        text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
+        text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
+        text_img[:, :, 3] = text_alpha
+        text_img[:, :, :3] = text_img_t
+        text_size = (min(text_img.shape[1], self.max_size[0]), min(text_img.shape[0], self.max_size[1]))
+        if self.text_align == 'right':
+            text_full[
+                :text_size[1],
+                self.max_size[0] - text_size[0]:,
+                :
+            ] = text_img[:text_size[1], :text_size[0], :]
+        else:
+            text_full[
+                :text_size[1],
+                :text_size[0],
+                :
+            ] = text_img[:text_size[1], :text_size[0], :]
+        return text_full
+
+
+class ProgressLayer(AlignLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.percentage = self.get_kwarg('percentage')
+        self.width = self.get_kwarg('width')
+        self.size = self.get_kwarg('size')
+        self.color = self.get_kwarg('color')
+
+    async def create(self, **kwargs):
+        adj_size = (int(self.size[0] * self.percentage), int(self.size[1] * self.percentage))
+        return progress_bar(adj_size, self.width, self.color)
 
 
 class ImageCreator:
@@ -138,108 +309,25 @@ class ImageCreator:
 
         if load_memory is None:
             load_memory = []
-        self.image_memory = {}
 
-        for opt in load_memory:
-            if 'directory' in opt:
-                for f in os.listdir(opt['directory']):
-                    if f.endswith('.png'):
-                        img = cv2.imread(os.path.join(opt['directory'], f), cv2.IMREAD_UNCHANGED)
-                        img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
-                        self.add_to_memory(opt['prefix']+'/'+f, img)
-            elif 'file' in opt:
-                img = cv2.imread(opt['file'], cv2.IMREAD_UNCHANGED)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
-                self.add_to_memory(opt['prefix'] + '/' + os.path.basename(opt['file']), img)
-            else:
-                raise Exception('I do not know what to load: {}'.format(opt))
+        self.image_memory = {}
+        for loader in load_memory:
+            loader.load_into(self.add_to_memory)
 
     def add_to_memory(self, name, img):
         if name in self.image_memory:
             raise Exception('image with same name was loaded before! Use a prefix')
         self.image_memory[name] = img
 
-    async def get_raw_image(self, options):
-        if 'file' in options:
-            return cv2.imread(os.path.join(options['file']), cv2.IMREAD_UNCHANGED)
-        elif 'url' in options:
-            if self.session is None:
-                self.session = aiohttp.ClientSession(loop=self.loop)
-            async with self.session.get(options['url']) as response:
-                img_bytes = await response.read()
-            return cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
-        elif 'memory' in options:
-            return self.image_memory[options['memory']]
-        elif 'emoji' in options:
-            emoji_id = tools.from_char(options['emoji'])
-            if 'emojis/'+emoji_id+'.png' not in self.image_memory:
-                emoji_id = '0'
-            return self.image_memory['emojis/'+emoji_id+'.png']
-        elif 'empty' in options:
-            return np.zeros((1, 1, 4), dtype=np.uint8)
-        else:
-            raise Exception('Could not parse image options {}'.format(options))
-
-    async def get_image(self, options):
-        img = await self.get_raw_image(options)
-        if img.shape[2] == 3:
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
-        if 'resize' in options:
-            img = cv2.resize(img, options['resize'])
-        return img
-
-    def get_progress_bar(self, options):
-        adj_size = (int(options['size'][0]*options['percentage']), int(options['size'][1]*options['percentage']))
-        return progress_bar(adj_size, options['width'], options['color'])
-
-    def get_text(self, options):
-        text_full = np.zeros((options['max_size'][1], options['max_size'][0], 4), dtype=np.uint8)
-        text_surf, _ = self.fonts[options['font']].render(options['text'],
-                                                          options['color'],
-                                                          size=options['font_size'])
-        text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
-        text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
-        text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
-        text_img[:, :, 3] = text_alpha
-        text_img[:, :, :3] = text_img_t
-        text_size = (min(text_img.shape[1], options['max_size'][0]), min(text_img.shape[0], options['max_size'][1]))
-        if 'text_align' in options and options['text_align']:
-            text_full[
-                :text_size[1],
-                options['max_size'][0]-text_size[0]:,
-                :
-            ] = text_img[:text_size[1], :text_size[0], :]
-        else:
-            text_full[
-                :text_size[1],
-                :text_size[0],
-                :
-            ] = text_img[:text_size[1], :text_size[0], :]
-        return text_full
-
-    async def get_layer(self, layer):
-        if 'image' in layer:
-            return await self.get_image(layer['image'])
-        elif 'progress' in layer:
-            return self.get_progress_bar(layer['progress'])
-        elif 'text' in layer:
-            return self.get_text(layer['text'])
-        else:
-            raise Exception('Could not parse layer options {}'.format(layer))
-
-    async def overlay_layer(self, img, layer):
-        pos = (0, 0)
-        if 'pos' in layer:
-            pos = layer['pos']
-        align = 'left'
-        if 'align' in layer:
-            align = layer['align']
-        return overlay(img, await self.get_layer(layer), pos[0], pos[1], align)
-
     async def create(self, layers):
         img = None
         for layer in layers:
-            img = await self.overlay_layer(img, layer)
+            if self.session is None:
+                self.session = aiohttp.ClientSession(loop=self.loop)
+            img = await layer.overlay(background=img,
+                                      session=self.session,
+                                      image_memory=self.image_memory,
+                                      fonts=self.fonts)
 
         is_success, buffer = cv2.imencode('.png', img)
         io_buf = io.BytesIO(buffer)

@@ -1,5 +1,4 @@
-import os
-from helpers.imgtools import SingleColor, LinearGradientColor
+from helpers.imgtools import *
 
 TOKEN = ''
 PREFIX = '>'
@@ -11,75 +10,106 @@ FONTS = {
 }
 
 IMAGES_LOAD_MEMORY = [
-    {'prefix': 'emojis', 'directory': os.path.join('images', 'emojis')},
-    {'prefix': '', 'file': os.path.join('images', 'profile_template.png')}
+    DirectoryImageLoader(prefix='emojis', directory=os.path.join('images', 'emojis')),
+    FileImageLoader(prefix='', file=os.path.join('images', 'profile_template.png')),
+    FileImageLoader(prefix='', file=os.path.join('images', 'levelup_template.png')),
 ]
 
 PROFILE_IMAGE = lambda x: [
-    {'pos': (0, 0), 'image': {
-        'empty': True, 'resize': (600, 150)
-    }},
-    {'pos': (15, 14), 'image': {
-        'url': x['avatar_url'], 'resize': (123, 123)
-    }},
-    {'pos': (0, 0), 'image': {
-        'memory': '/profile_template.png'
-    }},
-    {'pos': (147, 9), 'image': {
-        'emoji': x['member'].top_role.name[0],
-        'resize': (40, 40)
-    }},
-    {'pos': (145, 111), 'progress': {
-        'percentage': x['xp_percentage'],
-        'width': 10,
-        'size': (414, 0),
-        'color': LinearGradientColor((24,  110, 241, 255),
-                                     (7, 222, 255, 255),
-                                     1)
-    }},
-    {'pos': (200, 16), 'text': {
-        'font': 'default',
-        'font_size': min(35, max(10, int(520 / len(str(x['name']))))),
-        'text': str(x['name']),
-        'color': x['color'],
-        'max_size': (300, 35)
-    }},
-    {'pos': (150, 87), 'text': {
-        'font': 'default',
-        'font_size': 22,
-        'text': 'Lvl.',
-        'color': (103, 103, 103),
-        'max_size':  (30, 22)
-    }},
-    {'pos': (185, 83), 'text': {
-        'font': 'default',
-        'font_size': 28,
-        'text': str(x['lvl']),
-        'color': (255, 255, 255),
-        'max_size': (100, 28),
-     }},
-    {'pos': (587, 16), 'align': 'right', 'text': {
-        'font': 'default',
-        'font_size': 28,
-        'text_align': 'right',
-        'text': '#' + str(x['rank']),
-        'color': x['color'],
-        'max_size': (80, 28)
-    }},
-    {'pos': (587, 66), 'align': 'right', 'text': {
-        'font': 'default',
-        'font_size': 20,
-        'text_align': 'right',
-        'text': '{:.2f}x'.format(x['xp_multiplier']) if x['xp_multiplier'] != 1 else '',
-        'color': (102, 172, 47) if x['xp_multiplier'] > 1 else (60, 20, 220),
-        'max_size': (150, 20),
-    }},
-    {'pos': (580, 90), 'align': 'right', 'text': {
-        'font': 'default',
-        'font_size': 18,
-        'text_align': 'right',
-        'text': str(x['xp']) + ' / ' + str(x['max_xp']) + ' XP',
-        'color': (170, 170, 170),
-        'max_size': (280, 18),
-    }}
+    EmptyLayer(
+        pos=(0, 0),
+        resize=(600, 150)
+    ),
+    WebImageLayer(
+        pos=(15, 14),
+        resize=(123, 123),
+        url=x['avatar_url']
+    ),
+    MemoryImageLayer(
+        pos=(0, 0),
+        memory='/profile_template.png'),
+    EmojiLayer(
+        pos=(147, 9),
+        resize=(40, 40),
+        emoji=x['member'].top_role.name[0]
+    ),
+    ProgressLayer(
+        pos=(145, 111),
+        percentage=x['xp_percentage'],
+        width=10,
+        size=(414, 0),
+        color=LinearGradientColor((24,  110, 241, 255),
+                                  (7, 222, 255, 255),
+                                  1)
+    ),
+    TextLayer(
+        pos=(200, 16),
+        font='default',
+        font_size=min(35, max(10, int(520 / len(str(x['name']))))),
+        text=str(x['name']),
+        color=x['color'],
+        max_size=(300, 35)
+    ),
+    TextLayer(
+        pos=(150, 87),
+        font='default',
+        font_size=22,
+        text='Lvl.',
+        color=(103, 103, 103),
+        max_size=(30, 22)
+    ),
+    TextLayer(
+        pos=(185, 83),
+        font='default',
+        font_size=28,
+        text=str(x['lvl']),
+        color=(255, 255, 255),
+        max_size=(100, 28)
+    ),
+    TextLayer(
+        pos=(578, 16),
+        align='right',
+        text_align='right',
+        font='default',
+        font_size=28,
+        text='#' + str(x['rank']),
+        color=x['color'],
+        max_size=(80, 28)
+    ),
+    TextLayer(
+        pos=(580, 66),
+        align='right',
+        text_align='right',
+        font='default',
+        font_size=20,
+        text='{:.2f}x'.format(x['xp_multiplier']) if x['xp_multiplier'] != 1 else '',
+        color=(102, 172, 47) if x['xp_multiplier'] > 1 else (60, 20, 220),
+        max_size=(150, 20)
+    ),
+    TextLayer(
+        pos=(580, 90),
+        align='right',
+        text_align='right',
+        font='default',
+        font_size=18,
+        text=str(x['xp']) + ' / ' + str(x['max_xp']) + ' XP',
+        color=(170, 170, 170),
+        max_size=(280, 18)
+    )
+]
+
+LEVEL_UP_IMAGE = lambda x: [
+    EmptyLayer(
+        pos=(0, 0),
+        resize=(200, 100),
+    ),
+    MemoryImageLayer(
+        pos=(0, 0),
+        memory='/levelup_template.png'
+    ),
+    EmojiLayer(
+        pos=(55, 43),
+        emoji='👑',
+        resize=(16, 16)
+    )
 ]
