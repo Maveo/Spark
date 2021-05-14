@@ -344,11 +344,15 @@ class RectangleLayer(ColoredLayer):
         super()._init_finished()
 
     async def create(self, **kwargs):
-        top_left = (0, 0)
-        diameter = self.radius * 2
-        bottom_right = (max(1, diameter - 1, self.size[1] - 1), max(1, diameter - 1, self.size[0] - 1))
+        thick_offset = max(1, self.line_width)
+        double_thickoff = thick_offset * 2
 
-        src = np.zeros((bottom_right[0] + 1, bottom_right[1] + 1, 4), dtype=np.uint8)
+        top_left = (thick_offset, thick_offset)
+        diameter = self.radius * 2
+        bottom_right = (max(1, diameter - thick_offset, self.size[1] - thick_offset),
+                        max(1, diameter - thick_offset, self.size[0] - thick_offset))
+
+        src = np.zeros((bottom_right[0] + double_thickoff, bottom_right[1] + double_thickoff, 4), dtype=np.uint8)
 
         #  corners:
         #  p1 - p2
@@ -361,7 +365,6 @@ class RectangleLayer(ColoredLayer):
         p4 = (top_left[0], bottom_right[0])
 
         corner_radius = abs(self.radius)
-
         thickness = self.line_width
 
         if thickness < 0:
