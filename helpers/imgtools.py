@@ -5,6 +5,7 @@ import pygame
 import pygame.freetype
 import io
 import os
+import warnings
 import aiohttp
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
@@ -96,29 +97,37 @@ def progress_bar(size, radius, color_creator):
     return img
 
 
-def overlay(background, foreground, x, y, align):
+def overlay(background, foreground, x, y, max_size, align_x, align_y):
     if background is None:
         return foreground
 
-    if align == 'right':
-        h, w = foreground.shape[0], foreground.shape[1]
+    h, w = foreground.shape[0], foreground.shape[1]
+
+    if align_y == 'bottom':
         by_start = y
-        bx_start = max(0, x-w)
         by_end = min(y+h, background.shape[0])
-        bx_end = min(x, background.shape[1])
         fy_start = 0
-        fx_start = 0
         fy_end = by_end-y
+    else:
+        by_start = y
+        by_end = min(y + h, background.shape[0])
+        fy_start = 0
+        fy_end = by_end - y
+
+    if align_x == 'right':
+        n_w = w
+        if max_size[0] >= 0:
+            n_w = min(max_size[0], w)
+        bx_start = max(0, x-n_w)
+        bx_end = min(x, background.shape[1])
+        fx_start = w-n_w
         fx_end = bx_end
     else:
-        h, w = foreground.shape[0], foreground.shape[1]
-        by_start = y
+        if max_size[0] >= 0:
+            w = min(max_size[0], w)
         bx_start = x
-        by_end = min(y+h, background.shape[0])
         bx_end = min(x+w, background.shape[1])
-        fy_start = 0
         fx_start = 0
-        fy_end = by_end-y
         fx_end = bx_end-x
 
     if by_end - by_start < 0 or bx_end - bx_start < 0:
@@ -171,19 +180,28 @@ class AlignLayer:
     def get_kwarg(self, key, default=None):
         if default is not None and key not in self.kwargs:
             return default
+        self.used_kwargs.append(key)
         return self.kwargs[key]
 
     def __init__(self, **kwargs):
+        self.used_kwargs = []
         self.kwargs = kwargs
         self.pos = self.get_kwarg('pos', (0, 0))
-        self.align = self.get_kwarg('align', 'left')
+        self.align_x = self.get_kwarg('align_x', 'left')
+        self.align_y = self.get_kwarg('align_y', 'top')
+        self.max_size = self.get_kwarg('max_size', (-1, -1))
+
+    def _init_finished(self):
+        for key in self.kwargs.keys():
+            if key not in self.used_kwargs:
+                warnings.warn(type(self).__name__ + ' "' + key + '" was not used')
 
     async def create(self, **kwargs):
         raise Exception('Raw usage of Align Layer forbidden!')
 
     async def overlay(self, **kwargs):
         layer = await self.create(**kwargs)
-        return overlay(kwargs['background'], layer, self.pos[0], self.pos[1], self.align)
+        return overlay(kwargs['background'], layer, self.pos[0], self.pos[1], self.max_size, self.align_x, self.align_y)
 
 
 class ColorLayer(AlignLayer):
@@ -191,6 +209,7 @@ class ColorLayer(AlignLayer):
         super().__init__(**kwargs)
         self.resize = self.get_kwarg('resize', (1, 1))
         self.color = SingleColor(self.get_kwarg('color', (0, 0, 0, 0)))
+        super()._init_finished()
 
     async def create(self, **kwargs):
         return np.full((self.resize[1], self.resize[0], 4), self.color, dtype=np.uint8)
@@ -213,7 +232,7 @@ class ImageLayer(AlignLayer):
         return img
 
     def resized(self, img):
-        if self.resize == False:
+        if self.resize is False:
             return img
         return cv2.resize(img, self.resize)
 
@@ -225,6 +244,7 @@ class FileImageLayer(ImageLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.file = self.get_kwarg('file')
+        super()._init_finished()
 
     async def create(self, **kwargs):
         img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
@@ -236,6 +256,7 @@ class MemoryImageLayer(ImageLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.memory = self.get_kwarg('memory')
+        super()._init_finished()
 
     async def create(self, **kwargs):
         img = kwargs['image_memory'][self.memory]
@@ -243,24 +264,26 @@ class MemoryImageLayer(ImageLayer):
         return self.resized(img)
 
 
-class EmojiLayer(MemoryImageLayer):
+class EmojiLayer(ImageLayer):
     def __init__(self, **kwargs):
-        kwargs['memory'] = ''
         super().__init__(**kwargs)
         self.emoji = self.get_kwarg('emoji')
+        super()._init_finished()
 
     async def create(self, **kwargs):
         emoji_id = tools.from_char(self.emoji)
         if 'emojis/' + emoji_id + '.png' not in kwargs['image_memory']:
             emoji_id = '0'
-        self.memory = 'emojis/' + emoji_id + '.png'
-        return await super().create(**kwargs)
+        img = kwargs['image_memory']['emojis/' + emoji_id + '.png']
+        img = self.validated(img)
+        return self.resized(img)
 
 
 class WebImageLayer(ImageLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.url = self.get_kwarg('url')
+        super()._init_finished()
 
     async def create(self, **kwargs):
         async with kwargs['session'].get(self.url) as response:
@@ -275,14 +298,12 @@ class TextLayer(AlignLayer):
         super().__init__(**kwargs)
         self.font = self.get_kwarg('font')
         self.font_size = self.get_kwarg('font_size', 16)
-        self.text_align = self.get_kwarg('text_align', 'left')
         self.text = self.get_kwarg('text')
         self.color = SingleColor(self.get_kwarg('color', (0, 0, 0)))
         self.max_size = self.get_kwarg('max_size')
+        super()._init_finished()
 
     async def create(self, **kwargs):
-        text_full = np.zeros((self.max_size[1], self.max_size[0], 4), dtype=np.uint8)
-
         if self.font not in kwargs['fonts']:
             raise Exception('Error font: "' + self.font + '" was not found!')
         text_surf, _ = kwargs['fonts'][self.font].render(self.text, self.color, size=self.font_size)
@@ -292,20 +313,7 @@ class TextLayer(AlignLayer):
         text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
         text_img[:, :, 3] = text_alpha
         text_img[:, :, :3] = text_img_t
-        text_size = (min(text_img.shape[1], self.max_size[0]), min(text_img.shape[0], self.max_size[1]))
-        if self.text_align == 'right':
-            text_full[
-                :text_size[1],
-                self.max_size[0] - text_size[0]:,
-                :
-            ] = text_img[:text_size[1], :text_size[0], :]
-        else:
-            text_full[
-                :text_size[1],
-                :text_size[0],
-                :
-            ] = text_img[:text_size[1], :text_size[0], :]
-        return text_full
+        return text_img
 
 
 class ProgressLayer(AlignLayer):
@@ -315,6 +323,7 @@ class ProgressLayer(AlignLayer):
         self.width = self.get_kwarg('width')
         self.size = self.get_kwarg('size')
         self.color = self.get_kwarg('color')
+        super()._init_finished()
 
     async def create(self, **kwargs):
         adj_size = (int(self.size[0] * self.percentage), int(self.size[1] * self.percentage))
