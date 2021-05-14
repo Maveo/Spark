@@ -14,7 +14,8 @@ IMAGES_LOAD_MEMORY = [
     DirectoryImageLoader(prefix='emojis', directory=os.path.join('images', 'emojis'))
 ]
 
-PROFILE_IMAGE = lambda x: [
+
+def PROFILE_IMAGE(x): return [
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -22,29 +23,54 @@ PROFILE_IMAGE = lambda x: [
         radius=20,
         color=(55, 50, 48),
     ),
+
     WebImageLayer(
-        pos=(15, 14),
-        resize=(123, 123),
+        pos=(15, 15),
+        resize=(120, 120),
         url=x['avatar_url']
     ),
+
+    RectangleLayer(
+        pos=(15, 15),
+        size=(120, 120),
+        color=(55, 50, 48),
+        radius=-60,
+    ),
+
+    # Emoji
     EmojiLayer(
-        pos=(147, 9),
+        pos=(147, 15),
         resize=(40, 40),
         emoji=x['member'].top_role.name[0]
     ),
+
+    # Pregressbar BG
     ProgressLayer(
-        pos=(145, 111),
+        pos=(150, 115),
+        percentage=1,
+        line_width=-1,
+        direction='x',
+        size=(430, 20),
+        radius=10,
+        color=(87, 87, 87)
+    ),
+
+    # Progressbar
+    ProgressLayer(
+        pos=(150, 115),
         percentage=x['xp_percentage'],
         line_width=-1,
         direction='x',
-        size=(414, 20),
+        size=(430, 20),
         radius=10,
-        color=LinearGradientColor((24,  110, 241, 255),
+        color=LinearGradientColor((24, 110, 241, 255),
                                   (7, 222, 255, 255),
                                   1)
     ),
+
+    # Username
     TextLayer(
-        pos=(200, 30),
+        pos=(200, 39),
         align_y='center',
         font='regular',
         font_size=min(35, max(10, int(520 / len(str(x['name']))))),
@@ -52,42 +78,52 @@ PROFILE_IMAGE = lambda x: [
         color=x['color'],
         max_size=(300, 35)
     ),
+
+    # Lvl.
     TextLayer(
-        pos=(150, 87),
+        pos=(150, 92),
         font='regular',
         font_size=22,
         text='Lvl.',
         color=(103, 103, 103),
         max_size=(30, 22)
     ),
+
+    # Lvl-value
     TextLayer(
-        pos=(185, 83),
+        pos=(188, 87),
         font='regular',
         font_size=28,
         text=str(x['lvl']),
         color=(255, 255, 255),
         max_size=(100, 28)
     ),
+
+    # Rank
     TextLayer(
-        pos=(578, 16),
+        pos=(578, 24),
         align_x='right',
-        font='regular',
-        font_size=28,
+        font='bold',
+        font_size=35,
         text='#' + str(x['rank']),
         color=x['color'],
-        max_size=(80, 28)
+        max_size=(80, 30)
     ),
+
+    # Xp Multiplier
     TextLayer(
-        pos=(580, 66),
+        pos=(580, 72),
         align_x='right',
         font='regular',
         font_size=20,
         text='{:.2f}x'.format(x['xp_multiplier']) if x['xp_multiplier'] != 1 else '',
-        color=(102, 172, 47) if x['xp_multiplier'] > 1 else ((60, 20, 220) if x['xp_multiplier'] < 0 else (0, 128, 255)),
+        color=(102, 172, 47) if x['xp_multiplier'] > 1 else (
+            (60, 20, 220) if x['xp_multiplier'] < 0 else (0, 128, 255)),
         max_size=(150, 20)
     ),
+
     TextLayer(
-        pos=(580, 90),
+        pos=(580, 95),
         align_x='right',
         font='regular',
         font_size=18,
@@ -97,7 +133,8 @@ PROFILE_IMAGE = lambda x: [
     )
 ]
 
-LEVEL_UP_IMAGE = lambda x: [
+
+def LEVEL_UP_IMAGE(x): return [
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -105,6 +142,29 @@ LEVEL_UP_IMAGE = lambda x: [
         radius=20,
         color=(55, 50, 48),
     ),
+
+    RectangleLayer(
+        pos=(0, 0),
+        line_width=2,
+        size=(200, 100),
+        radius=20,
+        color=LinearGradientColor(SingleColor(x['color']).darkened(0.5),
+                                  SingleColor(x['color']),
+                                  1)
+    ),
+
+    # LEVELUP
+    TextLayer(
+        pos=(57, 10),
+        font='bold',
+        font_size=22,
+        text='LEVELUP',
+        color=LinearGradientColor(SingleColor(x['color']).darkened(0.5),
+                                  SingleColor(x['color']),
+                                  1),
+        max_size=(170, 25)
+    ),
+
     EmojiLayer(
         pos=(58, 70),
         resize=(16, 16),
@@ -118,7 +178,7 @@ LEVEL_UP_IMAGE = lambda x: [
     ),
 
     ProgressLayer(
-        pos=(80, 77),
+        pos=(82, 77),
         percentage=1,
         line_width=-1,
         size=(34, 4),
@@ -148,7 +208,7 @@ LEVEL_UP_IMAGE = lambda x: [
     ),
 
     TextLayer(
-        pos=(100, 43),
+        pos=(100, 40),
         font='regular',
         font_size=13,
         align_x='center',
@@ -158,7 +218,10 @@ LEVEL_UP_IMAGE = lambda x: [
     ),
 ]
 
-RANK_UP_IMAGE = lambda x: [
+
+def RANK_UP_IMAGE(x): return [
+
+    # BG
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -166,13 +229,184 @@ RANK_UP_IMAGE = lambda x: [
         radius=20,
         color=(55, 50, 48),
     ),
+
+    # BG Border
     RectangleLayer(
-        pos=(1, 1),
+        pos=(0, 0),
         line_width=2,
-        size=(198, 98),
+        size=(200, 100),
         radius=20,
+        color=LinearGradientColor(SingleColor(x['old_color']),
+                                  SingleColor(x['new_color']),
+                                  1),
+    ),
+
+    # RANKUP
+    TextLayer(
+        pos=(57, 10),
+        font='bold',
+        font_size=22,
+        text='RANKUP',
+        color=LinearGradientColor(SingleColor(x['old_color']),
+                                  SingleColor(x['new_color']),
+                                  1),
+        max_size=(170, 25)
+    ),
+
+    EmojiLayer(
+        pos=(58, 70),
+        resize=(16, 16),
+        emoji=x['old_role'].name[0],
+    ),
+
+    EmojiLayer(
+        pos=(125, 70),
+        resize=(16, 16),
+        emoji=x['new_role'].name[0],
+    ),
+
+    ProgressLayer(
+        pos=(82, 77),
+        percentage=1,
+        line_width=-1,
+        size=(34, 4),
+        radius=2,
         color=LinearGradientColor(SingleColor(x['old_color']),
                                   SingleColor(x['new_color']),
                                   1)
     ),
+
+    TextLayer(
+        pos=(53, 73),
+        align_x='right',
+        font='regular',
+        font_size=12,
+        text='Lvl. ' + str(x['old_lvl']),
+        color=x['old_color'],
+        max_size=(50, 22)
+    ),
+
+    TextLayer(
+        pos=(145, 73),
+        font='regular',
+        font_size=12,
+        text='Lvl. ' + str(x['new_lvl']),
+        color=x['new_color'],
+        max_size=(50, 22)
+    ),
+
+    TextLayer(
+        pos=(100, 40),
+        font='regular',
+        font_size=13,
+        align_x='center',
+        text=x['name'],
+        color=(255, 255, 255),
+        max_size=(180, 16)
+    ),
 ]
+
+
+def LEADERBOARD_IMAGE(x):
+    height = len(x) * 70 + 270
+    layers = [
+        # Background
+        RectangleLayer(
+            pos=(0, 0),
+            line_width=-1,
+            size=(1200, height),
+            radius=20,
+            color=(55, 50, 48),
+        ),
+
+        # Leaderboard Text Border
+        RectangleLayer(
+            pos=(10, 5),
+            line_width=5,
+            size=(1180, 128),
+            radius=10,
+            color=(55, 255, 48),
+        ),
+
+        # Leaderboard Text
+        TextLayer(
+            pos=(85, 22),
+            font='bold',
+            font_size=75,
+            text='Leaderboard',
+            color=(0, 255, 255),
+            max_size=(600, 100)
+        ),
+
+        # Name Header Text
+        TextLayer(
+            pos=(25, 68),
+            font='regular',
+            font_size=16,
+            text='Name',
+            color=(0, 255, 255),
+            max_size=(300, 20)
+        ),
+
+        # Level Header Text
+        TextLayer(
+            pos=(225, 68),
+            font='regular',
+            font_size=16,
+            text='Lvl.',
+            color=(0, 255, 255),
+            max_size=(300, 20)
+        ),
+
+        # Members Background
+        RectangleLayer(
+            pos=(15, 90),
+            line_width=-1,
+            size=(270, height - 100),
+            radius=15,
+            color=(100, 100, 100),
+        ),
+
+        # Levels Background
+        RectangleLayer(
+            pos=(210, 90),
+            line_width=-1,
+            size=(75, height - 100),
+            radius=15,
+            color=(100, 180, 180),
+        ),
+    ]
+
+    for i in range(len(x)):
+        pos_y = i * 30 + 40
+        layers.append(TextLayer(
+            pos=(10, pos_y),
+            font='regular',
+            font_size=23,
+            text='# ' + str(i + 1),
+            color=x[i]['color'],
+            max_size=(50, 20)
+        ))
+        layers.append(EmojiLayer(
+            pos=(50, pos_y),
+            resize=(20, 20),
+            emoji=x[i]['member'].top_role.name[0]
+        ))
+        layers.append(TextLayer(
+            pos=(78, pos_y + 2),
+            font='regular',
+            font_size=23,
+            text=x[i]['name'],
+            color=x[i]['color'],
+            max_size=(180, 20)
+        ))
+        layers.append(TextLayer(
+            pos=(280, pos_y + 2),
+            align_x='right',
+            font='regular',
+            font_size=23,
+            text='Lvl. ' + str(x[i]['lvl']),
+            color=x[i]['color'],
+            max_size=(180, 20)
+        ))
+    return layers

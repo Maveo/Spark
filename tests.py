@@ -26,9 +26,13 @@ class GuildDummy:
     def __init__(self, uid=0, roles=None, system_channel=ChannelDummy()):
         self.id = uid
         self.roles = roles
+        self.members = []
         if self.roles is None:
             self.roles = []
         self.system_channel = system_channel
+
+    def member_join(self, member):
+        self.members.append(member)
 
 
 class MemberDummy:
@@ -40,6 +44,7 @@ class MemberDummy:
         self.roles = {}
         self.top_role = RoleDummy(0)
         self.guild = guild
+        self.guild.member_join(self)
         self.bot = bot
         self.color = ColorDummy()
         self.messages = []
@@ -218,7 +223,7 @@ def main():
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
-            show_image(image)
+            # show_image(image)
             return True
 
         # test levelup image creation
@@ -236,6 +241,18 @@ def main():
             r1 = RoleDummy()
             r2 = RoleDummy()
             image_buffer = (await self.bot.member_create_rank_up_image(m, 1, 2, r1, r2)).fp.getbuffer()
+            image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
+
+            # show_image(image)
+            return True
+
+        # test leaderboard image creation
+        async def test_b_4(self):
+            g = GuildDummy()
+            m = [MemberDummy(x, guild=g) for x in range(10)]
+            [await self.bot.check_member(x) for x in m]
+
+            image_buffer = (await self.bot.create_leaderboard_image(g)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
             show_image(image)

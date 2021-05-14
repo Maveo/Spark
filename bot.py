@@ -172,6 +172,24 @@ class DiscordBot:
         img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
+    async def create_leaderboard_image(self, guild):
+        lb = await self.get_ranking(guild)
+        leaderboard_obj = []
+        for user in lb:
+            member = get(guild.members, id=int(user['uid']))
+            if member is not None and not member.bot:
+                name = member.name
+                if member.nick is not None:
+                    name = member.nick
+                leaderboard_obj.append({
+                    'member': member,
+                    'lvl': user['lvl'],
+                    'name': name,
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb())
+                })
+        img_buf = await self.image_creator.create(LEADERBOARD_IMAGE(leaderboard_obj))
+        return discord.File(filename="leaderboard.png", fp=img_buf)
+
     async def check_member(self, member):
         await self.check_guild(member.guild)
         users = await self.get_users(member.guild)
@@ -366,6 +384,13 @@ class DiscordBot:
             return await ctx.send(embed=discord.Embed(title='Error',
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
+
+        @commands.command(name='leaderboard',
+                          aliases=[],
+                          description="show the leaderboard")
+        async def _leaderboard(self, ctx, *args):
+            await ctx.trigger_typing()
+            await ctx.send(file=await self.parent.create_leaderboard_image(ctx.message.guild))
 
         @commands.command(name='ranking',
                           aliases=[],
