@@ -294,11 +294,13 @@ class DiscordBot:
             else:
                 roles_to_remove.append(lvlsys_list[i][1])
 
+        if role_to_give is None and len(lvlsys_list) != 0:
+            role_to_give = lvlsys_list[0][1]
+            roles_to_remove.remove(role_to_give)
+
         for role in roles_to_remove:
             await self.remove_role(member.guild, member, role)
 
-        if role_to_give is None and len(lvlsys_list) != 0:
-            role_to_give = lvlsys_list[0][1]
         await self.give_role(member.guild, member, role_to_give)
 
     async def lvlsys_set(self, guild_id, role_id, lvl):
