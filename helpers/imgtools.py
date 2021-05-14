@@ -220,7 +220,7 @@ class ColoredLayer(AlignLayer):
 
     def colored(self, img):
         color_overlay = self.color.create(img.shape)
-        color_overlay[..., 3:] = img[..., 3:]
+        color_overlay[..., 3] = img[..., 3] * (color_overlay[..., 3] / 255.0)
         return color_overlay
 
 
