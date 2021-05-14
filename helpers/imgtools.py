@@ -100,15 +100,37 @@ def overlay(background, foreground, x, y, align):
     if background is None:
         return foreground
 
-    overlay_image = foreground[..., :]
-    mask = foreground[..., 3:] / 255.0
-
-    h, w = foreground.shape[0], foreground.shape[1]
-
     if align == 'right':
-        background[y:y+h, x-w:x] = (1.0 - mask) * background[y:y+h, x-w:x] + mask * overlay_image
+        h, w = foreground.shape[0], foreground.shape[1]
+        by_start = y
+        bx_start = x-w
+        by_end = min(y+h, background.shape[0])
+        bx_end = min(x, background.shape[1])
+        fy_start = 0
+        fx_start = 0
+        fy_end = by_end-y
+        fx_end = bx_end
     else:
-        background[y:y+h, x:x+w] = (1.0 - mask) * background[y:y+h, x:x+w] + mask * overlay_image
+        h, w = foreground.shape[0], foreground.shape[1]
+        by_start = y
+        bx_start = x
+        by_end = min(y+h, background.shape[0])
+        bx_end = min(x+w, background.shape[1])
+        fy_start = 0
+        fx_start = 0
+        fy_end = by_end-y
+        fx_end = bx_end-x
+
+    overlay_image = foreground[fy_start:fy_end, fx_start:fx_end, :]
+    mask = overlay_image[..., 3:] / 255.0
+
+    background[
+        by_start:by_end,
+        bx_start:bx_end
+    ] = (1.0 - mask) * background[
+                        by_start:by_end,
+                        bx_start:bx_end
+                       ] + mask * overlay_image
 
     return background
 
