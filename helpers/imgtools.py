@@ -349,9 +349,10 @@ class RectangleLayer(ColoredLayer):
         thick_offset = max(0, self.line_width)
         double_thickoff = max(1, thick_offset * 2)
 
+        mthick_offset = max(1, thick_offset)
         top_left = (thick_offset, thick_offset)
-        bottom_right = (max(1, diameter - thick_offset, self.size[1] - thick_offset),
-                        max(1, diameter - thick_offset, self.size[0] - thick_offset))
+        bottom_right = (max(1, diameter - mthick_offset, self.size[1] - mthick_offset),
+                        max(1, diameter - mthick_offset, self.size[0] - mthick_offset))
 
         src = np.zeros((bottom_right[0] + double_thickoff, bottom_right[1] + double_thickoff, 4), dtype=np.uint8)
 
