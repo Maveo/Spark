@@ -1,5 +1,4 @@
 discord.py==1.7.2
-tinydb==4.4.0
 opencv-python~=4.5.1.48
 pygame==2.0.1
 aiohttp==3.7.4.post0

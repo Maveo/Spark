@@ -71,8 +71,7 @@ class MessageDummy:
 
 def main():
     from bot import DiscordBot
-    from tinydb import TinyDB, Query, operations
-    from tinydb.storages import MemoryStorage
+    import sqlite3
     import numpy as np
     import cv2
     import time
@@ -82,6 +81,8 @@ def main():
 
     SHOW_IMAGES = False
 
+    EPS = 0.00000001
+
     def show_image(img):
         if SHOW_IMAGES:
             try:
@@ -90,33 +91,37 @@ def main():
             except:
                 pass
 
+    def float_match(f1, f2):
+        return f1 - EPS < f2 < f1 + EPS
+
     class Tests:
-        def __init__(self, bot, user_db, lvlsys_db):
+        def __init__(self, bot, con):
             self.bot = bot
-            self.user_db = user_db
-            self.lvlsys_db = lvlsys_db
+            self.db_conn = con
 
         # test init
         async def test_1_init(self):
-            return self.user_db.all() == []
+            cur = self.db_conn.cursor()
+            cur.execute("SELECT * FROM users")
+            users = cur.fetchall()
+            cur.execute("SELECT * FROM lvlsys")
+            lvlsys = cur.fetchall()
+            return users == [] and lvlsys == []
 
         # test user joined server
         async def test_2_user_joined(self):
             m = MemberDummy()
             await self.bot.events.on_member_join(m)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0
+            return user['uid'] == 0 and float_match(user['lvl'], 1.0)
 
         # test user left server
         async def test_3_user_left(self):
             m = MemberDummy()
             await self.bot.events.on_member_join(m)
             await self.bot.events.on_member_remove(m)
-            try:
-                await self.bot.get_user(m)
-                return False
-            except KeyError:
-                return True
+            user = await self.bot.get_user(m)
+            return user is None
 
         # test write message
         async def test_4_user_writes_message(self):
@@ -125,7 +130,7 @@ def main():
             msg = MessageDummy(author=m)
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 2.5
+            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 2
 
         # test bot writes message
         async def test_5_bot_writes_message(self):
@@ -133,30 +138,24 @@ def main():
             m = MemberDummy(guild=g, bot=True)
             msg = MessageDummy(author=m)
             await self.bot.events.on_message(msg)
-            try:
-                await self.bot.get_user(m)
-                return False
-            except TypeError:
-                return True
+            user = await self.bot.get_user(m)
+            return user is None
 
         # test user join vc
         async def test_6_user_join_voice_channel(self):
             g = GuildDummy()
             m = MemberDummy(guild=g)
-            await self.bot.events.on_voice_state_update(m, ChannelDummy(), ChannelDummy(1))
+            await self.bot.member_joined_vc(m, 10)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0
+            return user['uid'] == 0 and float_match(user['lvl'], 1.0) and float_match(user['joined'], 10)
 
         # test bot join vc
         async def test_7_bot_join_voice_channel(self):
             g = GuildDummy()
             m = MemberDummy(guild=g, bot=True)
             await self.bot.events.on_voice_state_update(m, ChannelDummy(), ChannelDummy(1))
-            try:
-                await self.bot.get_user(m)
-                return False
-            except TypeError:
-                return True
+            user = await self.bot.get_user(m)
+            return user is None
 
         # test user leave vc
         async def test_8_user_leave_voice_channel(self):
@@ -165,7 +164,7 @@ def main():
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_left_vc(m, 60 * 60 * 1)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 60
+            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 60
 
         # test bot leave vc
         async def test_9_bot_leave_voice_channel(self):
@@ -173,31 +172,31 @@ def main():
             m = MemberDummy(guild=g, bot=True)
             await self.bot.events.on_voice_state_update(m, ChannelDummy(), ChannelDummy(1))
             await self.bot.events.on_voice_state_update(m, ChannelDummy(1), ChannelDummy())
-            try:
-                await self.bot.get_user(m)
-                return False
-            except TypeError:
-                return True
+            user = await self.bot.get_user(m)
+            return user is None
 
         # test user leveling
         async def test_10_leveling(self):
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
-            await self.bot.member_left_vc(m, 60 * 60 * 5)
+            await self.bot.member_left_vc(m, 60 * 60 * 62)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 3 and user['xp'] == 90
+            return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94
 
         # test set lvlsys point
         async def test_11_set_lvlsys_point(self):
-            await self.bot.lvlsys_set(0, 0, 5)
-            return self.lvlsys_db.all() == [{'gid': 0, 'lvlsys': {'5': 0}}]
+            await self.bot.lvlsys_set(0, 4, 5)
+            await self.bot.lvlsys_set(0, 6, 7)
+            lvlsys = await self.bot.lvlsys_get(0)
+            return lvlsys == [{'lsid': 1, 'gid': 0, 'lvl': 5, 'rid': 4}, {'lsid': 2, 'gid': 0, 'lvl': 7, 'rid': 6}]
 
         # test remove lvlsys point
         async def test_12_remove_lvlsys_point(self):
-            await self.bot.lvlsys_set(0, 0, 5)
-            await self.bot.lvlsys_set(0, 0, 6)
+            await self.bot.lvlsys_set(0, 3, 5)
+            await self.bot.lvlsys_set(0, 4, 6)
             await self.bot.lvlsys_remove(0, 5)
-            return self.lvlsys_db.all() == [{'gid': 0, 'lvlsys': {'6': 0}}]
+            lvlsys = await self.bot.lvlsys_get(0)
+            return lvlsys == [{'lsid': 2, 'gid': 0, 'lvl': 6, 'rid': 4}]
 
         # test giving role
         async def test_13_giving_role(self):
@@ -228,11 +227,56 @@ def main():
             l = await self.bot.get_ranking(g)
             return l[0]['uid'] == 1 and l[1]['uid'] == 0
 
+        # test blacklist
+        async def test_15_get_blacklist(self):
+            g = GuildDummy()
+            m = MemberDummy(guild=g)
+            await self.bot.member_set_blacklist(m, True)
+            users = list(await self.bot.get_blacklisted_users(g))
+            return users == [{'uid': 0, 'gid': 0, 'lvl': 1.0, 'xp_multiplier': 1.0, 'joined': -1, 'blacklist': 1}]
+
+        # test blacklist no message xp gain
+        async def test_16_blacklist_no_message_xp_gain(self):
+            g = GuildDummy()
+            m = MemberDummy(guild=g)
+            await self.bot.member_set_blacklist(m, True)
+            msg = MessageDummy(author=m)
+            await self.bot.events.on_message(msg)
+            user = await self.bot.get_user(m)
+            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 0
+
+        # test blacklist no voice call xp gain
+        async def test_16_blacklist_no_voice_xp_gain(self):
+            g = GuildDummy()
+            m = MemberDummy(guild=g)
+            await self.bot.member_set_blacklist(m, True)
+            await self.bot.member_joined_vc(m, 0)
+            await self.bot.member_left_vc(m, 60 * 60 * 1)
+            user = await self.bot.get_user(m)
+            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 0
+
+        # test leveling equality
+        async def test_17_leveling_equality(self):
+            lvl1 = 1
+            lvl1 += self.bot.lvl_xp_add(5000, lvl1)
+            lvl2 = 1
+            lvl2 += self.bot.lvl_xp_add(2500, lvl2)
+            lvl2 += self.bot.lvl_xp_add(2500, lvl2)
+            print(lvl1, lvl2)
+            return float_match(lvl1, lvl2)
+
+        # test xp boost
+        async def test_18_xp_boost(self):
+            lvl1 = 5
+            lvl1 += self.bot.lvl_xp_add(1000, lvl1)
+            # print(lvl1, lvl2)
+            # return float_match(lvl1, lvl2)
+
         # test profile image creation
-        async def test_15_profile_image(self):
+        async def test_996_profile_image(self):
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
-            await self.bot.member_set_lvl_xp(m, 5, 50)
+            await self.bot.member_set_lvl_xp(m, 5.5)
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -240,7 +284,7 @@ def main():
             return True
 
         # test level up image creation
-        async def test_16_level_up_image(self):
+        async def test_997_level_up_image(self):
             m = MemberDummy()
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -249,7 +293,7 @@ def main():
             return True
 
         # test rank up image creation
-        async def test_17_rank_up_image(self):
+        async def test_998_rank_up_image(self):
             m = MemberDummy()
             r1 = RoleDummy()
             r2 = RoleDummy()
@@ -260,7 +304,7 @@ def main():
             return True
 
         # test leaderboard image creation
-        async def test_18_leaderboard_image(self):
+        async def test_999_leaderboard_image(self):
             g = GuildDummy()
             m = [MemberDummy(x, guild=g) for x in range(10)]
             [await self.bot.check_member(x) for x in m]
@@ -268,27 +312,29 @@ def main():
             image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
-            # show_image(image)
+            show_image(image)
             return True
 
     async def run_test(method, test_number, test_name):
-        user_db = TinyDB(storage=MemoryStorage)
-        lvlsys_db = TinyDB(storage=MemoryStorage)
+        con = sqlite3.connect(":memory:")
 
-        b = DiscordBot(user_db, lvlsys_db)
+        b = DiscordBot(con)
         b.image_creator.session = aiohttp.ClientSession()
 
-        t = Tests(b, user_db, lvlsys_db)
+        t = Tests(b, con)
 
         print("TEST {:03d}: ".format(test_number), end='')
 
+        result = False
         start = time.time()
         if await getattr(t, method)():
             print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+            result = True
         else:
             print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
 
         await b.image_creator.session.close()
+        return result
 
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -301,8 +347,13 @@ def main():
                           'test_number': int(splitted_name[0]),
                           'test_name': ' '.join(splitted_name[1:])})
 
+    results = []
     for test in sorted(tests, key=lambda x: x['test_number']):
-        asyncio.run(run_test(test['method_name'], test['test_number'], test['test_name']))
+        res = asyncio.run(run_test(test['method_name'], test['test_number'], test['test_name']))
+        results.append((test, res))
+
+    failed_tests = list(filter(lambda x: not x[1], results))
+    print('Total amount of Tests: {} | Tests Failed: {}'.format(len(tests), len(failed_tests)))
 
 
 if __name__ == '__main__':
