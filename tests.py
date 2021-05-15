@@ -271,18 +271,6 @@ def main():
             # show_image(image)
             return True
 
-        # test relative ranking image creation
-        async def test_b_5(self):
-            g = GuildDummy()
-            m = [MemberDummy(x, guild=g) for x in range(30)]
-            [await self.bot.check_member(x) for x in m]
-
-            image_buffer = (await self.bot.create_relative_ranking_image(m[5], 3, 2)).fp.getbuffer()
-            image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
-
-            show_image(image)
-            return True
-
     async def run_test(method, test_number, test_name):
         user_db = TinyDB(storage=MemoryStorage)
         lvlsys_db = TinyDB(storage=MemoryStorage)
