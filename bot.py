@@ -105,7 +105,10 @@ class DiscordBot:
 
     async def get_ranking(self, guild):
         users = await self.get_users(guild)
-        return sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+        users = sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+        for i in range(len(users)):
+            users[i]['rank'] = i + 1
+        return users
 
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
@@ -182,6 +185,7 @@ class DiscordBot:
                     name = member.nick
                 ranking_obj.append({
                     'member': member,
+                    'rank': user['rank'],
                     'lvl': user['lvl'],
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb())
