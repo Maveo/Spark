@@ -64,8 +64,9 @@ class MemberDummy:
 
 
 class MessageDummy:
-    def __init__(self, author=MemberDummy(0)):
+    def __init__(self, author=MemberDummy(0), guild=GuildDummy(0)):
         self.author = author
+        self.guild = guild
 
 
 def main():
@@ -249,6 +250,18 @@ def main():
             [await self.bot.check_member(x) for x in m]
 
             image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
+            image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
+
+            # show_image(image)
+            return True
+
+        # test relative ranking image creation
+        async def test_b_5(self):
+            g = GuildDummy()
+            m = [MemberDummy(x, guild=g) for x in range(30)]
+            [await self.bot.check_member(x) for x in m]
+
+            image_buffer = (await self.bot.create_relative_ranking_image(m[5], 3, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
             show_image(image)

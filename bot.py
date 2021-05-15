@@ -105,7 +105,10 @@ class DiscordBot:
 
     async def get_ranking(self, guild):
         users = await self.get_users(guild)
-        return sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+        ranking = list(sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True))
+        for i in range(len(ranking)):
+            ranking[i]['rank'] = i + 1
+        return ranking
 
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
@@ -182,6 +185,7 @@ class DiscordBot:
                     name = member.nick
                 ranking_obj.append({
                     'member': member,
+                    'rank': user['rank'],
                     'lvl': user['lvl'],
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb())
@@ -193,6 +197,11 @@ class DiscordBot:
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
         return await self.create_ranking_image(member, ranking[:10])
+
+    async def create_relative_ranking_image(self, member, before, after):
+        ranking = await self.get_ranking(member.guild)
+        member_rank = list(map(lambda x: x['uid'], ranking)).index(member.id)
+        return await self.create_ranking_image(member, ranking[member_rank-before:member_rank+after])
 
     async def check_member(self, member):
         await self.check_guild(member.guild)
