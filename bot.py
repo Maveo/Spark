@@ -667,7 +667,8 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_member_join(self, member):
             await self.parent.update_member(member)
-            await member.send('Private message')
+            # send a private message on join
+            # await member.send('Private message')
 
         @commands.Cog.listener()
         async def on_member_remove(self, member):
