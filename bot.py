@@ -172,24 +172,27 @@ class DiscordBot:
         img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
-    async def create_leaderboard_image(self, member):
-        lb = await self.get_ranking(member.guild)
-        leaderboard_obj = []
-        for user in lb:
+    async def create_ranking_image(self, member, ranked_users):
+        ranking_obj = []
+        for user in ranked_users:
             member = get(member.guild.members, id=int(user['uid']))
             if member is not None and not member.bot:
                 name = member.name
                 if member.nick is not None:
                     name = member.nick
-                leaderboard_obj.append({
+                ranking_obj.append({
                     'member': member,
                     'lvl': user['lvl'],
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb())
                 })
 
-        img_buf = await self.image_creator.create(RANKGING_IMAGE(leaderboard_obj), max_size=(-1, 8000))
+        img_buf = await self.image_creator.create(RANKGING_IMAGE(ranking_obj), max_size=(-1, 8000))
         return discord.File(filename="leaderboard.png", fp=img_buf)
+
+    async def create_leaderboard_image(self, member):
+        ranking = await self.get_ranking(member.guild)
+        return await self.create_ranking_image(member, ranking[:10])
 
     async def check_member(self, member):
         await self.check_guild(member.guild)

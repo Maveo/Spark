@@ -249,10 +249,10 @@ def main():
         # test leaderboard image creation
         async def test_b_4(self):
             g = GuildDummy()
-            m = [MemberDummy(x, guild=g) for x in range(10)]
+            m = [MemberDummy(x, guild=g) for x in range(30)]
             [await self.bot.check_member(x) for x in m]
 
-            image_buffer = (await self.bot.create_leaderboard_image(g)).fp.getbuffer()
+            image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
             show_image(image)
