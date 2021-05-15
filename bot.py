@@ -428,7 +428,7 @@ class DiscordBot:
                                                           description='"send {msg}" to send into the system channel\n'
                                                                       '"send {channel_id} {msg}" to send'
                                                                       'into a specific channel',
-                                                          color=discord.Color.red()))
+                                                          color=discord.Color.gold()))
             elif len(args) == 1:
                 return await ctx.author.guild.system_channel.send(args[0])
             else:
@@ -457,7 +457,7 @@ class DiscordBot:
                                                           description='"setlvl {level}" to set your level\n'
                                                                       '"setlvl {level} {search}" to set a level for a '
                                                                       'specific user',
-                                                          color=discord.Color.red()))
+                                                          color=discord.Color.gold()))
 
             async def __setlvl(m):
                 try:
@@ -500,7 +500,7 @@ class DiscordBot:
                                               '"lvlsys remove {level}" to remove the level\n'
                                               '"lvlsys blacklist {search}" to blacklist a user\n'
                                               '"lvlsys whitelist {search}" to whitelist a user\n',
-                                  color=discord.Color.red())
+                                  color=discord.Color.gold())
 
             if len(args) == 0:
                 pass
