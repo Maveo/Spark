@@ -658,7 +658,7 @@ class DiscordBot:
                 await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
                                                    color=discord.Color.red()))
             else:
-                print(error)
+                self.parent.lprint(error)
 
         @commands.Cog.listener()
         async def on_ready(self):
