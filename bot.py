@@ -1,14 +1,16 @@
+from settings import *
+
 import discord
 from discord.ext import commands
 from discord.utils import get
 
-from discord_slash import cog_ext, SlashCommand, SlashContext
-from discord_slash.utils.manage_commands import create_option
+if USE_SLASH_COMMANDS:
+    from discord_slash import cog_ext, SlashCommand, SlashContext
+    from discord_slash.utils.manage_commands import create_option
 
 from tinydb import TinyDB, Query, operations
 
 from helpers import tools, imgtools
-from settings import *
 
 import asyncio
 import types
@@ -37,41 +39,42 @@ class DiscordBot:
         self.bot.add_cog(self.events)
         self.bot.add_cog(self.commands)
 
-        self.slash = SlashCommand(self.bot, sync_commands=True)
+        if USE_SLASH_COMMANDS:
+            self.slash = SlashCommand(self.bot, sync_commands=True)
 
-        def _slash_callback(command):
-            async def call(ctx: SlashContext, args=''):
-                async def _none(*_):
-                    pass
+            def _slash_callback(command):
+                async def call(ctx: SlashContext, args=''):
+                    async def _none(*_):
+                        pass
 
-                class _Message:
-                    def __init__(self, author=None):
-                        self.author = author
-                        self.guild = author.guild
+                    class _Message:
+                        def __init__(self, author=None):
+                            self.author = author
+                            self.guild = author.guild
 
-                ctx.trigger_typing = types.MethodType(_none, ctx)
-                ctx.message = _Message(author=ctx.author)
-                cargs = [ctx] + ([] if args == '' else args.split(' '))
-                try:
-                    if await command.can_run(ctx):
-                        await command.callback(self.commands, *cargs)
-                except commands.CommandError:
-                    await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
-                                                       color=discord.Color.red()))
-            return call
+                    ctx.trigger_typing = types.MethodType(_none, ctx)
+                    ctx.message = _Message(author=ctx.author)
+                    cargs = [ctx] + ([] if args == '' else args.split(' '))
+                    try:
+                        if await command.can_run(ctx):
+                            await command.callback(self.commands, *cargs)
+                    except commands.CommandError:
+                        await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
+                                                           color=discord.Color.red()))
+                return call
 
-        for c in self.bot.commands:
-            self.slash.add_slash_command(cmd=_slash_callback(c),
-                                         name=c.name,
-                                         description=c.help,
-                                         options=[
-                                             create_option(
-                                                 name="args",
-                                                 description="Arguments",
-                                                 option_type=3,
-                                                 required=False
-                                             )
-                                         ])
+            for c in self.bot.commands:
+                self.slash.add_slash_command(cmd=_slash_callback(c),
+                                             name=c.name,
+                                             description=c.help,
+                                             options=[
+                                                 create_option(
+                                                     name="args",
+                                                     description="Arguments",
+                                                     option_type=3,
+                                                     required=False
+                                                 )
+                                             ])
 
         self.image_creator = imgtools.ImageCreator(loop=self.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY)
 
