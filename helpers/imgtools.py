@@ -453,7 +453,7 @@ class ImageCreator:
             raise Exception('image with same name was loaded before! Use a prefix')
         self.image_memory[name] = img
 
-    async def create(self, layers):
+    async def create(self, layers, max_size=(-1, -1)):
         img = None
         for layer in layers:
             if self.session is None:
@@ -462,6 +462,15 @@ class ImageCreator:
                                       session=self.session,
                                       image_memory=self.image_memory,
                                       fonts=self.fonts)
+
+        resize_factor = 1
+        if 0 < max_size[0] < img.shape[1]:
+            resize_factor = max_size[0]/img.shape[1]
+        if 0 < max_size[1] < img.shape[0]:
+            resize_factor = min(resize_factor, max_size[1]/img.shape[0])
+
+        if resize_factor < 1:
+            img = cv2.resize(img, (int(img.shape[1]*resize_factor), int(img.shape[0]*resize_factor)))
 
         is_success, buffer = cv2.imencode('.png', img)
         io_buf = io.BytesIO(buffer)

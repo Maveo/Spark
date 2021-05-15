@@ -308,105 +308,111 @@ def RANK_UP_IMAGE(x): return [
 
 
 def LEADERBOARD_IMAGE(x):
-    height = len(x) * 70 + 270
+    height = len(x) * 85 + 410
     layers = [
+
         # Background
         RectangleLayer(
             pos=(0, 0),
             line_width=-1,
             size=(1200, height),
-            radius=20,
+            radius=55,
             color=(55, 50, 48),
         ),
 
         # Leaderboard Text Border
         RectangleLayer(
-            pos=(10, 5),
-            line_width=5,
-            size=(1180, 128),
-            radius=10,
-            color=(55, 255, 48),
+            pos=(30, 40),
+            line_width=10,
+            size=(1140, 180),
+            radius=45,
+            color=LinearGradientColor((76, 142, 217),
+                                      (7, 222, 255),
+                                      1)
         ),
 
         # Leaderboard Text
         TextLayer(
-            pos=(85, 22),
+            pos=(310, 93),
             font='bold',
-            font_size=75,
+            font_size=100,
             text='Leaderboard',
-            color=(0, 255, 255),
-            max_size=(600, 100)
+            color=(255, 255, 255),
+            max_size=(900, 100)
         ),
 
         # Name Header Text
         TextLayer(
-            pos=(25, 68),
+            pos=(90, 255),
             font='regular',
-            font_size=16,
+            font_size=65,
             text='Name',
-            color=(0, 255, 255),
-            max_size=(300, 20)
+            color=(87, 87, 87),
+            max_size=(300, 50)
         ),
 
         # Level Header Text
         TextLayer(
-            pos=(225, 68),
+            pos=(1025, 255),
             font='regular',
-            font_size=16,
+            font_size=65,
             text='Lvl.',
-            color=(0, 255, 255),
-            max_size=(300, 20)
+            color=(87, 87, 87),
+            max_size=(300, 50)
         ),
 
         # Members Background
         RectangleLayer(
-            pos=(15, 90),
+            pos=(37, 320),
             line_width=-1,
-            size=(270, height - 100),
-            radius=15,
-            color=(100, 100, 100),
+            size=(1100, height - 355),
+            radius=55,
+            color=(65, 59, 57),
         ),
 
         # Levels Background
         RectangleLayer(
-            pos=(210, 90),
+            pos=(978, 320),
             line_width=-1,
-            size=(75, height - 100),
-            radius=15,
-            color=(100, 180, 180),
+            size=(185, height - 355),
+            radius=45,
+            color=LinearGradientColor((130, 214, 254),
+                                      (49, 177, 232),
+                                      1)
         ),
     ]
 
     for i in range(len(x)):
-        pos_y = i * 30 + 40
+        pos_y = i * 85 + 370
         layers.append(TextLayer(
-            pos=(10, pos_y),
-            font='regular',
-            font_size=23,
-            text='# ' + str(i + 1),
-            color=x[i]['color'],
-            max_size=(50, 20)
+            pos=(150, pos_y + 2),
+            font='bold',
+            align_x='center',
+            font_size=60,
+            text='#' + str(i + 1),
+            color=(255, 255, 255),
+            max_size=(200, 150)
         ))
         layers.append(EmojiLayer(
-            pos=(50, pos_y),
-            resize=(20, 20),
+            pos=(240, pos_y - 10),
+            resize=(60, 60),
             emoji=x[i]['member'].top_role.name[0]
         ))
         layers.append(TextLayer(
-            pos=(78, pos_y + 2),
+            pos=(323, pos_y),
             font='regular',
-            font_size=23,
+            font_size=60,
             text=x[i]['name'],
-            color=x[i]['color'],
-            max_size=(180, 20)
+            color=(255, 255, 255),
+            max_size=(600, 150)
         ))
         layers.append(TextLayer(
-            pos=(280, pos_y + 2),
-            align_x='right',
+            pos=(1069, pos_y + 2),
             font='regular',
-            font_size=23,
-            text='Lvl. ' + str(x[i]['lvl']),
-            color=x[i]['color'],
-            max_size=(180, 20)
+            align_x='center',
+            font_size=60,
+            text=str(x[i]['lvl']),
+            color=(29, 29, 29),
+            max_size=(250, 150)
         ))
     return layers
