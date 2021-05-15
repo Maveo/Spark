@@ -105,10 +105,10 @@ class DiscordBot:
 
     async def get_ranking(self, guild):
         users = await self.get_users(guild)
-        ranking = list(sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True))
-        for i in range(len(ranking)):
-            ranking[i]['rank'] = i + 1
-        return ranking
+        users = sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+        for i in range(len(users)):
+            users[i]['rank'] = i + 1
+        return users
 
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
@@ -197,11 +197,6 @@ class DiscordBot:
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
         return await self.create_ranking_image(member, ranking[:10])
-
-    async def create_relative_ranking_image(self, member, before, after):
-        ranking = await self.get_ranking(member.guild)
-        member_rank = list(map(lambda x: x['uid'], ranking)).index(member.id)
-        return await self.create_ranking_image(member, ranking[member_rank-before:member_rank+after])
 
     async def check_member(self, member):
         await self.check_guild(member.guild)
@@ -383,7 +378,8 @@ class DiscordBot:
 
         @commands.command(name='profile',
                           aliases=['p', 'P'],
-                          description="show user profile")
+                          description='show user profile',
+                          help=' - Zeigt eure Profilkarte\n - profile {username} kann auch andere User anzeigen')
         async def _profile(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
@@ -402,7 +398,8 @@ class DiscordBot:
 
         @commands.command(name='leaderboard',
                           aliases=[],
-                          description="show the leaderboard")
+                          description='show the leaderboard',
+                          help=' - Zeigt die Top 10 des Servers')
         async def _leaderboard(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
@@ -411,7 +408,8 @@ class DiscordBot:
 
         @commands.command(name='ranking-all',
                           aliases=[],
-                          description="show the ranking")
+                          description='show the ranking',
+                          help=' - Zeigt alle Profilkarten des Servers')
         @commands.has_permissions(administrator=True)
         async def _ranking(self, ctx, *args):
             if ctx.guild is None:
@@ -427,7 +425,8 @@ class DiscordBot:
 
         @commands.command(name='send',
                           aliases=['s'],
-                          description="send through the bot")
+                          description='send through the bot',
+                          help=' - Sprich durch den Bot')
         @commands.has_permissions(administrator=True)
         async def _send(self, ctx, *args):
             if ctx.guild is None:
@@ -456,7 +455,8 @@ class DiscordBot:
 
         @commands.command(name='setlvl',
                           aliases=['setlevel', 'sl'],
-                          description="set level command")
+                          description='set level command',
+                          help=' - Bestimme das Level eines Users')
         @commands.has_permissions(administrator=True)
         async def _setlvl(self, ctx, *args):
             if ctx.guild is None:
@@ -494,7 +494,8 @@ class DiscordBot:
 
         @commands.command(name='lvlsys',
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
-                          description="level system commands")
+                          description='level system commands',
+                          help=' - Alles über das Levelsystem')
         @commands.has_permissions(administrator=True)
         async def _lvlsys(self, ctx, *args):
             if ctx.guild is None:
@@ -598,7 +599,10 @@ class DiscordBot:
 
             await ctx.send(embed=embed)
 
-        @commands.command(name='coinflip', aliases=['cf', 'coin'], description="Toss a coin to your Witcher!")
+        @commands.command(name='coinflip',
+                          aliases=['cf', 'coin'],
+                          description='Toss a coin to your Witcher!',
+                          help=' - Toss a coin to your Witcher!')
         async def _coinflip(self, ctx):
             if random.randint(0, 1) == 0:
                 res = 'kopf'
@@ -609,7 +613,10 @@ class DiscordBot:
             await message.delete()
             await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(res))))
 
-        @commands.command(name='dice', aliases=[], description="Roll a dice to your Witcher!")
+        @commands.command(name='dice',
+                          aliases=[],
+                          description='Roll a dice to your Witcher!',
+                          help=' - Würfelt eine Zahl zwischen 1-6')
         async def _dice(self, ctx, *args):
             dice_string = 'Rolled a **{}**'
             if len(args) == 1:
@@ -621,7 +628,10 @@ class DiscordBot:
                     return await ctx.send(dice_string.format(random.randint(min(opts), max(opts))))
             await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(random.randint(1, 6)))))
 
-        @commands.command(name='help', aliases=['h'], description="gives you help")
+        @commands.command(name='help',
+                          aliases=['h'],
+                          description="gives you help",
+                          help=' - Ist offenbar schon bekannt...')
         async def _help(self, ctx):
             embed = discord.Embed(title='Help',
                                   description='',
@@ -630,7 +640,7 @@ class DiscordBot:
             for command in sorted(self.parent.bot.commands, key=lambda x: x.name):
                 try:
                     if await command.can_run(ctx):
-                        embed.add_field(name=str(command.name), value=' - ' + str(command.description), inline=False)
+                        embed.add_field(name=str(command.name), value='{}'.format(command.help), inline=False)
                 except commands.CommandError:
                     pass
             await ctx.send(embed=embed)
@@ -648,7 +658,7 @@ class DiscordBot:
                 await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
                                                    color=discord.Color.red()))
             else:
-                print(error)
+                self.parent.lprint(error)
 
         @commands.Cog.listener()
         async def on_ready(self):
@@ -657,7 +667,8 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_member_join(self, member):
             await self.parent.update_member(member)
-            await member.send('Private message')
+            # send a private message on join
+            # await member.send('Private message')
 
         @commands.Cog.listener()
         async def on_member_remove(self, member):
@@ -670,6 +681,8 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
+            if member.bot:
+                return
             t = round(time.time(), 2)
             if before.channel is None and after.channel is not None:
                 # when joining

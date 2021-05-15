@@ -1,25 +1,58 @@
 from helpers.imgtools import *
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
+
+APPLICATION_ID = '839587710028611585'
 TOKEN = ''
 PREFIX = '>'
 DESCRIPTION = 'This is a KGS501 Productions bot!'
 PRINT_LOGGING = True
 
+
 RESPONSES_COMMAND_NOT_FOUND = [
-    'Haha, du kannst nicht schreiben!'
+    'Kenn ich nicht, den command',
+    '??',
+    'Kann grad nicht, sorry...',
+    'Wat willste jetzt von mir?',
+    'Sicher, dass du das richtig geschrieben hast?',
+    'ham wir leider nicht im Angebot',
+    'ERROR: User hat einen unbekannten command verwendet, oh gott was mache ich jetzt??',
+    'Nope',
+    'Kenn ich nicht, kann ich nicht...',
+    'Hä, was nochmal?',
+    'Den command scheint es nicht zu geben. Moment ich schaue nochmal nach.',
+    'Ding Dong, command ist gone',
+    'Was genau sollte der command jetzt machen?',
+    'Command konnte nicht gefunden werden',
+    'Vielen Dank für ihren Anruf, aber dieser command hat heute leider keine Zeit für Sie. Versuchen Sie es doch erneut, wenn wir ihn implementiert haben.',
+    'Der command ist leider nicht im Sortiment...',
+    'Dafür bin ich nicht der richtige Ansprechpartner',
 ]
 
 RESPONSES_MISSING_PERMISSIONS = [
-    'Haha, du hast keine Rechte!'
+    'Das darfst du leider nicht schreiben',
+    'Lass mich kurz nachgucken... Aha! Ne haste keine Rechte zu',
+    'Mach nen Abgang du Hobby Hacker!',
+    'Überlass das lieber den Admins...',
+    '🤨Warum genau sollte ich dich sowas ausführen lassen?',
+    'Keine Rechte für dich, Kollege!',
+    'Halt mal schön die Füße still',
+    'Lass besser die Finger von solchen commands, sonst hole ich den Admin!',
+    'Ohoh, wenn das der Admin sieht...',
+    'Diesen command darfst du leider nicht benutzen',
+    'Nene lass bloß die Finger davon!',
+    'Frag lieber nochmal nach, ob du sowas benutzen darfst. Ich frag auch nochmal...',
+    'Beep boop beep. Keine Berechtigung',
+    'HALT STOP!'
 ]
 
 FONTS = {
-    'regular': os.path.join('fonts', 'Product_Sans_Regular.ttf'),
-    'bold': os.path.join('fonts', 'Product_Sans_Bold.ttf'),
+    'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
+    'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
 }
 
 IMAGES_LOAD_MEMORY = [
-    DirectoryImageLoader(prefix='emojis', directory=os.path.join('images', 'emojis'))
+    DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
 ]
 
 
@@ -315,7 +348,7 @@ def RANK_UP_IMAGE(x): return [
 ]
 
 
-def LEADERBOARD_IMAGE(x):
+def RANKGING_IMAGE(x):
     height = len(x) * 85 + 410
     layers = [
 
@@ -397,7 +430,7 @@ def LEADERBOARD_IMAGE(x):
             font='bold',
             align_x='center',
             font_size=60,
-            text='#' + str(i + 1),
+            text='#' + str(x[i]['rank']),
             color=(255, 255, 255),
             max_size=(200, 150)
         ))

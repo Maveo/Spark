@@ -11,7 +11,7 @@ import aiohttp
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
-pygame.init()
+pygame.freetype.init()
 
 
 ALPHA_COLOR = (255, 255, 255, 255)
