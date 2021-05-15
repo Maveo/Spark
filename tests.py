@@ -96,10 +96,6 @@ def main():
             self.user_db = user_db
             self.lvlsys_db = lvlsys_db
 
-        # test helper
-        async def test__h1(self):
-            return tools.to_char(tools.from_char('✅')) == '✅' and tools.to_char(tools.from_char('🆘')) == '🆘'
-
         # test init
         async def test_b1(self):
             return self.user_db.all() == []
