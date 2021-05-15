@@ -373,9 +373,11 @@ class DiscordBot:
             self.parent = parent
 
         @commands.command(name='profile',
-                          aliases=['p'],
+                          aliases=['p', 'P'],
                           description="show user profile")
         async def _profile(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             await ctx.trigger_typing()
 
             if len(args) == 0:
@@ -393,13 +395,17 @@ class DiscordBot:
                           aliases=[],
                           description="show the leaderboard")
         async def _leaderboard(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             await ctx.trigger_typing()
             await ctx.send(file=await self.parent.create_leaderboard_image(ctx.message.author))
 
-        @commands.command(name='ranking',
+        @commands.command(name='ranking-all',
                           aliases=[],
                           description="show the ranking")
         async def _ranking(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             lb = await self.parent.get_ranking(ctx.message.guild)
             for user in lb:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
@@ -414,6 +420,8 @@ class DiscordBot:
                           description="send through the bot")
         @commands.has_permissions(administrator=True)
         async def _send(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"send {msg}" to send into the system channel\n'
@@ -441,6 +449,8 @@ class DiscordBot:
                           description="set level command")
         @commands.has_permissions(administrator=True)
         async def _setlvl(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"setlvl {level}" to set your level\n'
@@ -477,6 +487,8 @@ class DiscordBot:
                           description="level system commands")
         @commands.has_permissions(administrator=True)
         async def _lvlsys(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
             await ctx.trigger_typing()
 
             embed = discord.Embed(title='Help',
@@ -613,6 +625,15 @@ class DiscordBot:
             self.parent = parent
 
         @commands.Cog.listener()
+        async def on_command_error(self, ctx, error):
+            if isinstance(error, commands.CommandNotFound):
+                await ctx.send(random.choice(RESPONSES_COMMAND_NOT_FOUND))
+            elif isinstance(error, commands.MissingPermissions):
+                await ctx.send(random.choice(RESPONSES_MISSING_PERMISSIONS))
+            else:
+                print(error)
+
+        @commands.Cog.listener()
         async def on_ready(self):
             self.parent.lprint('Bot is ready')
 
@@ -627,7 +648,7 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_message(self, message):
-            if not message.author.bot:
+            if message.guild is not None and not message.author.bot:
                 await self.parent.member_message_xp(message.author)
 
         @commands.Cog.listener()

@@ -5,6 +5,14 @@ PREFIX = '>'
 DESCRIPTION = 'This is a KGS501 Productions bot!'
 PRINT_LOGGING = True
 
+RESPONSES_COMMAND_NOT_FOUND = [
+    'Haha, du kannst nicht schreiben!'
+]
+
+RESPONSES_MISSING_PERMISSIONS = [
+    'Haha, du hast keine Rechte!'
+]
+
 FONTS = {
     'regular': os.path.join('fonts', 'Product_Sans_Regular.ttf'),
     'bold': os.path.join('fonts', 'Product_Sans_Bold.ttf'),
