@@ -4,9 +4,12 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 APPLICATION_ID = ''
 TOKEN = ''
-PREFIX = '//'
+PREFIX = '>'
 DESCRIPTION = 'This is a KGS501 Productions bot!'
 PRINT_LOGGING = True
+
+MESSAGE_XP = 0.5
+VOICE_XP_PER_MINUTE = 1
 
 USE_SLASH_COMMANDS = False
 

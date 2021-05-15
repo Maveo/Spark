@@ -341,7 +341,7 @@ class DiscordBot:
             return
         xp_multiplier = data['xp_multiplier']
         if data['joined'] >= 0:
-            xp_earned = self.xp_for((t - data['joined']) / 60, xp_multiplier)
+            xp_earned = self.xp_for((t - data['joined']) * VOICE_XP_PER_MINUTE / 60, xp_multiplier)
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
             await self.member_set_lvl_xp(member, data['lvl'])
 
@@ -351,7 +351,7 @@ class DiscordBot:
         if bool(data['blacklist']) is True:
             return
         xp_multiplier = data['xp_multiplier']
-        xp_earned = self.xp_for(2.5, xp_multiplier)
+        xp_earned = self.xp_for(MESSAGE_XP, xp_multiplier)
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
         await self.member_set_lvl_xp(member, data['lvl'])
 
