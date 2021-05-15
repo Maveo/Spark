@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import pygame
 import pygame.freetype
+import unicodedata
 import io
 import os
 import warnings
@@ -318,6 +319,7 @@ class TextLayer(ColoredLayer):
         self.font = self.get_kwarg('font')
         self.font_size = self.get_kwarg('font_size', 16)
         self.text = self.get_kwarg('text')
+        self.text = unicodedata.normalize('NFKC', self.text)
         self.max_size = self.get_kwarg('max_size')
         super()._init_finished()
 
