@@ -188,7 +188,7 @@ class DiscordBot:
                 })
 
         img_buf = await self.image_creator.create(RANKGING_IMAGE(ranking_obj), max_size=(-1, 8000))
-        return discord.File(filename="leaderboard.png", fp=img_buf)
+        return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
