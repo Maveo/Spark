@@ -403,6 +403,7 @@ class DiscordBot:
         @commands.command(name='ranking-all',
                           aliases=[],
                           description="show the ranking")
+        @commands.has_permissions(administrator=True)
         async def _ranking(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
@@ -615,9 +616,14 @@ class DiscordBot:
         async def _help(self, ctx):
             embed = discord.Embed(title='Help',
                                   description='',
-                                  color=discord.Color.red())
+                                  color=discord.Color.gold())
+
             for command in sorted(self.parent.bot.commands, key=lambda x: x.name):
-                embed.add_field(name=str(command.name), value=' - ' + str(command.description), inline=False)
+                try:
+                    if await command.can_run(ctx):
+                        embed.add_field(name=str(command.name), value=' - ' + str(command.description), inline=False)
+                except commands.CommandError:
+                    pass
             await ctx.send(embed=embed)
 
     class Events(commands.Cog):
@@ -627,9 +633,11 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
             if isinstance(error, commands.CommandNotFound):
-                await ctx.send(random.choice(RESPONSES_COMMAND_NOT_FOUND))
+                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_COMMAND_NOT_FOUND),
+                                                   color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(random.choice(RESPONSES_MISSING_PERMISSIONS))
+                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
+                                                   color=discord.Color.red()))
             else:
                 print(error)
 
