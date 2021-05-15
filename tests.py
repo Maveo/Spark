@@ -105,7 +105,7 @@ def main():
             m = MemberDummy()
             await self.bot.events.on_member_join(m)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0 and len(m.messages) == 1
+            return user['uid'] == 0 and user['lvl'] == 1 and user['xp'] == 0
 
         # test user left server
         async def test_3_user_left(self):
