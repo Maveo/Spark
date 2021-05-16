@@ -1,5 +1,7 @@
 from tinydb import TinyDB
 
+import os
+
 import sqlite3
 
 
@@ -10,7 +12,8 @@ async def main():
         bar = fill * filledLength + '-' * (length - filledLength)
         print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=print_end)
 
-    new_db = 'dbs/merged.db'
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+    new_db = os.path.join(current_dir, '..', 'dbs', 'merged.db')
 
     con = sqlite3.connect(new_db)
 
@@ -37,7 +40,8 @@ async def main():
     con.commit()
 
     print('Merging user db...')
-    user_db = TinyDB('dbs/users.json')
+
+    user_db = TinyDB(os.path.join(current_dir, '..', 'dbs', 'users.json'))
 
     for guild in user_db.all():
         print('Merging Guild: {}'.format(guild['gid']))
@@ -66,7 +70,9 @@ async def main():
         print('Merged {} Users'.format(i))
 
     print('Merging level system db...')
-    lvlsys_db = TinyDB('dbs/lvlsys.json')
+
+    lvlsys_db = TinyDB(os.path.join(current_dir, '..', 'dbs', 'lvlsys.json'))
+
     for guild in lvlsys_db.all():
         print('Merging Guild: {}'.format(guild['gid']))
         i = 0
