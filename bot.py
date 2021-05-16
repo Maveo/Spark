@@ -768,15 +768,28 @@ class DiscordBot:
                           description='Roll a dice to your Witcher!',
                           help=' - Würfelt eine Zahl zwischen 1-6')
         async def _dice(self, ctx, *args):
-            dice_string = 'Rolled a **{}**'
+            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(random.randint(1, 6)))))
+
+        @commands.command(name='random',
+                          aliases=[],
+                          description='Generate a random number',
+                          help=' - Generiert eine zufällige Zahl')
+        async def _random(self, ctx, *args):
+            random_string = 'Random **{}**'
+            if len(args) == 0:
+                return await ctx.send(embed=discord.Embed(
+                    description=random.choice(self.parent.command_not_found_responses), color=discord.Color.red()))
+
             if len(args) == 1:
                 if args[0].isnumeric():
-                    return await ctx.send(dice_string.format(random.randint(1, int(args[0]))))
-            elif len(args) == 2:
+                    return await ctx.send(random_string.format(random.randint(1, int(args[0]))))
+
+            if len(args) == 2:
                 if args[0].isnumeric() and args[1].isnumeric():
                     opts = [int(args[0]), int(args[1])]
-                    return await ctx.send(dice_string.format(random.randint(min(opts), max(opts))))
-            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(random.randint(1, 6)))))
+                    return await ctx.send(random_string.format(random.randint(min(opts), max(opts))))
+
+            await ctx.send(random_string.format(random.choice(args)))
 
         @commands.command(name='help',
                           aliases=['h'],
