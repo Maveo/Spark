@@ -114,11 +114,11 @@ class DiscordBot:
 
     @staticmethod
     def max_xp_for(lvl):
-        return max(100, (int(lvl) - 1) * 10 + 100)
+        return max(100, int(lvl) * 10 + 90)
 
     @staticmethod
-    def xp_for(ctime, boost):
-        return round(ctime * boost, 2)
+    def xp_for(xp, boost):
+        return round(xp * boost, 2)
 
     @staticmethod
     def lvl_xp_add(xp, lvl):
