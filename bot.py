@@ -1,14 +1,6 @@
-from settings import *
-
 import discord
 from discord.ext import commands
 from discord.utils import get
-
-import sqlite3
-
-if USE_SLASH_COMMANDS:
-    from discord_slash import cog_ext, SlashCommand, SlashContext
-    from discord_slash.utils.manage_commands import create_option
 
 from helpers import tools, imgtools
 
@@ -20,11 +12,36 @@ import random
 
 
 class DiscordBot:
-    def __init__(self, db_conn, print_logging=False):
+    def __init__(self,
+                 db_conn,
+                 message_give_xp=0.5,
+                 voice_xp_per_minute=1,
+                 command_prefix='>',
+                 description='',
+                 missing_permission_responses=('Missing Permission',),
+                 command_not_found_responses=('Command not found',),
+                 image_creator=None,
+                 profile_image=None,
+                 level_up_image=None,
+                 rank_up_image=None,
+                 ranking_image=None,
+                 print_logging=False,
+                 use_slash_commands=False
+                 ):
         intents = discord.Intents.default()
         intents.members = True
 
         self.print_logging = print_logging
+        self.message_give_xp = message_give_xp
+        self.voice_xp_per_minute = voice_xp_per_minute
+
+        self.missing_permission_responses = missing_permission_responses
+        self.command_not_found_responses = command_not_found_responses
+
+        self.profile_image = profile_image
+        self.level_up_image = level_up_image
+        self.rank_up_image = rank_up_image
+        self.ranking_image = ranking_image
 
         self.db_conn = db_conn
 
@@ -57,7 +74,10 @@ class DiscordBot:
 
         self.db_conn.commit()
 
-        self.bot = commands.Bot(command_prefix=PREFIX, description=DESCRIPTION, intents=intents, help_command=None)
+        self.bot = commands.Bot(command_prefix=command_prefix,
+                                description=description,
+                                intents=intents,
+                                help_command=None)
 
         self.events = self.Events(self)
         self.commands = self.Commands(self)
@@ -65,7 +85,10 @@ class DiscordBot:
         self.bot.add_cog(self.events)
         self.bot.add_cog(self.commands)
 
-        if USE_SLASH_COMMANDS:
+        if use_slash_commands:
+            from discord_slash import cog_ext, SlashCommand, SlashContext
+            from discord_slash.utils.manage_commands import create_option
+
             self.slash = SlashCommand(self.bot, sync_commands=True)
 
             def _slash_callback(command):
@@ -85,7 +108,7 @@ class DiscordBot:
                         if await command.can_run(ctx):
                             await command.callback(self.commands, *cargs)
                     except commands.CommandError:
-                        await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
+                        await ctx.send(embed=discord.Embed(description=random.choice(self.missing_permission_responses),
                                                            color=discord.Color.red()))
 
                 return call
@@ -103,7 +126,10 @@ class DiscordBot:
                                                  )
                                              ])
 
-        self.image_creator = imgtools.ImageCreator(loop=self.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY)
+        self.image_creator = image_creator
+
+    def set_image_creator(self, image_creator):
+        self.image_creator = image_creator
 
     def run(self, token):
         self.bot.run(token)
@@ -113,8 +139,15 @@ class DiscordBot:
             print(*args)
 
     @staticmethod
+    def get_lvl(lvl):
+        if lvl < 0:
+            return int(lvl) - 1
+        else:
+            return int(lvl)
+
+    @staticmethod
     def max_xp_for(lvl):
-        return max(100, int(lvl) * 10 + 90)
+        return max(100, DiscordBot.get_lvl(lvl) * 10 + 90)
 
     @staticmethod
     def xp_for(xp, boost):
@@ -219,7 +252,7 @@ class DiscordBot:
         data_obj = {'member': member,
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
-                    'lvl': int(data['lvl']),
+                    'lvl': self.get_lvl(data['lvl']),
                     'xp': data_xp,
                     'max_xp': data_max_xp,
                     'xp_percentage': data_percentage,
@@ -227,7 +260,7 @@ class DiscordBot:
                     'xp_multiplier': data_xp_multiplier,
                     'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        img_buf = await self.image_creator.create(PROFILE_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.profile_image(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
@@ -236,12 +269,12 @@ class DiscordBot:
             name = member.nick
 
         data_obj = {'member': member,
-                    'old_lvl': int(old_lvl),
-                    'new_lvl': int(new_lvl),
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
                     'name': name}
 
-        img_buf = await self.image_creator.create(LEVEL_UP_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.level_up_image(data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
@@ -250,15 +283,15 @@ class DiscordBot:
             name = member.nick
 
         data_obj = {'member': member,
-                    'old_lvl': int(old_lvl),
-                    'new_lvl': int(new_lvl),
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
                     'old_role': old_role,
                     'new_role': new_role,
                     'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
                     'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
                     'name': name}
 
-        img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.rank_up_image(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):
@@ -272,12 +305,12 @@ class DiscordBot:
                 ranking_obj.append({
                     'member': member,
                     'rank': user['rank'],
-                    'lvl': int(user['lvl']),
+                    'lvl': self.get_lvl(user['lvl']),
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb())
                 })
 
-        img_buf = await self.image_creator.create(RANKGING_IMAGE(ranking_obj), max_size=(-1, 8000))
+        img_buf = await self.image_creator.create(self.ranking_image(ranking_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_leaderboard_image(self, member):
@@ -286,11 +319,11 @@ class DiscordBot:
 
     async def member_set_lvl_xp(self, member, lvl):
         if not member.bot:
-            previous_level = int(lvl)
+            previous_level = self.get_lvl(lvl)
 
             await self.update_user(member, {'lvl': lvl})
 
-            ilvl = int(lvl)
+            ilvl = self.get_lvl(lvl)
             previous_role = member.top_role
             await self.member_role_manage(member, ilvl)
 
@@ -341,7 +374,7 @@ class DiscordBot:
             return
         xp_multiplier = data['xp_multiplier']
         if data['joined'] >= 0:
-            xp_earned = self.xp_for((t - data['joined']) * VOICE_XP_PER_MINUTE / 60, xp_multiplier)
+            xp_earned = self.xp_for((t - data['joined']) * self.voice_xp_per_minute / 60, xp_multiplier)
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
             await self.member_set_lvl_xp(member, data['lvl'])
 
@@ -351,7 +384,7 @@ class DiscordBot:
         if bool(data['blacklist']) is True:
             return
         xp_multiplier = data['xp_multiplier']
-        xp_earned = self.xp_for(MESSAGE_XP, xp_multiplier)
+        xp_earned = self.xp_for(self.message_give_xp, xp_multiplier)
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
         await self.member_set_lvl_xp(member, data['lvl'])
 
@@ -711,10 +744,10 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
             if isinstance(error, commands.CommandNotFound):
-                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_COMMAND_NOT_FOUND),
+                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.command_not_found_responses),
                                                    color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
+                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.missing_permission_responses),
                                                    color=discord.Color.red()))
             else:
                 self.parent.lprint(error)
@@ -759,8 +792,27 @@ class DiscordBot:
 
 
 if __name__ == '__main__':
+    from settings import *
+    import sqlite3
+
     if not os.path.exists('dbs'):
         os.mkdir('dbs')
     con = sqlite3.connect('dbs/bot.db')
-    b = DiscordBot(con, PRINT_LOGGING)
+    b = DiscordBot(con,
+                   message_give_xp=MESSAGE_XP,
+                   voice_xp_per_minute=VOICE_XP_PER_MINUTE,
+                   command_prefix=COMMAND_PREFIX,
+                   description=DESCRIPTION,
+                   missing_permission_responses=MISSING_PERMISSIONS_RESPONSES,
+                   command_not_found_responses=COMMAND_NOT_FOUND_RESPONSES,
+                   profile_image=PROFILE_IMAGE,
+                   level_up_image=LEVEL_UP_IMAGE,
+                   rank_up_image=RANK_UP_IMAGE,
+                   ranking_image=RANKGING_IMAGE,
+                   print_logging=PRINT_LOGGING,
+                   use_slash_commands=USE_SLASH_COMMANDS
+                   )
+
+    b.set_image_creator(imgtools.ImageCreator(loop=b.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY))
+
     b.run(TOKEN)

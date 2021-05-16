@@ -71,6 +71,7 @@ class MessageDummy:
 
 def main():
     from bot import DiscordBot
+    from helpers.imgtools import ImageCreator, TextLayer, EmptyLayer
     import sqlite3
     import numpy as np
     import cv2
@@ -128,9 +129,10 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
             msg = MessageDummy(author=m)
+            self.bot.message_give_xp = 10
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 2
+            return user['uid'] == 0 and float_match(1.1, user['lvl'])
 
         # test bot writes message
         async def test_5_bot_writes_message(self):
@@ -161,6 +163,9 @@ def main():
         async def test_8_user_leave_voice_channel(self):
             g = GuildDummy()
             m = MemberDummy(guild=g)
+
+            self.bot.voice_xp_per_minute = 1
+
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_left_vc(m, 60 * 60 * 1)
             user = await self.bot.get_user(m)
@@ -178,6 +183,9 @@ def main():
         # test user leveling
         async def test_10_leveling(self):
             m = MemberDummy()
+
+            self.bot.voice_xp_per_minute = 1
+
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_left_vc(m, 60 * 60 * 62)
             user = await self.bot.get_user(m)
@@ -258,18 +266,44 @@ def main():
         # test leveling equality
         async def test_17_leveling_equality(self):
             lvl1 = 1
-            lvl1 += self.bot.lvl_xp_add(5000, lvl1)
+            lvl1 += self.bot.lvl_xp_add(60, lvl1)
             lvl2 = 1
-            lvl2 += self.bot.lvl_xp_add(2500, lvl2)
-            lvl2 += self.bot.lvl_xp_add(2500, lvl2)
+            lvl2 += self.bot.lvl_xp_add(30, lvl2)
+            lvl2 += self.bot.lvl_xp_add(30, lvl2)
             return float_match(lvl1, lvl2)
 
         # test xp boost
         async def test_18_xp_boost(self):
-            lvl1 = 5
-            lvl1 += self.bot.lvl_xp_add(1000, lvl1)
-            # print(lvl1, lvl2)
-            # return float_match(lvl1, lvl2)
+            m1 = MemberDummy(uid=1)
+
+            m2 = MemberDummy(uid=2)
+
+            await self.bot.update_user(m1, {'xp_multiplier': 2.0})
+
+            msg = MessageDummy(author=m1)
+            await self.bot.events.on_message(msg)
+
+            msg = MessageDummy(author=m2)
+            await self.bot.events.on_message(msg)
+
+            user1 = await self.bot.get_user(m1)
+            user2 = await self.bot.get_user(m2)
+            return user1['lvl'] > user2['lvl']
+
+        # test negative xp boost
+        async def test_19_negative_xp_boost(self):
+            m = MemberDummy()
+
+            await self.bot.update_user(m, {'xp_multiplier': -250.0})
+
+            msg = MessageDummy(author=m)
+
+            self.bot.message_give_xp = 1
+
+            await self.bot.events.on_message(msg)
+            user = await self.bot.get_user(m)
+
+            return self.bot.get_lvl(user['lvl']) == -2 and self.bot.lvl_get_xp(user['lvl']) == 50
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
@@ -289,6 +323,19 @@ def main():
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_set_lvl_xp(m, 5.5)
+
+            def _profile_image(x):
+                d = list(x.items())
+                layers = [
+                    EmptyLayer(resize=(900, len(d)*20 + 20)),
+                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='PROFILE IMAGE')
+                ]
+                for i in range(len(d)):
+                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
+                return layers
+
+            self.bot.profile_image = _profile_image
+
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -298,6 +345,19 @@ def main():
         # test level up image creation
         async def test_902_level_up_image(self):
             m = MemberDummy()
+
+            def _level_up_image(x):
+                d = list(x.items())
+                layers = [
+                    EmptyLayer(resize=(900, len(d)*20 + 20)),
+                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='LEVEL UP IMAGE')
+                ]
+                for i in range(len(d)):
+                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
+                return layers
+
+            self.bot.level_up_image = _level_up_image
+
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -309,6 +369,19 @@ def main():
             m = MemberDummy()
             r1 = RoleDummy()
             r2 = RoleDummy()
+
+            def _rank_up_image(x):
+                d = list(x.items())
+                layers = [
+                    EmptyLayer(resize=(900, len(d)*20)),
+                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='RANK UP IMAGE')
+                ]
+                for i in range(len(d)):
+                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
+                return layers
+
+            self.bot.rank_up_image = _rank_up_image
+
             image_buffer = (await self.bot.member_create_rank_up_image(m, 1, 2, r1, r2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -321,6 +394,18 @@ def main():
             m = [MemberDummy(x, guild=g) for x in range(10)]
             [await self.bot.check_member(x) for x in m]
 
+            def _ranking_image(x):
+                d = x
+                layers = [
+                    EmptyLayer(resize=(1500, len(d)*20 + 20)),
+                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='RANKING IMAGE')
+                ]
+                for i in range(len(d)):
+                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
+                return layers
+
+            self.bot.ranking_image = _ranking_image
+
             image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -330,7 +415,10 @@ def main():
     async def run_test(method, test_number, test_name):
         con = sqlite3.connect(":memory:")
 
-        b = DiscordBot(con)
+        b = DiscordBot(con, use_slash_commands=False)
+
+        b.set_image_creator(ImageCreator(loop=b.bot.loop, fonts={}, load_memory=[]))
+
         b.image_creator.session = aiohttp.ClientSession()
 
         t = Tests(b, con)
@@ -365,7 +453,10 @@ def main():
         results.append((test, res))
 
     failed_tests = list(filter(lambda x: not x[1], results))
-    print('Total amount of Tests: {} | Tests Failed: {}'.format(len(tests), len(failed_tests)))
+    print('Total amount of Tests: {} | Tests Failed: {} [{}]'.format(
+        len(tests),
+        len(failed_tests),
+        ', '.join(map(lambda x: 'TEST {} ({})'.format(x[0]['test_number'], x[0]['test_name']), failed_tests))))
 
 
 if __name__ == '__main__':
