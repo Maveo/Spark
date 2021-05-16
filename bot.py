@@ -744,17 +744,18 @@ class DiscordBot:
             if member.bot:
                 return
             t = round(time.time(), 2)
-            if before.channel is None and after.channel is not None:
-                # when joining
-                await self.parent.member_joined_vc(member, t)
-                self.parent.lprint(member, 'joined', after.channel)
-            elif before.channel is not None and after.channel is None:
+
+            if before.channel is not None:
                 # when leaving
-                await self.parent.member_left_vc(member, t)
+                if member.guild.afk_channel is None or before.channel.id != member.guild.afk_channel.id:
+                    await self.parent.member_left_vc(member, t)
                 self.parent.lprint(member, 'left', before.channel)
-            else:
-                # when moving
-                self.parent.lprint(member, 'moved from', before.channel, 'to', after.channel)
+
+            if after.channel is not None:
+                # when joining
+                if member.guild.afk_channel is None or after.channel.id != member.guild.afk_channel.id:
+                    await self.parent.member_joined_vc(member, t)
+                self.parent.lprint(member, 'joined', after.channel)
 
 
 if __name__ == '__main__':
