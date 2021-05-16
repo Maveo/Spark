@@ -336,7 +336,7 @@ def main():
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
-            return False not in map(lambda x: float_match(x['lvl'], 1.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
+            return False not in map(lambda x: float_match(x['lvl'], 4.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
 
         # test update all voice users
         async def test_21_all_blacklisted_users_no_voice_update(self):
