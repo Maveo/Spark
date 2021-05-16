@@ -42,8 +42,15 @@ class GuildDummy:
         self.members.append(member)
 
 
+class VoiceDummy:
+    def __init__(self, channel=None):
+        if channel is None:
+            channel = ChannelDummy()
+        self.channel = channel
+
+
 class MemberDummy:
-    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False):
+    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False, voice=None):
         self.id = uid
         self.name = name
         self.nick = nick
@@ -54,6 +61,9 @@ class MemberDummy:
             guild = GuildDummy()
         self.guild = guild
         self.guild.member_join(self)
+        if voice is None:
+            voice = VoiceDummy()
+        self.voice = voice
         self.bot = bot
         self.color = ColorDummy()
         self.messages = []
@@ -91,7 +101,6 @@ def main():
     import time
     import os
     import asyncio
-    import aiohttp
 
     SHOW_IMAGES = False
 
@@ -336,7 +345,7 @@ def main():
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
-            return False not in map(lambda x: float_match(x['lvl'], 1.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
+            return False not in map(lambda x: float_match(x['lvl'], 4.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
 
         # test update all voice users
         async def test_21_all_blacklisted_users_no_voice_update(self):
@@ -464,9 +473,7 @@ def main():
 
         b = DiscordBot(con, use_slash_commands=False)
 
-        b.set_image_creator(ImageCreator(loop=b.bot.loop, fonts={}, load_memory=[]))
-
-        b.image_creator.session = aiohttp.ClientSession()
+        b.set_image_creator(ImageCreator(fonts={}, load_memory=[]))
 
         t = Tests(b, con)
 
@@ -480,7 +487,6 @@ def main():
         else:
             print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
 
-        await b.image_creator.session.close()
         return result
 
     if os.name == 'nt':
