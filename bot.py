@@ -16,6 +16,7 @@ class DiscordBot:
                  db_conn,
                  message_give_xp=0.5,
                  voice_xp_per_minute=1,
+                 update_voice_xp_interval=-1,
                  command_prefix='>',
                  description='',
                  missing_permission_responses=('Missing Permission',),
@@ -34,6 +35,8 @@ class DiscordBot:
         self.print_logging = print_logging
         self.message_give_xp = message_give_xp
         self.voice_xp_per_minute = voice_xp_per_minute
+
+        self.update_voice_xp_interval = update_voice_xp_interval
 
         self.missing_permission_responses = missing_permission_responses
         self.command_not_found_responses = command_not_found_responses
@@ -132,6 +135,13 @@ class DiscordBot:
         self.image_creator = image_creator
 
     def run(self, token):
+        async def _update_vc_xp():
+            if self.update_voice_xp_interval > 0:
+                while True:
+                    await asyncio.sleep(self.update_voice_xp_interval)
+                    await self.update_all_voice_users(time.time())
+
+        self.bot.loop.create_task(_update_vc_xp())
         self.bot.run(token)
 
     def lprint(self, *args):
@@ -233,6 +243,26 @@ class DiscordBot:
             users[i]['rank'] = i + 1
         return users
 
+    async def update_all_voice_users(self, ctime):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM users WHERE joined >= 0')
+        users = cur.fetchall()
+        for user in users:
+            if not bool(user['blacklist']):
+                xp_earned = self.xp_for((ctime - user['joined']) * self.voice_xp_per_minute / 60, user['xp_multiplier'])
+                user['lvl'] += self.lvl_xp_add(xp_earned, user['lvl'])
+
+        cur.executemany('INSERT OR REPLACE INTO users(uid, gid, lvl, xp_multiplier, joined, blacklist)'
+                        'VALUES(?, ?, ?, ?, ?, ?);',
+                        map(lambda x: (x['uid'],
+                                       x['gid'],
+                                       x['lvl'],
+                                       x['xp_multiplier'],
+                                       ctime,
+                                       x['blacklist'],), users))
+
+        self.db_conn.commit()
+
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
 
@@ -268,81 +298,84 @@ class DiscordBot:
         return discord.File(filename="member.png", fp=img_buf)
 
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
-        name = member.name
-        if member.nick is not None:
-            name = member.nick
+        if self.level_up_image is not None:
+            name = member.name
+            if member.nick is not None:
+                name = member.nick
 
-        data_obj = {'member': member,
-                    'old_lvl': self.get_lvl(old_lvl),
-                    'new_lvl': self.get_lvl(new_lvl),
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
-                    'name': name}
+            data_obj = {'member': member,
+                        'old_lvl': self.get_lvl(old_lvl),
+                        'new_lvl': self.get_lvl(new_lvl),
+                        'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                        'name': name}
 
-        img_buf = await self.image_creator.create(self.level_up_image(data_obj))
-        return discord.File(filename="lvlup.png", fp=img_buf)
+            img_buf = await self.image_creator.create(self.level_up_image(data_obj))
+            return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
-        name = member.name
-        if member.nick is not None:
-            name = member.nick
+        if self.rank_up_image is not None:
+            name = member.name
+            if member.nick is not None:
+                name = member.nick
 
-        data_obj = {'member': member,
-                    'old_lvl': self.get_lvl(old_lvl),
-                    'new_lvl': self.get_lvl(new_lvl),
-                    'old_role': old_role,
-                    'new_role': new_role,
-                    'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
-                    'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
-                    'name': name}
+            data_obj = {'member': member,
+                        'old_lvl': self.get_lvl(old_lvl),
+                        'new_lvl': self.get_lvl(new_lvl),
+                        'old_role': old_role,
+                        'new_role': new_role,
+                        'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
+                        'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
+                        'name': name}
 
-        img_buf = await self.image_creator.create(self.rank_up_image(data_obj))
-        return discord.File(filename="rankup.png", fp=img_buf)
+            img_buf = await self.image_creator.create(self.rank_up_image(data_obj))
+            return discord.File(filename="rankup.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):
-        ranking_obj = []
-        for user in ranked_users:
-            member = get(member.guild.members, id=int(user['uid']))
-            if member is not None and not member.bot:
-                name = member.name
-                if member.nick is not None:
-                    name = member.nick
-                ranking_obj.append({
-                    'member': member,
-                    'rank': user['rank'],
-                    'lvl': self.get_lvl(user['lvl']),
-                    'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb())
-                })
+        if self.ranking_image is not None:
+            ranking_obj = []
+            for user in ranked_users:
+                member = get(member.guild.members, id=int(user['uid']))
+                if member is not None and not member.bot:
+                    name = member.name
+                    if member.nick is not None:
+                        name = member.nick
+                    ranking_obj.append({
+                        'member': member,
+                        'rank': user['rank'],
+                        'lvl': self.get_lvl(user['lvl']),
+                        'name': name,
+                        'color': imgtools.rgb_to_bgr(member.color.to_rgb())
+                    })
 
-        img_buf = await self.image_creator.create(self.ranking_image(ranking_obj), max_size=(-1, 8000))
-        return discord.File(filename="ranking.png", fp=img_buf)
+            img_buf = await self.image_creator.create(self.ranking_image(ranking_obj), max_size=(-1, 8000))
+            return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
         return await self.create_ranking_image(member, ranking[:10])
 
-    async def member_set_lvl_xp(self, member, lvl):
-        if not member.bot:
-            previous_level = self.get_lvl(lvl)
+    async def check_send_rank_level_image(self, member, lvl, old_level, old_role):
+        if old_level is not None and self.get_lvl(old_level) < self.get_lvl(lvl):
+            if old_role != member.top_role:
+                return await member.guild.system_channel.send(
+                    file=await self.member_create_rank_up_image(member,
+                                                                old_level,
+                                                                lvl,
+                                                                old_role,
+                                                                member.top_role))
+            await member.guild.system_channel.send(
+                file=await self.member_create_lvl_image(member,
+                                                        old_level,
+                                                        lvl))
 
+    async def member_set_lvl_xp(self, member, lvl, old_level=None):
+        if not member.bot:
             await self.update_user(member, {'lvl': lvl})
 
             ilvl = self.get_lvl(lvl)
             previous_role = member.top_role
             await self.member_role_manage(member, ilvl)
-
-            if previous_level < ilvl:
-                if previous_role != member.top_role:
-                    return await member.guild.system_channel.send(
-                        file=await self.member_create_rank_up_image(member,
-                                                                    previous_level,
-                                                                    ilvl,
-                                                                    previous_role,
-                                                                    member.top_role))
-                await member.guild.system_channel.send(
-                    file=await self.member_create_lvl_image(member,
-                                                            previous_level,
-                                                            ilvl))
+            await self.check_send_rank_level_image(member, lvl, old_level, previous_role)
 
     async def update_member(self, member):
         await self.check_member(member)
@@ -379,8 +412,10 @@ class DiscordBot:
         xp_multiplier = data['xp_multiplier']
         if data['joined'] >= 0:
             xp_earned = self.xp_for((t - data['joined']) * self.voice_xp_per_minute / 60, xp_multiplier)
+            old_level = data['lvl']
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
-            await self.member_set_lvl_xp(member, data['lvl'])
+            await self.member_set_lvl_xp(member, data['lvl'], old_level)
+            await self.update_user(member, {'joined': -1})
 
     async def member_message_xp(self, member):
         await self.check_member(member)
@@ -389,8 +424,9 @@ class DiscordBot:
             return
         xp_multiplier = data['xp_multiplier']
         xp_earned = self.xp_for(self.message_give_xp, xp_multiplier)
+        old_level = data['lvl']
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
-        await self.member_set_lvl_xp(member, data['lvl'])
+        await self.member_set_lvl_xp(member, data['lvl'], old_level)
 
     @staticmethod
     async def give_role(guild, member, role_id):
@@ -567,7 +603,7 @@ class DiscordBot:
             async def __setlvl(m):
                 try:
                     lvl = int(args[0])
-                    await self.parent.member_set_lvl_xp(m, lvl)
+                    await self.parent.member_set_lvl_xp(m, lvl, None)
                     await ctx.send(embed=discord.Embed(title='Success',
                                                        description='Level was set successfully!',
                                                        color=discord.Color.green()))
@@ -805,6 +841,7 @@ if __name__ == '__main__':
     b = DiscordBot(con,
                    message_give_xp=MESSAGE_XP,
                    voice_xp_per_minute=VOICE_XP_PER_MINUTE,
+                   update_voice_xp_interval=UPDATE_VOICE_XP_INTERVAL,
                    command_prefix=COMMAND_PREFIX,
                    description=DESCRIPTION,
                    missing_permission_responses=MISSING_PERMISSIONS_RESPONSES,
