@@ -276,7 +276,7 @@ class DiscordBot:
                                        x['gid'],
                                        x['lvl'],
                                        x['xp_multiplier'],
-                                       user['joined'],
+                                       x['joined'],
                                        x['blacklist'],), users))
 
         self.db_conn.commit()
