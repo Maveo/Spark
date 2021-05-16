@@ -863,6 +863,6 @@ if __name__ == '__main__':
                    use_slash_commands=USE_SLASH_COMMANDS
                    )
 
-    b.set_image_creator(imgtools.ImageCreator(loop=b.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY))
+    b.set_image_creator(imgtools.ImageCreator(fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY))
 
     b.run(TOKEN)

@@ -91,7 +91,6 @@ def main():
     import time
     import os
     import asyncio
-    import aiohttp
 
     SHOW_IMAGES = False
 
@@ -464,9 +463,7 @@ def main():
 
         b = DiscordBot(con, use_slash_commands=False)
 
-        b.set_image_creator(ImageCreator(loop=b.bot.loop, fonts={}, load_memory=[]))
-
-        b.image_creator.session = aiohttp.ClientSession()
+        b.set_image_creator(ImageCreator(fonts={}, load_memory=[]))
 
         t = Tests(b, con)
 
@@ -480,7 +477,6 @@ def main():
         else:
             print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
 
-        await b.image_creator.session.close()
         return result
 
     if os.name == 'nt':

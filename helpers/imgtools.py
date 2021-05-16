@@ -1,3 +1,4 @@
+import threading
 from helpers import tools
 import numpy as np
 import cv2
@@ -7,7 +8,8 @@ import unicodedata
 import io
 import os
 import warnings
-import aiohttp
+import asyncio
+import requests
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
@@ -308,8 +310,7 @@ class WebImageLayer(ImageLayer):
         super()._init_finished()
 
     async def create(self, **kwargs):
-        async with kwargs['session'].get(self.url) as response:
-            img_bytes = await response.read()
+        img_bytes = requests.get(self.url).content
         img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
         img = self.validated(img)
         return self.resized(img)
@@ -405,11 +406,6 @@ class RectangleLayer(ColoredLayer):
         return self.colored(src)
 
 
-# class LineLayer(RectangleLayer):
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-
-
 class ProgressLayer(RectangleLayer):
     def __init__(self, **kwargs):
         direction = 'x'
@@ -433,11 +429,14 @@ class ProgressLayer(RectangleLayer):
         super().__init__(**kwargs)
 
 
-class ImageCreator:
-    def __init__(self, loop=None, fonts=None, load_memory=None):
-        self.loop = loop
-        self.session = None
+class AsyncEvent(asyncio.Event):
+    def set(self):
+        # TODO: _loop is not documented
+        self._loop.call_soon_threadsafe(super().set)
 
+
+class ImageCreator:
+    def __init__(self, fonts=None, load_memory=None):
         self.fonts = {
             'default': pygame.freetype.SysFont(pygame.freetype.get_default_font(), 16)
         }
@@ -459,24 +458,39 @@ class ImageCreator:
         self.image_memory[name] = img
 
     async def create(self, layers, max_size=(-1, -1)):
-        img = None
-        for layer in layers:
-            if self.session is None:
-                self.session = aiohttp.ClientSession(loop=self.loop)
-            img = await layer.overlay(background=img,
-                                      session=self.session,
-                                      image_memory=self.image_memory,
-                                      fonts=self.fonts)
+        class _CreateImage:
+            def __init__(_self, event):
+                _self.result = None
+                _self.event = event
 
-        resize_factor = 1
-        if 0 < max_size[0] < img.shape[1]:
-            resize_factor = max_size[0]/img.shape[1]
-        if 0 < max_size[1] < img.shape[0]:
-            resize_factor = min(resize_factor, max_size[1]/img.shape[0])
+            def create(_self):
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(_self._async_create())
 
-        if resize_factor < 1:
-            img = cv2.resize(img, (int(img.shape[1]*resize_factor), int(img.shape[0]*resize_factor)))
+            async def _async_create(_self):
+                img = None
+                for layer in layers:
+                    img = await layer.overlay(background=img,
+                                              image_memory=self.image_memory,
+                                              fonts=self.fonts)
 
-        is_success, buffer = cv2.imencode('.png', img)
-        io_buf = io.BytesIO(buffer)
-        return io_buf
+                resize_factor = 1
+                if 0 < max_size[0] < img.shape[1]:
+                    resize_factor = max_size[0] / img.shape[1]
+                if 0 < max_size[1] < img.shape[0]:
+                    resize_factor = min(resize_factor, max_size[1] / img.shape[0])
+
+                if resize_factor < 1:
+                    img = cv2.resize(img, (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor)))
+
+                is_success, buffer = cv2.imencode('.png', img)
+                _self.result = io.BytesIO(buffer)
+                _self.event.set()
+
+        e = AsyncEvent()
+        ci = _CreateImage(e)
+
+        threading.Thread(target=ci.create).start()
+        await e.wait()
+
+        return ci.result

@@ -8,7 +8,6 @@ def main():
     import time
     import os
     import asyncio
-    import aiohttp
     from helpers import tools
 
     SHOW_IMAGES = True
@@ -23,8 +22,7 @@ def main():
 
     class Tests:
         def __init__(self):
-            self.image_creator = ImageCreator(loop=None,
-                                              fonts=settings.FONTS,
+            self.image_creator = ImageCreator(fonts=settings.FONTS,
                                               load_memory=settings.IMAGES_LOAD_MEMORY)
 
         # test helper
