@@ -169,7 +169,8 @@ def main():
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_left_vc(m, 60 * 60 * 1)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']) == 60
+            return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']
+                                                                                      ) == 60 and user['joined'] == -1
 
         # test bot leave vc
         async def test_9_bot_leave_voice_channel(self):
@@ -304,6 +305,33 @@ def main():
             user = await self.bot.get_user(m)
 
             return self.bot.get_lvl(user['lvl']) == -2 and self.bot.lvl_get_xp(user['lvl']) == 50
+
+        # test update all voice users
+        async def test_20_update_all_voice_users(self):
+            mbs = [MemberDummy(x) for x in range(10)]
+            [await self.bot.member_joined_vc(x, 0) for x in mbs]
+
+            self.bot.voice_xp_per_minute = 1
+
+            t = 60 * 60 * 1
+
+            await self.bot.update_all_voice_users(t)
+            users = [await self.bot.get_user(x) for x in mbs]
+            return False not in map(lambda x: float_match(x['lvl'], 1.6) and x['joined'] == t, users)
+
+        # test update all voice users
+        async def test_21_all_blacklisted_users_no_voice_update(self):
+            mbs = [MemberDummy(x) for x in range(5)]
+            [await self.bot.member_joined_vc(x, 0) for x in mbs]
+            [await self.bot.member_set_blacklist(x, True) for x in mbs]
+
+            self.bot.voice_xp_per_minute = 1
+
+            t = 60 * 60 * 1
+
+            await self.bot.update_all_voice_users(t)
+            users = [await self.bot.get_user(x) for x in mbs]
+            return False not in map(lambda x: float_match(x['lvl'], 1.0) and x['joined'] == t, users)
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):

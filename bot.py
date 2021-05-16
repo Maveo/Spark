@@ -16,6 +16,7 @@ class DiscordBot:
                  db_conn,
                  message_give_xp=0.5,
                  voice_xp_per_minute=1,
+                 update_voice_xp_interval=-1,
                  command_prefix='>',
                  description='',
                  missing_permission_responses=('Missing Permission',),
@@ -34,6 +35,8 @@ class DiscordBot:
         self.print_logging = print_logging
         self.message_give_xp = message_give_xp
         self.voice_xp_per_minute = voice_xp_per_minute
+
+        self.update_voice_xp_interval = update_voice_xp_interval
 
         self.missing_permission_responses = missing_permission_responses
         self.command_not_found_responses = command_not_found_responses
@@ -132,6 +135,13 @@ class DiscordBot:
         self.image_creator = image_creator
 
     def run(self, token):
+        async def _update_vc_xp():
+            if self.update_voice_xp_interval > 0:
+                while True:
+                    await asyncio.sleep(self.update_voice_xp_interval)
+                    await self.update_all_voice_users(time.time())
+
+        self.bot.loop.create_task(_update_vc_xp())
         self.bot.run(token)
 
     def lprint(self, *args):
@@ -232,6 +242,26 @@ class DiscordBot:
         for i in range(len(users)):
             users[i]['rank'] = i + 1
         return users
+
+    async def update_all_voice_users(self, ctime):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM users WHERE joined >= 0')
+        users = cur.fetchall()
+        for user in users:
+            if not bool(user['blacklist']):
+                xp_earned = self.xp_for((ctime - user['joined']) * self.voice_xp_per_minute / 60, user['xp_multiplier'])
+                user['lvl'] += self.lvl_xp_add(xp_earned, user['lvl'])
+
+        cur.executemany('INSERT OR REPLACE INTO users(uid, gid, lvl, xp_multiplier, joined, blacklist)'
+                        'VALUES(?, ?, ?, ?, ?, ?);',
+                        map(lambda x: (x['uid'],
+                                       x['gid'],
+                                       x['lvl'],
+                                       x['xp_multiplier'],
+                                       ctime,
+                                       x['blacklist'],), users))
+
+        self.db_conn.commit()
 
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
@@ -381,6 +411,7 @@ class DiscordBot:
             xp_earned = self.xp_for((t - data['joined']) * self.voice_xp_per_minute / 60, xp_multiplier)
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
             await self.member_set_lvl_xp(member, data['lvl'])
+            await self.update_user(member, {'joined': -1})
 
     async def member_message_xp(self, member):
         await self.check_member(member)
@@ -805,6 +836,7 @@ if __name__ == '__main__':
     b = DiscordBot(con,
                    message_give_xp=MESSAGE_XP,
                    voice_xp_per_minute=VOICE_XP_PER_MINUTE,
+                   update_voice_xp_interval=UPDATE_VOICE_XP_INTERVAL,
                    command_prefix=COMMAND_PREFIX,
                    description=DESCRIPTION,
                    missing_permission_responses=MISSING_PERMISSIONS_RESPONSES,
