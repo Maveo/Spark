@@ -183,6 +183,8 @@ class AlignLayer:
     def get_kwarg(self, key, default=None):
         if default is not None and key not in self.kwargs:
             return default
+        if key not in self.kwargs:
+            raise Exception('"{}" was not found in {}'.format(key, type(self).__name__))
         self.used_kwargs.append(key)
         return self.kwargs[key]
 
@@ -199,7 +201,7 @@ class AlignLayer:
             return
         for key in self.kwargs.keys():
             if key not in self.used_kwargs:
-                warnings.warn(type(self).__name__ + ' "' + key + '" was not used')
+                warnings.warn('{} "{}" was not used'.format(type(self).__name__, key))
 
     async def create(self, **kwargs):
         raise Exception('Raw usage of Align Layer forbidden!')
@@ -316,11 +318,10 @@ class WebImageLayer(ImageLayer):
 class TextLayer(ColoredLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.font = self.get_kwarg('font')
+        self.font = self.get_kwarg('font', 'default')
         self.font_size = self.get_kwarg('font_size', 16)
         self.text = self.get_kwarg('text')
         self.text = unicodedata.normalize('NFKC', self.text)
-        self.max_size = self.get_kwarg('max_size')
         super()._init_finished()
 
     async def create(self, **kwargs):
@@ -437,7 +438,9 @@ class ImageCreator:
         self.loop = loop
         self.session = None
 
-        self.fonts = {}
+        self.fonts = {
+            'default': pygame.freetype.SysFont(pygame.freetype.get_default_font(), 16)
+        }
         if fonts is not None:
             for k, v in fonts.items():
                 self.fonts[k] = pygame.freetype.Font(v)

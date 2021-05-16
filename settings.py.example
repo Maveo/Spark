@@ -2,14 +2,18 @@ from helpers.imgtools import *
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
-APPLICATION_ID = '839587710028611585'
+APPLICATION_ID = ''
 TOKEN = ''
-PREFIX = '>'
+COMMAND_PREFIX = '>'
 DESCRIPTION = 'This is a KGS501 Productions bot!'
 PRINT_LOGGING = True
 
+MESSAGE_XP = 0.5
+VOICE_XP_PER_MINUTE = 1
 
-RESPONSES_COMMAND_NOT_FOUND = [
+USE_SLASH_COMMANDS = False
+
+COMMAND_NOT_FOUND_RESPONSES = [
     'Kenn ich nicht, den command',
     '??',
     'Kann grad nicht, sorry...',
@@ -29,7 +33,7 @@ RESPONSES_COMMAND_NOT_FOUND = [
     'Dafür bin ich nicht der richtige Ansprechpartner',
 ]
 
-RESPONSES_MISSING_PERMISSIONS = [
+MISSING_PERMISSIONS_RESPONSES = [
     'Das darfst du leider nicht schreiben',
     'Lass mich kurz nachgucken... Aha! Ne haste keine Rechte zu',
     'Mach nen Abgang du Hobby Hacker!',

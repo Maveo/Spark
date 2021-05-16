@@ -1,33 +1,83 @@
-import asyncio
-
-from settings import *
-
 import discord
 from discord.ext import commands
 from discord.utils import get
 
-from tinydb import TinyDB, Query, operations
-
 from helpers import tools, imgtools
 
+import asyncio
+import types
 import os
 import time
 import random
 
-query = Query()
-
 
 class DiscordBot:
-    def __init__(self, user_db, lvlsys_db, print_logging=False):
+    def __init__(self,
+                 db_conn,
+                 message_give_xp=0.5,
+                 voice_xp_per_minute=1,
+                 command_prefix='>',
+                 description='',
+                 missing_permission_responses=('Missing Permission',),
+                 command_not_found_responses=('Command not found',),
+                 image_creator=None,
+                 profile_image=None,
+                 level_up_image=None,
+                 rank_up_image=None,
+                 ranking_image=None,
+                 print_logging=False,
+                 use_slash_commands=False
+                 ):
         intents = discord.Intents.default()
         intents.members = True
 
         self.print_logging = print_logging
+        self.message_give_xp = message_give_xp
+        self.voice_xp_per_minute = voice_xp_per_minute
 
-        self.user_db = user_db
-        self.lvlsys_db = lvlsys_db
+        self.missing_permission_responses = missing_permission_responses
+        self.command_not_found_responses = command_not_found_responses
 
-        self.bot = commands.Bot(command_prefix=PREFIX, description=DESCRIPTION, intents=intents, help_command=None)
+        self.profile_image = profile_image
+        self.level_up_image = level_up_image
+        self.rank_up_image = rank_up_image
+        self.ranking_image = ranking_image
+
+        self.db_conn = db_conn
+
+        def _dict_factory(cursor, row):
+            d = {}
+            for idx, col in enumerate(cursor.description):
+                d[col[0]] = row[idx]
+            return d
+
+        self.db_conn.row_factory = _dict_factory
+        cur = self.db_conn.cursor()
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                uid INTEGER PRIMARY KEY,
+                gid INTEGER NOT NULL,
+                lvl REAL NOT NULL,
+                xp_multiplier REAL NOT NULL,
+                joined INTEGER NOT NULL,
+                blacklist INTEGER NOT NULL
+            );''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS lvlsys (
+                lsid INTEGER PRIMARY KEY,
+                gid INTEGER NOT NULL,
+                lvl INTEGER NOT NULL,
+                rid INTEGER NOT NULL
+            );''')
+
+        self.db_conn.commit()
+
+        self.bot = commands.Bot(command_prefix=command_prefix,
+                                description=description,
+                                intents=intents,
+                                help_command=None)
 
         self.events = self.Events(self)
         self.commands = self.Commands(self)
@@ -35,7 +85,51 @@ class DiscordBot:
         self.bot.add_cog(self.events)
         self.bot.add_cog(self.commands)
 
-        self.image_creator = imgtools.ImageCreator(loop=self.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY)
+        if use_slash_commands:
+            from discord_slash import cog_ext, SlashCommand, SlashContext
+            from discord_slash.utils.manage_commands import create_option
+
+            self.slash = SlashCommand(self.bot, sync_commands=True)
+
+            def _slash_callback(command):
+                async def call(ctx: SlashContext, args=''):
+                    async def _none(*_):
+                        pass
+
+                    class _Message:
+                        def __init__(self, author=None):
+                            self.author = author
+                            self.guild = author.guild
+
+                    ctx.trigger_typing = types.MethodType(_none, ctx)
+                    ctx.message = _Message(author=ctx.author)
+                    cargs = [ctx] + ([] if args == '' else args.split(' '))
+                    try:
+                        if await command.can_run(ctx):
+                            await command.callback(self.commands, *cargs)
+                    except commands.CommandError:
+                        await ctx.send(embed=discord.Embed(description=random.choice(self.missing_permission_responses),
+                                                           color=discord.Color.red()))
+
+                return call
+
+            for c in self.bot.commands:
+                self.slash.add_slash_command(cmd=_slash_callback(c),
+                                             name=c.name,
+                                             description=c.help,
+                                             options=[
+                                                 create_option(
+                                                     name="args",
+                                                     description="Arguments",
+                                                     option_type=3,
+                                                     required=False
+                                                 )
+                                             ])
+
+        self.image_creator = image_creator
+
+    def set_image_creator(self, image_creator):
+        self.image_creator = image_creator
 
     def run(self, token):
         self.bot.run(token)
@@ -45,15 +139,34 @@ class DiscordBot:
             print(*args)
 
     @staticmethod
-    def max_xp_for(lvl):
-        return max(100, (lvl - 1) * 10 + 100)
+    def get_lvl(lvl):
+        if lvl < 0:
+            return int(lvl) - 1
+        else:
+            return int(lvl)
 
     @staticmethod
-    def xp_for(ctime, boost):
-        return round(ctime * boost, 2)
+    def max_xp_for(lvl):
+        return max(100, DiscordBot.get_lvl(lvl) * 10 + 90)
+
+    @staticmethod
+    def xp_for(xp, boost):
+        return round(xp * boost, 2)
+
+    @staticmethod
+    def lvl_xp_add(xp, lvl):
+        return xp / DiscordBot.max_xp_for(lvl)
+
+    @staticmethod
+    def lvl_get_xp(lvl):
+        return int((abs(lvl) % 1) * DiscordBot.max_xp_for(lvl))
 
     @staticmethod
     async def search_member(ctx, search):
+        if search[:2] == '<@' and search[-1] == '>':
+            search = search[2:-1]
+            if search[0] == '!':
+                search = search[1:]
         if search.isnumeric():
             member = get(ctx.message.guild.members, id=int(search))
             if member is not None and not member.bot:
@@ -67,45 +180,55 @@ class DiscordBot:
         return None
 
     async def get_users(self, guild):
-        return self.user_db.get(query.gid == guild.id)['users']
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
+        return cur.fetchall()
+
+    async def check_member(self, member):
+        if not member.bot:
+            user = await self.get_user(member)
+            if user is None:
+                await self.update_user(member, {
+                    'lvl': 1.0,
+                    'xp_multiplier': 1.0,
+                    'blacklist': False
+                })
 
     async def get_user(self, member):
-        data = await self.get_users(member.guild)
-        return data[str(member.id)]
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM users WHERE uid=?', (member.id,))
+        return cur.fetchone()
 
     async def update_user(self, member, data):
-        users_data = await self.get_users(member.guild)
-        str_uid = str(member.id)
-        if str_uid not in users_data:
-            users_data[str_uid] = {}
+        user = await self.get_user(member)
+        if user is None:
+            user = {
+                'lvl': 1.0,
+                'xp_multiplier': 1.0,
+                'blacklist': False,
+                'joined': -1
+            }
         for k, v in data.items():
-            users_data[str_uid][k] = v
-        self.user_db.update(
-            operations.set('users', users_data),
-            query.gid == member.guild.id
-        )
+            user[k] = v
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT OR REPLACE INTO users(uid, gid, lvl, xp_multiplier, joined, blacklist)'
+                    'VALUES(?, ?, ?, ?, ?, ?);',
+                    (member.id, member.guild.id, user['lvl'], user['xp_multiplier'], user['joined'], user['blacklist'],
+                     ))
+        self.db_conn.commit()
 
     async def remove_member(self, member):
-        users_data = await self.get_users(member.guild)
-        str_uid = str(member.id)
-        if str_uid in users_data:
-            del users_data[str_uid]
-        self.user_db.update(
-            operations.set('users', users_data),
-            query.gid == member.guild.id
-        )
-
-    async def check_guild(self, guild):
-        if not self.user_db.contains(query.gid == guild.id):
-            self.user_db.insert({'gid': guild.id, 'users': {}})
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM users WHERE uid=?', (member.id,))
+        self.db_conn.commit()
 
     async def get_blacklisted_users(self, guild):
         users = await self.get_users(guild)
-        return filter(lambda x: x['blacklist'], users.values())
+        return filter(lambda x: bool(x['blacklist']), users)
 
     async def get_ranking(self, guild):
         users = await self.get_users(guild)
-        users = sorted(users.values(), key=lambda x: (x['lvl'], x['xp']), reverse=True)
+        users = sorted(users, key=lambda x: x['lvl'], reverse=True)
         for i in range(len(users)):
             users[i]['rank'] = i + 1
         return users
@@ -125,7 +248,7 @@ class DiscordBot:
             name = member.nick
 
         data_xp_multiplier = data['xp_multiplier']
-        data_xp = int(data['xp'])
+        data_xp = int(self.lvl_get_xp(data['lvl']))
         data_max_xp = int(self.max_xp_for(data['lvl']))
         data_percentage = data_xp / data_max_xp
         data_rank = await self.get_ranking_rank(member)
@@ -133,7 +256,7 @@ class DiscordBot:
         data_obj = {'member': member,
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
-                    'lvl': data['lvl'],
+                    'lvl': self.get_lvl(data['lvl']),
                     'xp': data_xp,
                     'max_xp': data_max_xp,
                     'xp_percentage': data_percentage,
@@ -141,7 +264,7 @@ class DiscordBot:
                     'xp_multiplier': data_xp_multiplier,
                     'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        img_buf = await self.image_creator.create(PROFILE_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.profile_image(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
@@ -150,12 +273,12 @@ class DiscordBot:
             name = member.nick
 
         data_obj = {'member': member,
-                    'old_lvl': old_lvl,
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
-                    'new_lvl': new_lvl,
                     'name': name}
 
-        img_buf = await self.image_creator.create(LEVEL_UP_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.level_up_image(data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
@@ -164,15 +287,15 @@ class DiscordBot:
             name = member.nick
 
         data_obj = {'member': member,
-                    'old_lvl': old_lvl,
-                    'new_lvl': new_lvl,
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
                     'old_role': old_role,
                     'new_role': new_role,
                     'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
                     'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
                     'name': name}
 
-        img_buf = await self.image_creator.create(RANK_UP_IMAGE(data_obj))
+        img_buf = await self.image_creator.create(self.rank_up_image(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):
@@ -186,53 +309,40 @@ class DiscordBot:
                 ranking_obj.append({
                     'member': member,
                     'rank': user['rank'],
-                    'lvl': user['lvl'],
+                    'lvl': self.get_lvl(user['lvl']),
                     'name': name,
                     'color': imgtools.rgb_to_bgr(member.color.to_rgb())
                 })
 
-        img_buf = await self.image_creator.create(RANKGING_IMAGE(ranking_obj), max_size=(-1, 8000))
+        img_buf = await self.image_creator.create(self.ranking_image(ranking_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
         return await self.create_ranking_image(member, ranking[:10])
 
-    async def check_member(self, member):
-        await self.check_guild(member.guild)
-        users = await self.get_users(member.guild)
-        if not member.bot and str(member.id) not in users:
-            await self.update_user(member,
-                                   {'uid': member.id, 'lvl': 1, 'xp': 0, 'xp_multiplier': 1, 'blacklist': False})
-
-    async def member_set_lvl_xp(self, member, lvl, xp=0):
+    async def member_set_lvl_xp(self, member, lvl):
         if not member.bot:
-            previous_level = int(lvl)
+            previous_level = self.get_lvl(lvl)
 
-            while xp > self.max_xp_for(lvl):
-                xp -= self.max_xp_for(lvl)
-                lvl += 1
-            while xp < 0:
-                lvl -= 1
-                xp += self.max_xp_for(lvl)
+            await self.update_user(member, {'lvl': lvl})
 
-            await self.update_user(member, {'xp': xp, 'lvl': lvl})
-
+            ilvl = self.get_lvl(lvl)
             previous_role = member.top_role
-            await self.member_role_manage(member, lvl)
+            await self.member_role_manage(member, ilvl)
 
-            if previous_level < lvl:
+            if previous_level < ilvl:
                 if previous_role != member.top_role:
                     return await member.guild.system_channel.send(
                         file=await self.member_create_rank_up_image(member,
                                                                     previous_level,
-                                                                    lvl,
+                                                                    ilvl,
                                                                     previous_role,
                                                                     member.top_role))
                 await member.guild.system_channel.send(
                     file=await self.member_create_lvl_image(member,
                                                             previous_level,
-                                                            lvl))
+                                                            ilvl))
 
     async def update_member(self, member):
         await self.check_member(member)
@@ -264,27 +374,23 @@ class DiscordBot:
     async def member_left_vc(self, member, t):
         await self.check_member(member)
         data = await self.get_user(member)
-        if 'blacklist' in data and data['blacklist'] is True:
+        if bool(data['blacklist']) is True:
             return
-        xp_multiplier = 1
-        if 'xp_multiplier' in data:
-            xp_multiplier = data['xp_multiplier']
-        if 'joined' in data:
-            xp_earned = self.xp_for((t - data['joined']) / 60, xp_multiplier)
-            data['xp'] += xp_earned
-            await self.member_set_lvl_xp(member, data['lvl'], data['xp'])
+        xp_multiplier = data['xp_multiplier']
+        if data['joined'] >= 0:
+            xp_earned = self.xp_for((t - data['joined']) * self.voice_xp_per_minute / 60, xp_multiplier)
+            data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
+            await self.member_set_lvl_xp(member, data['lvl'])
 
     async def member_message_xp(self, member):
         await self.check_member(member)
         data = await self.get_user(member)
-        if 'blacklist' in data and data['blacklist'] is True:
+        if bool(data['blacklist']) is True:
             return
-        xp_multiplier = 1
-        if 'xp_multiplier' in data:
-            xp_multiplier = data['xp_multiplier']
-        xp_earned = self.xp_for(2.5, xp_multiplier)
-        data['xp'] += xp_earned
-        await self.member_set_lvl_xp(member, data['lvl'], data['xp'])
+        xp_multiplier = data['xp_multiplier']
+        xp_earned = self.xp_for(self.message_give_xp, xp_multiplier)
+        data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
+        await self.member_set_lvl_xp(member, data['lvl'])
 
     @staticmethod
     async def give_role(guild, member, role_id):
@@ -304,12 +410,8 @@ class DiscordBot:
                     return await member.remove_roles(role)
 
     async def member_role_manage(self, member, lvl):
-        data = self.lvlsys_db.get(query.gid == member.guild.id)
-        if data is None:
-            data = {}
-        if 'lvlsys' not in data:
-            data['lvlsys'] = {}
-        lvlsys_list = sorted(map(lambda x: (int(x[0]), x[1]), data['lvlsys'].items()), key=lambda x: x[0])
+        data = await self.lvlsys_get(member.guild.id)
+        lvlsys_list = sorted(map(lambda x: (int(x['lvl']), x['rid']), data), key=lambda x: x[0])
         role_to_give = None
         roles_to_remove = []
         for i in range(len(lvlsys_list)):
@@ -330,38 +432,32 @@ class DiscordBot:
             if role != role_to_give:
                 await self.remove_role(member.guild, member, role)
 
+    async def lvlsys_get(self, guild_id):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM lvlsys WHERE gid=?', (guild_id,))
+        return cur.fetchall()
+
     async def lvlsys_set(self, guild_id, role_id, lvl):
-        lvl = str(lvl)
-        data = self.lvlsys_db.get(query.gid == guild_id)
-        if data is None:
-            self.lvlsys_db.insert({'gid': guild_id, 'lvlsys': {lvl: role_id}})
-        else:
-            if 'lvlsys' not in data:
-                data['lvlsys'] = {}
-            data['lvlsys'][lvl] = role_id
-            self.lvlsys_db.update(operations.set('lvlsys', data['lvlsys']), query.gid == guild_id)
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT OR REPLACE INTO lvlsys(gid, lvl, rid)'
+                    'VALUES(?, ?, ?);',
+                    (guild_id, lvl, role_id,))
+        self.db_conn.commit()
 
     async def lvlsys_remove(self, guild_id, lvl):
-        lvl = str(lvl)
-        data = self.lvlsys_db.get(query.gid == guild_id)
-        if data is None:
-            self.lvlsys_db.insert({'gid': guild_id, 'lvlsys': {}})
-        else:
-            if 'lvlsys' not in data:
-                data['lvlsys'] = {}
-            if lvl in data['lvlsys']:
-                del data['lvlsys'][lvl]
-            self.lvlsys_db.update(operations.set('lvlsys', data['lvlsys']), query.gid == guild_id)
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM lvlsys WHERE gid=? AND lvl=?', (guild_id, lvl,))
+        self.db_conn.commit()
 
     async def lvlsys_get_embed(self, guild):
         embed = discord.Embed(title='Error',
                               description='level system empty for this server',
                               color=discord.Color.red())
 
-        data = self.lvlsys_db.get(query.gid == guild.id)
-        if data is not None and 'lvlsys' in data:
+        data = await self.lvlsys_get(guild.id)
+        if data is not None and len(data) > 0:
             description = []
-            for lvl, role_id in reversed(sorted(data['lvlsys'].items(), key=lambda x: x[0])):
+            for lvl, role_id in reversed(sorted(map(lambda x: (x['lvl'], x['rid']), data), key=lambda x: x[0])):
                 role = get(guild.roles, id=role_id)
                 if role is None:
                     await self.lvlsys_remove(guild.id, lvl)
@@ -471,7 +567,7 @@ class DiscordBot:
             async def __setlvl(m):
                 try:
                     lvl = int(args[0])
-                    await self.parent.member_set_lvl_xp(m, lvl, xp=0)
+                    await self.parent.member_set_lvl_xp(m, lvl)
                     await ctx.send(embed=discord.Embed(title='Success',
                                                        description='Level was set successfully!',
                                                        color=discord.Color.green()))
@@ -603,7 +699,7 @@ class DiscordBot:
                           aliases=['cf', 'coin'],
                           description='Toss a coin to your Witcher!',
                           help=' - Toss a coin to your Witcher!')
-        async def _coinflip(self, ctx):
+        async def _coinflip(self, ctx, *args):
             if random.randint(0, 1) == 0:
                 res = 'kopf'
             else:
@@ -632,7 +728,7 @@ class DiscordBot:
                           aliases=['h'],
                           description="gives you help",
                           help=' - Ist offenbar schon bekannt...')
-        async def _help(self, ctx):
+        async def _help(self, ctx, *args):
             embed = discord.Embed(title='Help',
                                   description='',
                                   color=discord.Color.gold())
@@ -652,10 +748,10 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
             if isinstance(error, commands.CommandNotFound):
-                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_COMMAND_NOT_FOUND),
+                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.command_not_found_responses),
                                                    color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(embed=discord.Embed(description=random.choice(RESPONSES_MISSING_PERMISSIONS),
+                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.missing_permission_responses),
                                                    color=discord.Color.red()))
             else:
                 self.parent.lprint(error)
@@ -666,7 +762,8 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
-            await self.parent.update_member(member)
+            if not member.bot:
+                await self.parent.update_member(member)
             # send a private message on join
             # await member.send('Private message')
 
@@ -684,19 +781,42 @@ class DiscordBot:
             if member.bot:
                 return
             t = round(time.time(), 2)
-            if before.channel is None and after.channel is not None:
-                # when joining
-                await self.parent.member_joined_vc(member, t)
-                self.parent.lprint(member, 'joined', after.channel)
-            elif before.channel is not None and after.channel is None:
+
+            if before.channel is not None:
                 # when leaving
-                await self.parent.member_left_vc(member, t)
+                if member.guild.afk_channel is None or before.channel.id != member.guild.afk_channel.id:
+                    await self.parent.member_left_vc(member, t)
                 self.parent.lprint(member, 'left', before.channel)
-            else:
-                # when moving
-                self.parent.lprint(member, 'moved from', before.channel, 'to', after.channel)
+
+            if after.channel is not None:
+                # when joining
+                if member.guild.afk_channel is None or after.channel.id != member.guild.afk_channel.id:
+                    await self.parent.member_joined_vc(member, t)
+                self.parent.lprint(member, 'joined', after.channel)
 
 
 if __name__ == '__main__':
-    b = DiscordBot(TinyDB('dbs/users.json'), TinyDB('dbs/lvlsys.json'), PRINT_LOGGING)
+    from settings import *
+    import sqlite3
+
+    if not os.path.exists('dbs'):
+        os.mkdir('dbs')
+    con = sqlite3.connect('dbs/bot.db')
+    b = DiscordBot(con,
+                   message_give_xp=MESSAGE_XP,
+                   voice_xp_per_minute=VOICE_XP_PER_MINUTE,
+                   command_prefix=COMMAND_PREFIX,
+                   description=DESCRIPTION,
+                   missing_permission_responses=MISSING_PERMISSIONS_RESPONSES,
+                   command_not_found_responses=COMMAND_NOT_FOUND_RESPONSES,
+                   profile_image=PROFILE_IMAGE,
+                   level_up_image=LEVEL_UP_IMAGE,
+                   rank_up_image=RANK_UP_IMAGE,
+                   ranking_image=RANKGING_IMAGE,
+                   print_logging=PRINT_LOGGING,
+                   use_slash_commands=USE_SLASH_COMMANDS
+                   )
+
+    b.set_image_creator(imgtools.ImageCreator(loop=b.bot.loop, fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY))
+
     b.run(TOKEN)
