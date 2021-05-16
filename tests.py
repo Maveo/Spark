@@ -1,3 +1,6 @@
+import types
+
+
 class ColorDummy:
     def __init__(self, rgb=(0, 255, 0)):
         self.rgb = rgb
@@ -7,9 +10,11 @@ class ColorDummy:
 
 
 class RoleDummy:
-    def __init__(self, uid=0, name='✅DummyRole', color=ColorDummy()):
+    def __init__(self, uid=0, name='✅DummyRole', color=None):
         self.id = uid
         self.name = name
+        if color is None:
+            color = ColorDummy()
         self.color = color
 
 
@@ -23,12 +28,14 @@ class ChannelDummy:
 
 
 class GuildDummy:
-    def __init__(self, uid=0, roles=None, system_channel=ChannelDummy()):
+    def __init__(self, uid=0, roles=None, system_channel=None):
         self.id = uid
         self.roles = roles
         self.members = []
         if self.roles is None:
             self.roles = []
+        if system_channel is None:
+            system_channel = ChannelDummy()
         self.system_channel = system_channel
 
     def member_join(self, member):
@@ -36,13 +43,15 @@ class GuildDummy:
 
 
 class MemberDummy:
-    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=GuildDummy(0), bot=False):
+    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False):
         self.id = uid
         self.name = name
         self.nick = nick
         self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
         self.roles = {}
         self.top_role = RoleDummy(0)
+        if guild is None:
+            guild = GuildDummy()
         self.guild = guild
         self.guild.member_join(self)
         self.bot = bot
@@ -64,8 +73,12 @@ class MemberDummy:
 
 
 class MessageDummy:
-    def __init__(self, author=MemberDummy(0), guild=GuildDummy(0)):
+    def __init__(self, author=None, guild=None):
+        if author is None:
+            author = MemberDummy()
         self.author = author
+        if guild is None:
+            guild = GuildDummy()
         self.guild = guild
 
 
@@ -191,7 +204,8 @@ def main():
             await self.bot.member_joined_vc(m, g.id)
             await self.bot.member_left_vc(m, 60 * 60 * 62)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(g.system_channel.messages) == 1
+            return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(
+                g.system_channel.messages) == 1
 
         # test set lvlsys point
         async def test_11_set_lvlsys_point(self):
@@ -309,16 +323,20 @@ def main():
 
         # test update all voice users
         async def test_20_update_all_voice_users(self):
-            mbs = [MemberDummy(x) for x in range(10)]
+            g = GuildDummy(uid=0)
+
+            mbs = [MemberDummy(x, guild=g) for x in range(5)]
             [await self.bot.member_joined_vc(x, 0) for x in mbs]
 
             self.bot.voice_xp_per_minute = 1
 
-            t = 60 * 60 * 1
+            t = 60 * 60 * 6
+
+            self.bot.bot.get_guild = types.MethodType(lambda *args: g, self.bot.bot)
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
-            return False not in map(lambda x: float_match(x['lvl'], 1.6) and x['joined'] == t, users)
+            return False not in map(lambda x: float_match(x['lvl'], 1.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
 
         # test update all voice users
         async def test_21_all_blacklisted_users_no_voice_update(self):

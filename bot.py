@@ -250,7 +250,16 @@ class DiscordBot:
         for user in users:
             if not bool(user['blacklist']):
                 xp_earned = self.xp_for((ctime - user['joined']) * self.voice_xp_per_minute / 60, user['xp_multiplier'])
+
+                ilvl = self.get_lvl(user['lvl'])
+
                 user['lvl'] += self.lvl_xp_add(xp_earned, user['lvl'])
+
+                guild = self.bot.get_guild(user['gid'])
+                member = get(guild.members, id=int(user['uid']))
+                previous_role = member.top_role
+                await self.member_role_manage(member, ilvl)
+                await self.check_send_rank_level_image(member, user['lvl'], ilvl, previous_role)
 
         cur.executemany('INSERT OR REPLACE INTO users(uid, gid, lvl, xp_multiplier, joined, blacklist)'
                         'VALUES(?, ?, ?, ?, ?, ?);',
