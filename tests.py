@@ -262,7 +262,6 @@ def main():
             lvl2 = 1
             lvl2 += self.bot.lvl_xp_add(2500, lvl2)
             lvl2 += self.bot.lvl_xp_add(2500, lvl2)
-            print(lvl1, lvl2)
             return float_match(lvl1, lvl2)
 
         # test xp boost
@@ -272,8 +271,21 @@ def main():
             # print(lvl1, lvl2)
             # return float_match(lvl1, lvl2)
 
+        # test lvlsys embed
+        async def test_801_lvlsys_get_embed(self):
+            roles = [
+                RoleDummy(1),
+                RoleDummy(10),
+                RoleDummy(5),
+                RoleDummy(3),
+            ]
+            [await self.bot.lvlsys_set(0, role.id, role.id) for role in roles]
+            g = GuildDummy(uid=0, roles=roles)
+            embed = await self.bot.lvlsys_get_embed(g)
+            return embed.description.split('\n')[0] == 'Level: 10 | Role: ✅DummyRole | ID: 10'
+
         # test profile image creation
-        async def test_996_profile_image(self):
+        async def test_901_profile_image(self):
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_set_lvl_xp(m, 5.5)
@@ -284,7 +296,7 @@ def main():
             return True
 
         # test level up image creation
-        async def test_997_level_up_image(self):
+        async def test_902_level_up_image(self):
             m = MemberDummy()
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -293,7 +305,7 @@ def main():
             return True
 
         # test rank up image creation
-        async def test_998_rank_up_image(self):
+        async def test_903_rank_up_image(self):
             m = MemberDummy()
             r1 = RoleDummy()
             r2 = RoleDummy()
@@ -304,7 +316,7 @@ def main():
             return True
 
         # test leaderboard image creation
-        async def test_999_leaderboard_image(self):
+        async def test_904_leaderboard_image(self):
             g = GuildDummy()
             m = [MemberDummy(x, guild=g) for x in range(10)]
             [await self.bot.check_member(x) for x in m]
