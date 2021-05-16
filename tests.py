@@ -42,8 +42,15 @@ class GuildDummy:
         self.members.append(member)
 
 
+class VoiceDummy:
+    def __init__(self, channel=None):
+        if channel is None:
+            channel = ChannelDummy()
+        self.channel = channel
+
+
 class MemberDummy:
-    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False):
+    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False, voice=None):
         self.id = uid
         self.name = name
         self.nick = nick
@@ -54,6 +61,9 @@ class MemberDummy:
             guild = GuildDummy()
         self.guild = guild
         self.guild.member_join(self)
+        if voice is None:
+            voice = VoiceDummy()
+        self.voice = voice
         self.bot = bot
         self.color = ColorDummy()
         self.messages = []
