@@ -183,14 +183,15 @@ def main():
 
         # test user leveling
         async def test_10_leveling(self):
-            m = MemberDummy()
+            g = GuildDummy()
+            m = MemberDummy(guild=g)
 
             self.bot.voice_xp_per_minute = 1
 
-            await self.bot.member_joined_vc(m, 0)
+            await self.bot.member_joined_vc(m, g.id)
             await self.bot.member_left_vc(m, 60 * 60 * 62)
             user = await self.bot.get_user(m)
-            return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94
+            return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(g.system_channel.messages) == 1
 
         # test set lvlsys point
         async def test_11_set_lvlsys_point(self):
