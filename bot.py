@@ -196,7 +196,7 @@ class DiscordBot:
 
     async def get_user(self, member):
         cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM users WHERE uid=?', (member.id,))
+        cur.execute('SELECT * FROM users WHERE uid=? AND gid=?', (member.id, member.guild.id,))
         return cur.fetchone()
 
     async def update_user(self, member, data):
@@ -219,7 +219,7 @@ class DiscordBot:
 
     async def remove_member(self, member):
         cur = self.db_conn.cursor()
-        cur.execute('DELETE FROM users WHERE uid=?', (member.id,))
+        cur.execute('DELETE FROM users WHERE uid=? AND gid=?', (member.id, member.guild.id,))
         self.db_conn.commit()
 
     async def get_blacklisted_users(self, guild):
