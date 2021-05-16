@@ -163,6 +163,10 @@ class DiscordBot:
 
     @staticmethod
     async def search_member(ctx, search):
+        if search[:2] == '<@' and search[-1] == '>':
+            search = search[2:-1]
+            if search[0] == '!':
+                search = search[1:]
         if search.isnumeric():
             member = get(ctx.message.guild.members, id=int(search))
             if member is not None and not member.bot:
