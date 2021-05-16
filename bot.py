@@ -759,6 +759,8 @@ class DiscordBot:
 
 
 if __name__ == '__main__':
+    if not os.path.exists('dbs'):
+        os.mkdir('dbs')
     con = sqlite3.connect('dbs/bot.db')
     b = DiscordBot(con, PRINT_LOGGING)
     b.run(TOKEN)
