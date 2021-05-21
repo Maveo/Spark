@@ -200,7 +200,6 @@ class DiscordBot:
             return channel
         return None
 
-
     async def get_users(self, guild):
         cur = self.db_conn.cursor()
         cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
