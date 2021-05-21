@@ -772,7 +772,7 @@ class DiscordBot:
             elif len(args) >= 1:
                 async def _clear_by(limit):
                     if len(args) == 1:
-                        await ctx.channel.purge(limit=limit+1, bulk=True)
+                        await ctx.channel.purge(limit=limit+1, bulk=False)
                         return await ctx.send(embed=discord.Embed(title='',
                                                                   description='Successfully deleted messages!',
                                                                   color=discord.Color.green()))
@@ -783,14 +783,12 @@ class DiscordBot:
                                                                   description='Channel "{}" was '
                                                                               'not found!'.format(search),
                                                                   color=discord.Color.red()))
-                    await channel.purge(limit=limit, bulk=True)
+                    await channel.purge(limit=limit, bulk=False)
                     return await ctx.send(embed=discord.Embed(title='',
                                                               description='Successfully deleted messages!',
                                                               color=discord.Color.green()))
 
-                if args[0] == 'all':
-                    return await _clear_by(999999999)  # TO-DO: don't use a number
-                elif args[0].isnumeric():
+                if args[0].isnumeric():
                     return await _clear_by(int(args[0]))
 
             await ctx.send(embed=discord.Embed(title='Error',
