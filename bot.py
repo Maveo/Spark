@@ -189,6 +189,18 @@ class DiscordBot:
             return member
         return None
 
+    @staticmethod
+    async def search_text_channel(ctx, search):
+        if search.isnumeric():
+            channel = get(ctx.author.guild.channels, name=int(search), type=discord.ChannelType.text)
+            if channel is not None:
+                return channel
+        channel = get(ctx.author.guild.channels, name=search, type=discord.ChannelType.text)
+        if channel is not None:
+            return channel
+        return None
+
+
     async def get_users(self, guild):
         cur = self.db_conn.cursor()
         cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
@@ -748,6 +760,44 @@ class DiscordBot:
                                                           color=discord.Color.red()))
 
             await ctx.send(embed=embed)
+
+        @commands.command(name='clear',
+                          aliases=[],
+                          description='Clear messages in a text channel!',
+                          help=' - Löscht Nachrichten in einem Text-Channel!')
+        @commands.has_permissions(administrator=True)
+        async def _clear(self, ctx, *args):
+            await ctx.trigger_typing()
+            if len(args) == 0:
+                pass
+            elif len(args) >= 1:
+                async def _clear_by(limit):
+                    if len(args) == 1:
+                        await ctx.channel.purge(limit=limit+1, bulk=True)
+                        return await ctx.send(embed=discord.Embed(title='',
+                                                                  description='Successfully deleted messages!',
+                                                                  color=discord.Color.green()))
+                    search = ' '.join(args[1:])
+                    channel = await self.parent.search_text_channel(ctx, search)
+                    if channel is None:
+                        return await ctx.send(embed=discord.Embed(title='',
+                                                                  description='Channel "{}" was '
+                                                                              'not found!'.format(search),
+                                                                  color=discord.Color.red()))
+                    await channel.purge(limit=limit, bulk=True)
+                    return await ctx.send(embed=discord.Embed(title='',
+                                                              description='Successfully deleted messages!',
+                                                              color=discord.Color.green()))
+
+                if args[0] == 'all':
+                    return await _clear_by(999999999)  # TO-DO: don't use a number
+                elif args[0].isnumeric():
+                    return await _clear_by(int(args[0]))
+
+            await ctx.send(embed=discord.Embed(title='Error',
+                                               description='Please provide a number of messages to delete or use '
+                                                           'clear all to delete all messages in this channel!',
+                                               color=discord.Color.red()))
 
         @commands.command(name='coinflip',
                           aliases=['cf', 'coin'],
