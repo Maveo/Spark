@@ -9,7 +9,7 @@ GLOBAL_SETTINGS = {
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
     'PRINT_LOGGING': True,
     'USE_SLASH_COMMANDS': False,
-    'UPDATE_VOICE_XP_INTERVAL': 1,  # in seconds
+    'UPDATE_VOICE_XP_INTERVAL': 30,  # in seconds
     'FONTS': {
         'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
         'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
