@@ -299,7 +299,7 @@ class DiscordBot:
         users = cur.fetchall()
 
         for user in users:
-            if bool(user['blacklist']):
+            if bool(user['blacklist']) is True:
                 user['joined'] = ctime
             else:
                 guild = self.bot.get_guild(user['gid'])
