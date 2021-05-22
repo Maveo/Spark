@@ -9,42 +9,32 @@ import types
 import os
 import time
 import random
+from ast import literal_eval
 
 
 class DiscordBot:
     def __init__(self,
                  db_conn,
-                 message_give_xp=0.5,
-                 voice_xp_per_minute=1,
                  update_voice_xp_interval=-1,
                  command_prefix='>',
                  description='',
-                 missing_permission_responses=('Missing Permission',),
-                 command_not_found_responses=('Command not found',),
+                 default_guild_settings=None,
                  image_creator=None,
-                 profile_image=None,
-                 level_up_image=None,
-                 rank_up_image=None,
-                 ranking_image=None,
                  print_logging=False,
                  use_slash_commands=False
                  ):
+
+        if default_guild_settings is None:
+            default_guild_settings = {}
+
+        self.default_guild_settings = default_guild_settings
+
         intents = discord.Intents.default()
         intents.members = True
 
         self.print_logging = print_logging
-        self.message_give_xp = message_give_xp
-        self.voice_xp_per_minute = voice_xp_per_minute
 
         self.update_voice_xp_interval = update_voice_xp_interval
-
-        self.missing_permission_responses = missing_permission_responses
-        self.command_not_found_responses = command_not_found_responses
-
-        self.profile_image = profile_image
-        self.level_up_image = level_up_image
-        self.rank_up_image = rank_up_image
-        self.ranking_image = ranking_image
 
         self.db_conn = db_conn
 
@@ -74,6 +64,15 @@ class DiscordBot:
                 lvl INTEGER NOT NULL,
                 rid INTEGER NOT NULL
             );''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+              gid INTEGER NOT NULL, 
+              skey TEXT NOT NULL, 
+              svalue TEXT NOT NULL, 
+              PRIMARY KEY (gid, skey)
+            );
+        ''')
 
         self.db_conn.commit()
 
@@ -111,7 +110,8 @@ class DiscordBot:
                         if await command.can_run(ctx):
                             await command.callback(self.commands, *cargs)
                     except commands.CommandError:
-                        await ctx.send(embed=discord.Embed(description=random.choice(self.missing_permission_responses),
+                        await ctx.send(embed=discord.Embed(description=random.choice(
+                            await self.get_setting(ctx.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
                                                            color=discord.Color.red()))
 
                 return call
@@ -215,6 +215,45 @@ class DiscordBot:
                     'blacklist': False
                 })
 
+    async def get_setting(self, guild_id, key):
+        if key not in self.default_guild_settings:
+            raise KeyError('Key "{}" not found in default guild settings!'.format(key))
+
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM settings WHERE gid=? AND skey=?', (guild_id, key,))
+        guild_setting = cur.fetchone()
+        if guild_setting is not None:
+            try:
+                # TO-DO: don't use literal eval
+                return type(self.default_guild_settings[key])(literal_eval(guild_setting['svalue']))
+            except TypeError or ValueError:
+                pass
+
+        return self.default_guild_settings[key]
+
+    async def get_settings(self, guild_id):
+        settings = {}
+        for key in self.default_guild_settings.keys():
+            settings[key] = await self.get_setting(guild_id, key)
+        return settings
+
+    async def set_setting(self, guild_id, key, value):
+        if key not in self.default_guild_settings:
+            raise KeyError('Key "{}" not found in default guild settings!'.format(key))
+
+        try:
+            # TO-DO: don't use literal eval
+            type(self.default_guild_settings[key])(literal_eval(value))
+        except TypeError or ValueError:
+            return False
+
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT OR REPLACE INTO settings(gid, skey, svalue)'
+                    'VALUES(?, ?, ?);',
+                    (guild_id, key, value,))
+        self.db_conn.commit()
+        return True
+
     async def get_user(self, member):
         cur = self.db_conn.cursor()
         cur.execute('SELECT * FROM users WHERE uid=? AND gid=?', (member.id, member.guild.id,))
@@ -268,7 +307,8 @@ class DiscordBot:
                 if member.voice is None or member.voice.channel is None:
                     user['joined'] = 0
                 else:
-                    xp_earned = self.xp_for((ctime - user['joined']) * self.voice_xp_per_minute / 60,
+                    xp_earned = self.xp_for((ctime - user['joined'])
+                                            * await self.get_setting(guild.id, 'VOICE_XP_PER_MINUTE') / 60,
                                             user['xp_multiplier'])
 
                     user['joined'] = ctime
@@ -323,61 +363,62 @@ class DiscordBot:
                     'xp_multiplier': data_xp_multiplier,
                     'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        img_buf = await self.image_creator.create(self.profile_image(data_obj))
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
-        if self.level_up_image is not None:
-            name = member.name
-            if member.nick is not None:
-                name = member.nick
+        name = member.name
+        if member.nick is not None:
+            name = member.nick
 
-            data_obj = {'member': member,
-                        'old_lvl': self.get_lvl(old_lvl),
-                        'new_lvl': self.get_lvl(new_lvl),
-                        'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
-                        'name': name}
+        data_obj = {'member': member,
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'name': name}
 
-            img_buf = await self.image_creator.create(self.level_up_image(data_obj))
-            return discord.File(filename="lvlup.png", fp=img_buf)
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'LEVEL_UP_IMAGE'))(data_obj))
+        return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
-        if self.rank_up_image is not None:
-            name = member.name
-            if member.nick is not None:
-                name = member.nick
+        name = member.name
+        if member.nick is not None:
+            name = member.nick
 
-            data_obj = {'member': member,
-                        'old_lvl': self.get_lvl(old_lvl),
-                        'new_lvl': self.get_lvl(new_lvl),
-                        'old_role': old_role,
-                        'new_role': new_role,
-                        'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
-                        'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
-                        'name': name}
+        data_obj = {'member': member,
+                    'old_lvl': self.get_lvl(old_lvl),
+                    'new_lvl': self.get_lvl(new_lvl),
+                    'old_role': old_role,
+                    'new_role': new_role,
+                    'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
+                    'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
+                    'name': name}
 
-            img_buf = await self.image_creator.create(self.rank_up_image(data_obj))
-            return discord.File(filename="rankup.png", fp=img_buf)
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))(data_obj))
+        return discord.File(filename="rankup.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):
-        if self.ranking_image is not None:
-            ranking_obj = []
-            for user in ranked_users:
-                member = get(member.guild.members, id=int(user['uid']))
-                if member is not None and not member.bot:
-                    name = member.name
-                    if member.nick is not None:
-                        name = member.nick
-                    ranking_obj.append({
-                        'member': member,
-                        'rank': user['rank'],
-                        'lvl': self.get_lvl(user['lvl']),
-                        'name': name,
-                        'color': imgtools.rgb_to_bgr(member.color.to_rgb())
-                    })
+        data_obj = []
+        for user in ranked_users:
+            member = get(member.guild.members, id=int(user['uid']))
+            if member is not None and not member.bot:
+                name = member.name
+                if member.nick is not None:
+                    name = member.nick
+                data_obj.append({
+                    'member': member,
+                    'rank': user['rank'],
+                    'lvl': self.get_lvl(user['lvl']),
+                    'name': name,
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb())
+                })
 
-            img_buf = await self.image_creator.create(self.ranking_image(ranking_obj), max_size=(-1, 8000))
-            return discord.File(filename="ranking.png", fp=img_buf)
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'RANKING_IMAGE'))(data_obj), max_size=(-1, 8000))
+        return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
@@ -440,7 +481,8 @@ class DiscordBot:
             return
         xp_multiplier = data['xp_multiplier']
         if data['joined'] >= 0:
-            xp_earned = self.xp_for((t - data['joined']) * self.voice_xp_per_minute / 60, xp_multiplier)
+            xp_earned = self.xp_for((t - data['joined'])
+                                    * await self.get_setting(member.guild.id, 'VOICE_XP_PER_MINUTE') / 60, xp_multiplier)
             old_level = data['lvl']
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
             await self.member_set_lvl_xp(member, data['lvl'], old_level)
@@ -452,7 +494,7 @@ class DiscordBot:
         if bool(data['blacklist']) is True:
             return
         xp_multiplier = data['xp_multiplier']
-        xp_earned = self.xp_for(self.message_give_xp, xp_multiplier)
+        xp_earned = self.xp_for(await self.get_setting(member.guild.id, 'MESSAGE_XP'), xp_multiplier)
         old_level = data['lvl']
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
         await self.member_set_lvl_xp(member, data['lvl'], old_level)
@@ -653,6 +695,65 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
 
+        @commands.command(name='settings',
+                          aliases=['setting'],
+                          description='settings commands',
+                          help=' - Alles ein-zu-stellen')
+        @commands.has_permissions(administrator=True)
+        async def _settings(self, ctx, *args):
+            if len(args) == 0:
+                pass
+            elif args[0] in ['set', 's'] and len(args) >= 3:
+                key = args[1]
+                value = ' '.join(args[2:])
+                try:
+                    if not await self.parent.set_setting(ctx.message.author.guild.id, key, value):
+                        return await ctx.send(embed=discord.Embed(title='Ups...',
+                                                                  description='Something went wrong!'
+                                                                  .format(key),
+                                                                  color=discord.Color.red()))
+                    embed = discord.Embed(title='Settings',
+                                          description='',
+                                          color=discord.Color.gold())
+
+                    embed.add_field(name='{}'.format(key),
+                                    value='{}'.format(await self.parent.get_setting(ctx.message.author.guild.id, key)),
+                                    inline=False)
+                    return await ctx.send(embed=embed)
+                except KeyError:
+                    return await ctx.send(embed=discord.Embed(title='Error',
+                                                              description='the key "{}" was not found in the settings'
+                                                              .format(key),
+                                                              color=discord.Color.red()))
+            elif args[0] in ['get', 'g']:
+                embed = discord.Embed(title='Settings',
+                                      description='',
+                                      color=discord.Color.gold())
+
+                if len(args) > 1:
+                    try:
+                        key = ' '.join(args[1:])
+                        res = await self.parent.get_setting(ctx.message.author.guild.id, key)
+                        embed.add_field(name='{}'.format(key),
+                                        value='{}'.format(res),
+                                        inline=False)
+                        return await ctx.send(embed=embed)
+                    except KeyError:
+                        pass
+
+                for key, value in (await self.parent.get_settings(ctx.message.author.guild.id)).items():
+                    res = '{}'.format(value)
+                    embed.add_field(name='{}'.format(key),
+                                    value=(res[:80] + '...') if len(str(res)) > 80 else res,
+                                    inline=False)
+                return await ctx.send(embed=embed)
+
+            await ctx.send(embed=discord.Embed(title='Help',
+                                               description='"settings get" to display the settings\n'
+                                                           '"settings get {key}" to display a setting\n'
+                                                           '"settings set {key} {value}" to set a setting\n',
+                                               color=discord.Color.gold()))
+
         @commands.command(name='lvlsys',
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description='level system commands',
@@ -772,7 +873,7 @@ class DiscordBot:
             elif len(args) >= 1:
                 async def _clear_by(limit):
                     if len(args) == 1:
-                        await ctx.channel.purge(limit=limit+1, bulk=False)
+                        await ctx.channel.purge(limit=limit + 1, bulk=False)
                         return await ctx.send(embed=discord.Embed(title='',
                                                                   description='Successfully deleted messages!',
                                                                   color=discord.Color.green()))
@@ -825,7 +926,9 @@ class DiscordBot:
             random_string = 'Random **{}**'
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(
-                    description=random.choice(self.parent.command_not_found_responses), color=discord.Color.red()))
+                    description=random.choice(
+                        await self.parent.get_setting(ctx.message.author.guild.id, 'COMMAND_NOT_FOUND_RESPONSES')),
+                    color=discord.Color.red()))
 
             if len(args) == 1:
                 if args[0].isnumeric():
@@ -862,10 +965,12 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
             if isinstance(error, commands.CommandNotFound):
-                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.command_not_found_responses),
+                await ctx.send(embed=discord.Embed(description=random.choice(
+                    await self.parent.get_setting(ctx.message.author.guild.id, 'COMMAND_NOT_FOUND_RESPONSES')),
                                                    color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(embed=discord.Embed(description=random.choice(self.parent.missing_permission_responses),
+                await ctx.send(embed=discord.Embed(description=random.choice(
+                    await self.parent.get_setting(ctx.message.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
                                                    color=discord.Color.red()))
             else:
                 self.parent.lprint(error)
@@ -910,28 +1015,22 @@ class DiscordBot:
 
 
 if __name__ == '__main__':
-    from settings import *
+    from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
     import sqlite3
 
     if not os.path.exists('dbs'):
         os.mkdir('dbs')
     con = sqlite3.connect('dbs/bot.db')
     b = DiscordBot(con,
-                   message_give_xp=MESSAGE_XP,
-                   voice_xp_per_minute=VOICE_XP_PER_MINUTE,
-                   update_voice_xp_interval=UPDATE_VOICE_XP_INTERVAL,
-                   command_prefix=COMMAND_PREFIX,
-                   description=DESCRIPTION,
-                   missing_permission_responses=MISSING_PERMISSIONS_RESPONSES,
-                   command_not_found_responses=COMMAND_NOT_FOUND_RESPONSES,
-                   profile_image=PROFILE_IMAGE,
-                   level_up_image=LEVEL_UP_IMAGE,
-                   rank_up_image=RANK_UP_IMAGE,
-                   ranking_image=RANKGING_IMAGE,
-                   print_logging=PRINT_LOGGING,
-                   use_slash_commands=USE_SLASH_COMMANDS
+                   default_guild_settings=DEFAULT_GUILD_SETTINGS,
+                   update_voice_xp_interval=GLOBAL_SETTINGS['UPDATE_VOICE_XP_INTERVAL'],
+                   command_prefix=GLOBAL_SETTINGS['COMMAND_PREFIX'],
+                   description=GLOBAL_SETTINGS['DESCRIPTION'],
+                   print_logging=GLOBAL_SETTINGS['PRINT_LOGGING'],
+                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS']
                    )
 
-    b.set_image_creator(imgtools.ImageCreator(fonts=FONTS, load_memory=IMAGES_LOAD_MEMORY))
+    b.set_image_creator(imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
+                                              load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY']))
 
-    b.run(TOKEN)
+    b.run(GLOBAL_SETTINGS['TOKEN'])
