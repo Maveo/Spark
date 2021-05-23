@@ -460,6 +460,21 @@ def main():
             adds = await self.bot.xp_multiplier_adds(m0.id, g.id)
             return adds == 10
 
+        # test boost xp multiplier expires
+        async def test_28_boost_xp_multiplier_expires(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+            m2 = MemberDummy(2, guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = -1
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+
+            await self.bot.set_boost_user(m1, m0)
+            await self.bot.set_boost_user(m2, m0)
+            adds = await self.bot.xp_multiplier_adds(m0.id, g.id)
+            return adds == 0
+
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
             roles = [

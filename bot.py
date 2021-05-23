@@ -220,7 +220,8 @@ class DiscordBot:
     async def xp_multiplier_adds(self, member_id, guild_id):
         xp_adds = 0
         cur = self.db_conn.cursor()
-        cur.execute('SELECT COUNT(*) as count FROM boosts WHERE gid=? AND boostedid=?', (guild_id, member_id,))
+        cur.execute('SELECT COUNT(*) as count FROM boosts WHERE gid=? AND boostedid=? AND expires>?',
+                    (guild_id, member_id, time.time(),))
         xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'BOOST_ADD_XP_MULTIPLIER')
         return xp_adds
 
