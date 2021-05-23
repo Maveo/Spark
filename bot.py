@@ -680,7 +680,7 @@ class DiscordBot:
 
                 if boosting is None or boosting['expires'] < current_time:
                     return await ctx.send(embed=discord.Embed(title='Boost',
-                                                              description='You currently boosting no one!\n'
+                                                              description='You are currently boosting no one!\n'
                                                                           'Use "boost {member} to start boosting!',
                                                               color=discord.Color.gold()))
 
