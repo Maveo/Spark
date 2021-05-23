@@ -3,8 +3,8 @@ from helpers.imgtools import *
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 GLOBAL_SETTINGS = {
-    'APPLICATION_ID': '839587710028611585',
-    'TOKEN': 'ODM5NTg3NzEwMDI4NjExNTg1.YJL0_A.96uXZEliluClFaBQfJhPG4EApFc',
+    'APPLICATION_ID': '',
+    'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
     'PRINT_LOGGING': True,
