@@ -19,8 +19,8 @@ class RoleDummy:
 
 
 class ChannelDummy:
-    def __init__(self, channel=None):
-        self.channel = channel
+    def __init__(self, uid=0):
+        self.id = uid
         self.messages = []
 
     async def send(self, *args, **kwargs):
@@ -95,13 +95,16 @@ class MemberDummy:
 
 
 class MessageDummy:
-    def __init__(self, author=None, guild=None):
+    def __init__(self, author=None, guild=None, channel=None):
         if author is None:
             author = MemberDummy()
         self.author = author
         if guild is None:
             guild = GuildDummy()
         self.guild = guild
+        if channel is None:
+            channel = ChannelDummy()
+        self.channel = channel
 
 
 def main():

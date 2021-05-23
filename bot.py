@@ -115,21 +115,29 @@ class DiscordBot:
                     async def _none(*_):
                         pass
 
+                    class _Channel:
+                        def __init__(self, cid=None):
+                            self.id = cid
+
                     class _Message:
-                        def __init__(self, author=None):
+                        def __init__(self, author=None, channel_id=None):
                             self.author = author
-                            self.guild = author.guild
+                            self.guild = None
+                            try:
+                                self.guild = author.guild
+                            except AttributeError:
+                                pass
+                            self.channel = _Channel(cid=channel_id)
 
                     ctx.trigger_typing = types.MethodType(_none, ctx)
-                    ctx.message = _Message(author=ctx.author)
+                    ctx.message = _Message(author=ctx.author, channel_id=ctx.channel_id)
+
                     cargs = [ctx] + ([] if args == '' else args.split(' '))
                     try:
                         if await command.can_run(ctx):
                             await command.callback(self.commands, *cargs)
-                    except commands.CommandError:
-                        await ctx.send(embed=discord.Embed(description=random.choice(
-                            await self.get_setting(ctx.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
-                                                           color=discord.Color.red()))
+                    except commands.CommandError as error:
+                        await self.events.on_command_error(ctx, error)
 
                 return call
 
@@ -1100,17 +1108,24 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
-            if isinstance(error, commands.CommandNotFound):
+            guild_id = None
+            try:
+                guild_id = ctx.message.author.guild.id
+            except AttributeError:
+                pass
+
+            if isinstance(error, commands.NoPrivateMessage):
+                await ctx.send('This command does not work via Private Message')
+            elif isinstance(error, commands.CommandNotFound):
                 await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(ctx.message.author.guild.id, 'COMMAND_NOT_FOUND_RESPONSES')),
+                    await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')),
                                                    color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(ctx.message.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
+                    await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')),
                                                    color=discord.Color.red()))
-
-            elif isinstance(error, commands.NoPrivateMessage):
-                await ctx.send('This command does not work via Private Message')
+            elif isinstance(error, commands.CheckFailure):
+                pass
             else:
                 self.parent.lprint(error)
 
