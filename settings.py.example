@@ -81,7 +81,7 @@ def profile_image(x): return [
         font_size=min(35, max(10, int(520 / len(str(x['name']))))),
         text=str(x['name']),
         color=x['color'],
-        max_size=(300, 35)
+        max_size=(280, 35)
     ),
 
     # Lvl.
@@ -112,7 +112,7 @@ def profile_image(x): return [
         font_size=35,
         text='#' + str(x['rank']),
         color=x['color'],
-        max_size=(80, 30)
+        max_size=(90, 30)
     ),
 
     # Xp Multiplier
@@ -160,7 +160,7 @@ def level_up_image(x): return [
 
     # LEVELUP
     TextLayer(
-        pos=(57, 10),
+        pos=(57, 13),
         font='bold',
         font_size=22,
         text='LEVELUP',
@@ -213,7 +213,7 @@ def level_up_image(x): return [
     ),
 
     TextLayer(
-        pos=(100, 40),
+        pos=(100, 42),
         font='regular',
         font_size=13,
         align_x='center',
@@ -247,7 +247,7 @@ def rank_up_image(x): return [
 
     # RANKUP
     TextLayer(
-        pos=(57, 10),
+        pos=(58, 13),
         font='bold',
         font_size=22,
         text='RANKUP',
@@ -300,7 +300,7 @@ def rank_up_image(x): return [
     ),
 
     TextLayer(
-        pos=(100, 40),
+        pos=(100, 42),
         font='regular',
         font_size=13,
         align_x='center',
@@ -426,7 +426,7 @@ DEFAULT_GUILD_SETTINGS = {
     'NEW_USER_LEVEL': 1.0,
     'NEW_USER_XP_MULTIPLIER': 1.0,
     'MESSAGE_XP': 0.2,
-    'VOICE_XP_PER_MINUTE': 1.0,
+    'VOICE_XP_PER_MINUTE': 2.0,
     'COMMAND_NOT_FOUND_RESPONSES': [
         'Kenn ich nicht, den command',
         '??',
