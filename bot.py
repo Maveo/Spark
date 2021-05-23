@@ -353,9 +353,11 @@ class DiscordBot:
             if bool(data['blacklist']) is True:
                 return False
 
-            await self.member_set_lvl(member,
-                                      await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL'),
-                                      old_level=data['lvl'])
+            promo_lvl = await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL')
+            if promo_lvl > data['lvl']:
+                await self.member_set_lvl(member,
+                                          await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL'),
+                                          old_level=data['lvl'])
             return True
 
         except sqlite3.IntegrityError:
