@@ -1,6 +1,6 @@
 # - Spark -
  ### A Discord Bot
-![alt text](https://cdn.discordapp.com/avatars/843214102108962856/e56abcca57abbb451254a05b70efb100.png?size=128 "Sparks face")
+![alt text](https://cdn.discordapp.com/avatars/843214102108962856/9d05175cc55385fa4a5f5313a858a045.webp?size=128 "Sparks face")
 
 
 ## Application
