@@ -4,11 +4,13 @@ from discord.utils import get
 
 from helpers import tools, imgtools
 
+import sqlite3
 import asyncio
 import types
 import os
 import time
 import random
+import string
 from ast import literal_eval
 
 
@@ -91,6 +93,27 @@ class DiscordBot:
             );
         ''')
 
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS promos (
+              uid INTEGER NOT NULL, 
+              gid INTEGER NOT NULL,
+              code TEXT NOT NULL,
+              expires INTEGER NOT NULL,
+              PRIMARY KEY (uid, gid),
+              UNIQUE (gid, code)
+            );
+        ''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS promo_boosts (
+                  uid INTEGER NOT NULL, 
+                  gid INTEGER NOT NULL, 
+                  pid INTEGER NOT NULL,
+                  expires INTEGER NOT NULL,
+                  PRIMARY KEY (uid, gid)
+                );
+        ''')
+
         self.db_conn.commit()
 
         self.bot = commands.Bot(command_prefix=command_prefix,
@@ -115,21 +138,29 @@ class DiscordBot:
                     async def _none(*_):
                         pass
 
+                    class _Channel:
+                        def __init__(self, cid=None):
+                            self.id = cid
+
                     class _Message:
-                        def __init__(self, author=None):
+                        def __init__(self, author=None, channel_id=None):
                             self.author = author
-                            self.guild = author.guild
+                            self.guild = None
+                            try:
+                                self.guild = author.guild
+                            except AttributeError:
+                                pass
+                            self.channel = _Channel(cid=channel_id)
 
                     ctx.trigger_typing = types.MethodType(_none, ctx)
-                    ctx.message = _Message(author=ctx.author)
+                    ctx.message = _Message(author=ctx.author, channel_id=ctx.channel_id)
+
                     cargs = [ctx] + ([] if args == '' else args.split(' '))
                     try:
                         if await command.can_run(ctx):
                             await command.callback(self.commands, *cargs)
-                    except commands.CommandError:
-                        await ctx.send(embed=discord.Embed(description=random.choice(
-                            await self.get_setting(ctx.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
-                                                           color=discord.Color.red()))
+                    except commands.CommandError as error:
+                        await self.events.on_command_error(ctx, error)
 
                 return call
 
@@ -220,27 +251,37 @@ class DiscordBot:
     async def xp_multiplier_adds(self, member_id, guild_id):
         xp_adds = 0
         cur = self.db_conn.cursor()
+
+        # user boosts by >boost
         cur.execute('SELECT COUNT(*) as count FROM boosts WHERE gid=? AND boostedid=? AND expires>?',
                     (guild_id, member_id, time.time(),))
         xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'BOOST_ADD_XP_MULTIPLIER')
+
+        # boosted by promo code
+        cur.execute('SELECT COUNT(*) as count FROM promo_boosts WHERE gid=? AND pid=? AND expires>?',
+                    (guild_id, member_id, time.time(),))
+        xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'PROMO_BOOST_ADD_XP_MULTIPLIER')
+
         return xp_adds
 
-    async def get_all_boosts(self, member):
+    async def get_boosted_by(self, member, ctime):
         cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM boosts WHERE gid=?', (member.guild.id,))
+        cur.execute('SELECT * FROM boosts WHERE gid=? AND boostedid=? AND expires>?',
+                    (member.guild.id, member.id, ctime,))
         return cur.fetchall()
 
-    async def get_boost_user(self, member):
+    async def get_boost_user(self, member, ctime):
         cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM boosts WHERE uid=? AND gid=?', (member.id, member.guild.id,))
+        cur.execute('SELECT * FROM boosts WHERE uid=? AND gid=? AND expires>?',
+                    (member.id, member.guild.id, ctime,))
         return cur.fetchone()
 
     async def set_boost_user(self, member, user_to_boost):
         if member.id == user_to_boost.id:
             return ENUMS.BOOSTING_YOURSELF_FORBIDDEN
-        previous_boost = await self.get_boost_user(member)
         current_time = int(time.time())
-        if previous_boost is None or previous_boost['expires'] < current_time:
+        previous_boost = await self.get_boost_user(member, current_time)
+        if previous_boost is None:
             cur = self.db_conn.cursor()
             cur.execute('INSERT OR REPLACE INTO boosts(uid, gid, boostedid, expires)'
                         'VALUES(?, ?, ?, ?);',
@@ -249,6 +290,140 @@ class DiscordBot:
             self.db_conn.commit()
             return ENUMS.BOOST_SUCCESS
         return ENUMS.BOOST_NOT_EXPIRED
+
+    async def create_promo_code(self, member):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM promos WHERE (uid=? AND gid=?) OR expires<?',
+                    (member.id, member.guild.id, time.time(),))
+
+        for i in range(5):
+            promo_code = ''.join([
+                random.choice(string.ascii_letters)
+                for _ in range(int(await self.get_setting(member.guild.id, 'PROMO_CODE_LENGTH')))
+            ])
+            try:
+                cur.execute('INSERT INTO promos(uid, gid, code, expires)'
+                            'VALUES(?, ?, ?, ?);',
+                            (member.id,
+                             member.guild.id,
+                             promo_code,
+                             int(time.time() + (
+                                 await self.get_setting(member.guild.id, 'PROMO_CODE_EXPIRES_HOURS')) * 60 * 60),
+                             ))
+                self.db_conn.commit()
+                return promo_code
+            except sqlite3.IntegrityError:
+                pass
+        return None
+
+    async def get_promo_boosted_by(self, member, ctime):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM promo_boosts WHERE gid=? AND pid=? AND expires>?',
+                    (member.guild.id,
+                     member.id,
+                     ctime,
+                     ))
+        return cur.fetchall()
+
+    async def get_promo_code(self, member, promo_code):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM promos WHERE gid=? AND code=? AND expires>? AND uid!=?',
+                    (member.guild.id,
+                     promo_code,
+                     int(time.time()),
+                     member.id,
+                     ))
+        return cur.fetchone()
+
+    async def use_promo_code(self, member, promo):
+        await self.check_member(member)
+        cur = self.db_conn.cursor()
+        try:
+            cur.execute('INSERT INTO promo_boosts(uid, gid, pid, expires)'
+                        'VALUES(?, ?, ?, ?);',
+                        (member.id,
+                         member.guild.id,
+                         promo['uid'],
+                         int(time.time() + (
+                             await self.get_setting(member.guild.id, 'PROMO_BOOST_EXPIRES_DAYS')) * 24 * 60 * 60),
+                         ))
+            self.db_conn.commit()
+
+            data = await self.get_user(member)
+            if bool(data['blacklist']) is True:
+                return False
+
+            await self.member_set_lvl(member,
+                                      await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL'),
+                                      old_level=data['lvl'])
+            return True
+
+        except sqlite3.IntegrityError:
+            pass
+
+        return False
+
+    async def boost_get_embed(self, member):
+        current_time = time.time()
+
+        boosting = await self.get_boost_user(member, current_time)
+
+        embed = discord.Embed(title='Boosts',
+                              description='You are currently boosting no one!\n'
+                                          'Use **"boost {member}"** to start boosting!',
+                              color=discord.Color.gold())
+
+        id_names = {}
+
+        def _get_name(uid):
+            uid = int(uid)
+            if uid in id_names:
+                return id_names[uid]
+            m = get(member.guild.members, id=uid)
+            name = 'A USER WHO LEFT'
+            if m is not None:
+                name = m.display_name
+            id_names[uid] = name
+            return name
+
+        def _get_days_hours(expires):
+            br = (expires - current_time) / (24 * 60 * 60)
+            brd = int(br)
+            brh = int((br - brd) * 24)
+            return brd, brh
+
+        if boosting is not None:
+            member_name = _get_name(boosting['boostedid'])
+
+            boost_remaining_days, boost_remaining_hours = _get_days_hours(boosting['expires'])
+            embed = discord.Embed(title='Boosts',
+                                  description='You are boosting **{}**!\n'
+                                              'Boost expires in **{}** days **{}** hours!'
+                                  .format(member_name,
+                                          boost_remaining_days,
+                                          boost_remaining_hours),
+                                  color=discord.Color.gold())
+
+        def _boost_to_str(boost):
+            brd, brh = _get_days_hours(boost['expires'])
+            return 'By *{}* expires in **{}** days **{}** hours'.format(_get_name(boost['uid']), brd, brh)
+
+        boosted_by = await self.get_boosted_by(member, current_time)
+        if len(boosted_by) > 0:
+            embed.add_field(name='Your Boosts (x{})'
+                            .format(await self.get_setting(member.guild.id,
+                                                           'BOOST_ADD_XP_MULTIPLIER')),
+                            value='\n'.join(map(_boost_to_str, boosted_by)),
+                            inline=False)
+
+        promo_boosted_by = await self.get_promo_boosted_by(member, current_time)
+        if len(promo_boosted_by) > 0:
+            embed.add_field(name='Your Promo Boosts (x{})'
+                            .format(await self.get_setting(member.guild.id,
+                                                           'PROMO_BOOST_ADD_XP_MULTIPLIER')),
+                            value='\n'.join(map(_boost_to_str, promo_boosted_by)),
+                            inline=False)
+        return embed
 
     async def get_users(self, guild):
         cur = self.db_conn.cursor()
@@ -286,6 +461,11 @@ class DiscordBot:
         for key in self.default_guild_settings.keys():
             settings[key] = await self.get_setting(guild_id, key)
         return settings
+
+    async def remove_setting(self, guild_id, key):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM settings WHERE gid=? AND skey=?', (guild_id, key,))
+        self.db_conn.commit()
 
     async def set_setting(self, guild_id, key, value):
         if key not in self.default_guild_settings:
@@ -491,7 +671,7 @@ class DiscordBot:
                                                         old_level,
                                                         lvl))
 
-    async def member_set_lvl_xp(self, member, lvl, old_level=None):
+    async def member_set_lvl(self, member, lvl, old_level=None):
         if not member.bot:
             await self.update_user(member, {'lvl': lvl})
 
@@ -535,10 +715,11 @@ class DiscordBot:
         xp_multiplier = data['xp_multiplier'] + await self.xp_multiplier_adds(data['uid'], data['gid'])
         if data['joined'] >= 0:
             xp_earned = self.xp_for((t - data['joined'])
-                                    * await self.get_setting(member.guild.id, 'VOICE_XP_PER_MINUTE') / 60, xp_multiplier)
+                                    * await self.get_setting(member.guild.id, 'VOICE_XP_PER_MINUTE') / 60,
+                                    xp_multiplier)
             old_level = data['lvl']
             data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
-            await self.member_set_lvl_xp(member, data['lvl'], old_level)
+            await self.member_set_lvl(member, data['lvl'], old_level)
             await self.update_user(member, {'joined': -1})
 
     async def member_message_xp(self, member):
@@ -550,7 +731,7 @@ class DiscordBot:
         xp_earned = self.xp_for(await self.get_setting(member.guild.id, 'MESSAGE_XP'), xp_multiplier)
         old_level = data['lvl']
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
-        await self.member_set_lvl_xp(member, data['lvl'], old_level)
+        await self.member_set_lvl(member, data['lvl'], old_level)
 
     @staticmethod
     async def give_role(guild, member, role_id):
@@ -632,6 +813,14 @@ class DiscordBot:
         def __init__(self, parent):
             self.parent = parent
 
+        async def cog_check(self, ctx):
+            if ctx.message.guild is not None and not ctx.message.author.bot:
+                if await self.parent.get_setting(ctx.message.guild.id, 'PROMO_CHANNEL_ID') \
+                        == str(ctx.message.channel.id):
+                    await ctx.send('Commands not allowed in Promo Channel!')
+                    return False
+            return True
+
         @commands.command(name='profile',
                           aliases=['p', 'P'],
                           description='show user profile',
@@ -652,42 +841,49 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
 
+        @commands.command(name='promo',
+                          aliases=['pr'],
+                          description='get your promo code',
+                          help=' - Hol dir deinen Promo-Code')
+        async def _promo(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
+            promo_code = await self.parent.create_promo_code(ctx.message.author)
+            if promo_code is None:
+                return await ctx.send(embed=discord.Embed(title='Oops...',
+                                                          description='Something went wrong with your promo code!',
+                                                          color=discord.Color.red()))
+            await ctx.message.author.send(
+                embed=discord.Embed(title='',
+                                    description='This is your Promo-Code for **{}**\n'
+                                                'Expires in **{}** hours\n'
+                                                '```{}```'
+                                    .format(ctx.message.author.guild.name,
+                                            int(
+                                                await self.parent.get_setting(ctx.guild.id, 'PROMO_CODE_EXPIRES_HOURS')
+                                            ),
+                                            promo_code),
+                                    color=discord.Color.blue())
+            )
+            await ctx.send(
+                embed=discord.Embed(title='',
+                                    description='Your Promo-Code was sent to you!',
+                                    color=discord.Color.green())
+            )
+
         @commands.command(name='boost',
-                          aliases=['b'],
-                          description='give a friend a boost',
-                          help=' - Boosted einen Freund')
+                          aliases=['b', 'boosts'],
+                          description='everything boosting your xp',
+                          help=' - Alles zu XP - Boosts')
         async def _boost(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
             await ctx.trigger_typing()
             if len(args) == 0:
-                current_time = time.time()
+                embed = await self.parent.boost_get_embed(ctx.message.author)
 
-                boosting = await self.parent.get_boost_user(ctx.message.author)
-
-                if boosting is None or boosting['expires'] < current_time:
-                    return await ctx.send(embed=discord.Embed(title='Boost',
-                                                              description='You currently boosting no one!\n'
-                                                                          'Use "boost {member} to start boosting!',
-                                                              color=discord.Color.gold()))
-
-                member = get(ctx.message.guild.members, id=int(boosting['boostedid']))
-
-                member_name = 'A USER WHO LEFT'
-
-                if member is not None:
-                    member_name = member.display_name
-
-                boost_remaining = (boosting['expires'] - current_time) / (24 * 60 * 60)
-                boost_remaining_days = round(boost_remaining)
-                boost_remaining_hours = round((boost_remaining - boost_remaining_days) * 24)
-                return await ctx.send(embed=discord.Embed(title='Boost',
-                                                          description='You are boosting {}!\n'
-                                                                      'Boost expires in {} days and {} hours!'
-                                                          .format(member_name,
-                                                                  boost_remaining_days,
-                                                                  boost_remaining_hours),
-                                                          color=discord.Color.gold()))
+                return await ctx.send(embed=embed)
 
             member = await self.parent.search_member(ctx, ' '.join(args))
             if member is None:
@@ -784,7 +980,7 @@ class DiscordBot:
             async def __setlvl(m):
                 try:
                     lvl = int(args[0])
-                    await self.parent.member_set_lvl_xp(m, lvl, None)
+                    await self.parent.member_set_lvl(m, lvl, None)
                     await ctx.send(embed=discord.Embed(title='Success',
                                                        description='Level was set successfully!',
                                                        color=discord.Color.green()))
@@ -816,6 +1012,19 @@ class DiscordBot:
 
             if len(args) == 0:
                 pass
+            elif args[0] in ['reset'] and len(args) >= 2:
+                key = ' '.join(args[1:])
+                if key not in self.parent.default_guild_settings:
+                    return await ctx.send(embed=discord.Embed(title='Error',
+                                                              description='the key "{}" was not found in the settings'
+                                                              .format(key),
+                                                              color=discord.Color.red()))
+                await self.parent.remove_setting(ctx.message.author.guild.id, key)
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Successfully reset setting "{}"!'
+                                                          .format(key),
+                                                          color=discord.Color.green()))
+
             elif args[0] in ['set', 's'] and len(args) >= 3:
                 key = args[1]
                 value = ' '.join(args[2:])
@@ -830,7 +1039,8 @@ class DiscordBot:
                                           color=discord.Color.gold())
 
                     embed.add_field(name='{}'.format(key),
-                                    value='{}'.format(await self.parent.get_setting(ctx.message.author.guild.id, key)),
+                                    value='"{}"'.format(
+                                        await self.parent.get_setting(ctx.message.author.guild.id, key)),
                                     inline=False)
                     return await ctx.send(embed=embed)
                 except KeyError:
@@ -848,14 +1058,14 @@ class DiscordBot:
                         key = ' '.join(args[1:])
                         res = await self.parent.get_setting(ctx.message.author.guild.id, key)
                         embed.add_field(name='{}'.format(key),
-                                        value='{}'.format(res),
+                                        value='"{}"'.format(res),
                                         inline=False)
                         return await ctx.send(embed=embed)
                     except KeyError:
                         pass
 
                 for key, value in (await self.parent.get_settings(ctx.message.author.guild.id)).items():
-                    res = '{}'.format(value)
+                    res = '"{}"'.format(value)
                     embed.add_field(name='{}'.format(key),
                                     value=(res[:80] + '...') if len(str(res)) > 80 else res,
                                     inline=False)
@@ -864,6 +1074,7 @@ class DiscordBot:
             await ctx.send(embed=discord.Embed(title='Help',
                                                description='"settings get" to display the settings\n'
                                                            '"settings get {key}" to display a setting\n'
+                                                           '"settings reset {key}" to reset a setting\n'
                                                            '"settings set {key} {value}" to set a setting\n',
                                                color=discord.Color.gold()))
 
@@ -1081,17 +1292,24 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_command_error(self, ctx, error):
-            if isinstance(error, commands.CommandNotFound):
+            guild_id = None
+            try:
+                guild_id = ctx.message.author.guild.id
+            except AttributeError:
+                pass
+
+            if isinstance(error, commands.NoPrivateMessage):
+                await ctx.send('This command does not work via Private Message')
+            elif isinstance(error, commands.CommandNotFound):
                 await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(ctx.message.author.guild.id, 'COMMAND_NOT_FOUND_RESPONSES')),
-                                                   color=discord.Color.red()))
+                    await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')),
+                    color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
                 await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(ctx.message.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
-                                                   color=discord.Color.red()))
-
-            elif isinstance(error, commands.NoPrivateMessage):
-                await ctx.send('This command does not work via Private Message')
+                    await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')),
+                    color=discord.Color.red()))
+            elif isinstance(error, commands.CheckFailure):
+                pass
             else:
                 self.parent.lprint(error)
 
@@ -1112,8 +1330,30 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_message(self, message):
-            if message.guild is not None and not message.author.bot:
-                await self.parent.member_message_xp(message.author)
+            if message.guild is not None:
+                if not message.author.bot:
+                    await self.parent.member_message_xp(message.author)
+                if await self.parent.get_setting(message.guild.id, 'PROMO_CHANNEL_ID') == str(message.channel.id):
+                    if not message.author.bot:
+                        promo = await self.parent.get_promo_code(message.author, message.content)
+                        if promo is None:
+                            await message.channel.send(embed=discord.Embed(title='',
+                                                                           description='Invalid promo code!',
+                                                                           color=discord.Color.red()))
+                        else:
+                            res = await self.parent.use_promo_code(message.author, promo)
+                            if res:
+                                await message.channel.send(
+                                    embed=discord.Embed(title='',
+                                                        description='Promo code used successfully!',
+                                                        color=discord.Color.green()))
+                            else:
+                                await message.channel.send(
+                                    embed=discord.Embed(title='',
+                                                        description='You already used a promo code!',
+                                                        color=discord.Color.red()))
+                    await asyncio.sleep(5)
+                    await message.delete()
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
@@ -1136,7 +1376,6 @@ class DiscordBot:
 
 if __name__ == '__main__':
     from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
-    import sqlite3
 
     if not os.path.exists('dbs'):
         os.mkdir('dbs')
