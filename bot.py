@@ -638,7 +638,7 @@ class DiscordBot:
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"send {msg}" to send into the system channel\n'
-                                                                      '"send {channel_id} {msg}" to send'
+                                                                      '"send {channel_id} {msg}" to send '
                                                                       'into a specific channel',
                                                           color=discord.Color.gold()))
             elif len(args) == 1:
