@@ -373,6 +373,19 @@ def main():
             return await self.bot.get_setting(0, 'VOICE_XP_PER_MINUTE') == 70\
                 and await self.bot.get_setting(0, 'MESSAGE_XP') == 50
 
+        # test multiple guilds same user
+        async def test_23_multiple_guilds_same_user(self):
+            g0 = GuildDummy(0)
+            g1 = GuildDummy(1)
+            m0 = MemberDummy(guild=g0)
+            m1 = MemberDummy(guild=g1)
+            await self.bot.events.on_member_join(m0)
+            await self.bot.events.on_member_join(m1)
+            await self.bot.member_set_blacklist(m0, True)
+            user0 = await self.bot.get_user(m0)
+            user1 = await self.bot.get_user(m1)
+            return user0['blacklist'] == 1 and user1['blacklist'] == 0
+
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
             roles = [
@@ -493,15 +506,16 @@ def main():
 
         print("TEST {:03d}: ".format(test_number), end='')
 
-        result = False
-        start = time.time()
-        if await getattr(t, method)():
-            print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
-            result = True
-        else:
-            print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+        try:
+            start = time.time()
+            if await getattr(t, method)():
+                print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+                return True
+        except:
+            pass
 
-        return result
+        print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+        return False
 
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

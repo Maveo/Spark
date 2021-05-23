@@ -49,12 +49,13 @@ class DiscordBot:
 
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
-                uid INTEGER PRIMARY KEY,
-                gid INTEGER NOT NULL,
+                uid INTEGER,
+                gid INTEGER,
                 lvl REAL NOT NULL,
                 xp_multiplier REAL NOT NULL,
                 joined INTEGER NOT NULL,
-                blacklist INTEGER NOT NULL
+                blacklist INTEGER NOT NULL,
+                PRIMARY KEY (uid, gid)
             );''')
 
         cur.execute('''
