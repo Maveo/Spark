@@ -30,7 +30,7 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 - #### send
   ###### Talk through the bot in chat
 - #### settings
-  ###### Set server specific parameters
+  ###### Set Discord server specific parameters
 - #### setlvl
   ###### Set a users level
 - #### clear
