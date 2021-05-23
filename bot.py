@@ -12,6 +12,12 @@ import random
 from ast import literal_eval
 
 
+class ENUMS:
+    BOOST_SUCCESS = 0
+    BOOSTING_YOURSELF_FORBIDDEN = 1
+    BOOST_NOT_EXPIRED = 2
+
+
 class DiscordBot:
     def __init__(self,
                  db_conn,
@@ -68,10 +74,20 @@ class DiscordBot:
 
         cur.execute('''
             CREATE TABLE IF NOT EXISTS settings (
-              gid INTEGER NOT NULL, 
-              skey TEXT NOT NULL, 
-              svalue TEXT NOT NULL, 
+              gid INTEGER NOT NULL,
+              skey TEXT NOT NULL,
+              svalue TEXT NOT NULL,
               PRIMARY KEY (gid, skey)
+            );
+        ''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS boosts (
+              uid INTEGER NOT NULL, 
+              gid INTEGER NOT NULL, 
+              boostedid INTEGER NOT NULL,
+              expires INTEGER NOT NULL,
+              PRIMARY KEY (uid, gid)
             );
         ''')
 
@@ -201,6 +217,39 @@ class DiscordBot:
             return channel
         return None
 
+    async def xp_multiplier_adds(self, member_id, guild_id):
+        xp_adds = 0
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT COUNT(*) as count FROM boosts WHERE gid=? AND boostedid=? AND expires>?',
+                    (guild_id, member_id, time.time(),))
+        xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'BOOST_ADD_XP_MULTIPLIER')
+        return xp_adds
+
+    async def get_all_boosts(self, member):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM boosts WHERE gid=?', (member.guild.id,))
+        return cur.fetchall()
+
+    async def get_boost_user(self, member):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM boosts WHERE uid=? AND gid=?', (member.id, member.guild.id,))
+        return cur.fetchone()
+
+    async def set_boost_user(self, member, user_to_boost):
+        if member.id == user_to_boost.id:
+            return ENUMS.BOOSTING_YOURSELF_FORBIDDEN
+        previous_boost = await self.get_boost_user(member)
+        current_time = int(time.time())
+        if previous_boost is None or previous_boost['expires'] < current_time:
+            cur = self.db_conn.cursor()
+            cur.execute('INSERT OR REPLACE INTO boosts(uid, gid, boostedid, expires)'
+                        'VALUES(?, ?, ?, ?);',
+                        (member.id, member.guild.id, user_to_boost.id, current_time
+                         + (await self.get_setting(member.guild.id, 'BOOST_EXPIRES_DAYS')) * 24 * 60 * 60,))
+            self.db_conn.commit()
+            return ENUMS.BOOST_SUCCESS
+        return ENUMS.BOOST_NOT_EXPIRED
+
     async def get_users(self, guild):
         cur = self.db_conn.cursor()
         cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
@@ -310,7 +359,8 @@ class DiscordBot:
                 else:
                     xp_earned = self.xp_for((ctime - user['joined'])
                                             * await self.get_setting(guild.id, 'VOICE_XP_PER_MINUTE') / 60,
-                                            user['xp_multiplier'])
+                                            user['xp_multiplier']
+                                            + await self.xp_multiplier_adds(user['uid'], user['gid']))
 
                     user['joined'] = ctime
 
@@ -343,11 +393,9 @@ class DiscordBot:
         # Retrieve user data
         #
         data = await self.get_user(member)
-        name = member.name
-        if member.nick is not None:
-            name = member.nick
+        name = member.display_name
 
-        data_xp_multiplier = data['xp_multiplier']
+        data_xp_multiplier = data['xp_multiplier'] + await self.xp_multiplier_adds(data['uid'], data['gid'])
         data_xp = int(self.lvl_get_xp(data['lvl']))
         data_max_xp = int(self.max_xp_for(data['lvl']))
         data_percentage = data_xp / data_max_xp
@@ -368,10 +416,18 @@ class DiscordBot:
             (await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
+    async def member_create_welcome_image(self, member):
+        name = member.display_name
+        data_obj = {'member': member,
+                    'name': name,
+                    'avatar_url': str(member.avatar_url_as(format="png")),
+                    'guild_icon_url': str(member.guild.icon_url_as(format="png"))}
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))(data_obj))
+        return discord.File(filename="welcome.png", fp=img_buf)
+
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
-        name = member.name
-        if member.nick is not None:
-            name = member.nick
+        name = member.display_name
 
         data_obj = {'member': member,
                     'old_lvl': self.get_lvl(old_lvl),
@@ -384,9 +440,7 @@ class DiscordBot:
         return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
-        name = member.name
-        if member.nick is not None:
-            name = member.nick
+        name = member.display_name
 
         data_obj = {'member': member,
                     'old_lvl': self.get_lvl(old_lvl),
@@ -406,9 +460,7 @@ class DiscordBot:
         for user in ranked_users:
             member = get(member.guild.members, id=int(user['uid']))
             if member is not None and not member.bot:
-                name = member.name
-                if member.nick is not None:
-                    name = member.nick
+                name = member.display_name
                 data_obj.append({
                     'member': member,
                     'rank': user['rank'],
@@ -480,7 +532,7 @@ class DiscordBot:
         data = await self.get_user(member)
         if bool(data['blacklist']) is True:
             return
-        xp_multiplier = data['xp_multiplier']
+        xp_multiplier = data['xp_multiplier'] + await self.xp_multiplier_adds(data['uid'], data['gid'])
         if data['joined'] >= 0:
             xp_earned = self.xp_for((t - data['joined'])
                                     * await self.get_setting(member.guild.id, 'VOICE_XP_PER_MINUTE') / 60, xp_multiplier)
@@ -494,7 +546,7 @@ class DiscordBot:
         data = await self.get_user(member)
         if bool(data['blacklist']) is True:
             return
-        xp_multiplier = data['xp_multiplier']
+        xp_multiplier = data['xp_multiplier'] + await self.xp_multiplier_adds(data['uid'], data['gid'])
         xp_earned = self.xp_for(await self.get_setting(member.guild.id, 'MESSAGE_XP'), xp_multiplier)
         old_level = data['lvl']
         data['lvl'] += self.lvl_xp_add(xp_earned, data['lvl'])
@@ -600,6 +652,63 @@ class DiscordBot:
                                                       description='No user was found!',
                                                       color=discord.Color.red()))
 
+        @commands.command(name='boost',
+                          aliases=['b'],
+                          description='give a friend a boost',
+                          help=' - Boosted einen Freund')
+        async def _boost(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+            await ctx.trigger_typing()
+            if len(args) == 0:
+                current_time = time.time()
+
+                boosting = await self.parent.get_boost_user(ctx.message.author)
+
+                if boosting is None or boosting['expires'] < current_time:
+                    return await ctx.send(embed=discord.Embed(title='Boost',
+                                                              description='You currently boosting no one!\n'
+                                                                          'Use "boost {member} to start boosting!',
+                                                              color=discord.Color.gold()))
+
+                member = get(ctx.message.guild.members, id=int(boosting['boostedid']))
+
+                member_name = 'A USER WHO LEFT'
+
+                if member is not None:
+                    member_name = member.display_name
+
+                boost_remaining = (boosting['expires'] - current_time) / (24 * 60 * 60)
+                boost_remaining_days = round(boost_remaining)
+                boost_remaining_hours = round((boost_remaining - boost_remaining_days) * 24)
+                return await ctx.send(embed=discord.Embed(title='Boost',
+                                                          description='You are boosting {}!\n'
+                                                                      'Boost expires in {} days and {} hours!'
+                                                          .format(member_name,
+                                                                  boost_remaining_days,
+                                                                  boost_remaining_hours),
+                                                          color=discord.Color.gold()))
+
+            member = await self.parent.search_member(ctx, ' '.join(args))
+            if member is None:
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='No matching user was found',
+                                                          color=discord.Color.red()))
+
+            res = await self.parent.set_boost_user(ctx.message.author, member)
+            if res == ENUMS.BOOST_SUCCESS:
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='You are boosting {} now!'
+                                                          .format(member.display_name),
+                                                          color=discord.Color.green()))
+            elif res == ENUMS.BOOSTING_YOURSELF_FORBIDDEN:
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='You cannot boost yourself!',
+                                                          color=discord.Color.red()))
+            return await ctx.send(embed=discord.Embed(title='',
+                                                      description='Your boost has not expired yet!',
+                                                      color=discord.Color.red()))
+
         @commands.command(name='leaderboard',
                           aliases=[],
                           description='show the leaderboard',
@@ -638,7 +747,7 @@ class DiscordBot:
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"send {msg}" to send into the system channel\n'
-                                                                      '"send {channel_id} {msg}" to send'
+                                                                      '"send {channel_id} {msg}" to send '
                                                                       'into a specific channel',
                                                           color=discord.Color.gold()))
             elif len(args) == 1:
@@ -702,6 +811,9 @@ class DiscordBot:
                           help=' - Alles ein-zu-stellen')
         @commands.has_permissions(administrator=True)
         async def _settings(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
             if len(args) == 0:
                 pass
             elif args[0] in ['set', 's'] and len(args) >= 3:
@@ -763,6 +875,7 @@ class DiscordBot:
         async def _lvlsys(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+
             await ctx.trigger_typing()
 
             embed = discord.Embed(title='Help',
@@ -868,6 +981,9 @@ class DiscordBot:
                           help=' - Löscht Nachrichten in einem Text-Channel!')
         @commands.has_permissions(administrator=True)
         async def _clear(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
             await ctx.trigger_typing()
             if len(args) == 0:
                 pass
@@ -973,6 +1089,9 @@ class DiscordBot:
                 await ctx.send(embed=discord.Embed(description=random.choice(
                     await self.parent.get_setting(ctx.message.author.guild.id, 'MISSING_PERMISSIONS_RESPONSES')),
                                                    color=discord.Color.red()))
+
+            elif isinstance(error, commands.NoPrivateMessage):
+                await ctx.send('This command does not work via Private Message')
             else:
                 self.parent.lprint(error)
 
@@ -984,8 +1103,8 @@ class DiscordBot:
         async def on_member_join(self, member):
             if not member.bot:
                 await self.parent.update_member(member)
-            # send a private message on join
-            # await member.send('Private message')
+            if await self.parent.get_setting(member.guild.id, 'SEND_WELCOME_IMAGE'):
+                await member.send(file=await self.parent.member_create_welcome_image(member))
 
         @commands.Cog.listener()
         async def on_member_remove(self, member):

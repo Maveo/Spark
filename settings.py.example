@@ -3,8 +3,8 @@ from helpers.imgtools import *
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 GLOBAL_SETTINGS = {
-    'APPLICATION_ID': '839587710028611585',
-    'TOKEN': 'ODM5NTg3NzEwMDI4NjExNTg1.YJL0_A.96uXZEliluClFaBQfJhPG4EApFc',
+    'APPLICATION_ID': '',
+    'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
     'PRINT_LOGGING': True,
@@ -81,7 +81,7 @@ def profile_image(x): return [
         font_size=min(35, max(10, int(520 / len(str(x['name']))))),
         text=str(x['name']),
         color=x['color'],
-        max_size=(300, 35)
+        max_size=(280, 35)
     ),
 
     # Lvl.
@@ -112,7 +112,7 @@ def profile_image(x): return [
         font_size=35,
         text='#' + str(x['rank']),
         color=x['color'],
-        max_size=(80, 30)
+        max_size=(90, 30)
     ),
 
     # Xp Multiplier
@@ -160,7 +160,7 @@ def level_up_image(x): return [
 
     # LEVELUP
     TextLayer(
-        pos=(57, 10),
+        pos=(57, 13),
         font='bold',
         font_size=22,
         text='LEVELUP',
@@ -213,7 +213,7 @@ def level_up_image(x): return [
     ),
 
     TextLayer(
-        pos=(100, 40),
+        pos=(100, 42),
         font='regular',
         font_size=13,
         align_x='center',
@@ -247,7 +247,7 @@ def rank_up_image(x): return [
 
     # RANKUP
     TextLayer(
-        pos=(57, 10),
+        pos=(58, 13),
         font='bold',
         font_size=22,
         text='RANKUP',
@@ -300,7 +300,7 @@ def rank_up_image(x): return [
     ),
 
     TextLayer(
-        pos=(100, 40),
+        pos=(100, 42),
         font='regular',
         font_size=13,
         align_x='center',
@@ -422,11 +422,52 @@ def ranking_image(x):
     return layers
 
 
+def welcome_image(x): return [
+    FileImageLayer(
+        file=os.path.join(current_dir, 'images', 'welcome_template.png')
+    ),
+    WebImageLayer(
+        pos=(85, 35),
+        resize=(60, 60),
+        url=x['guild_icon_url']
+    ),
+    RectangleLayer(
+        pos=(85, 35),
+        size=(60, 60),
+        color=(55, 50, 48),
+        radius=-30,
+    ),
+    WebImageLayer(
+        pos=(15, 130),
+        resize=(80, 80),
+        url=x['avatar_url']
+    ),
+    RectangleLayer(
+        pos=(15, 130),
+        size=(80, 80),
+        color=(55, 50, 48),
+        radius=-40,
+    ),
+    TextLayer(
+        pos=(110, 170),
+        align_y='center',
+        font='bold',
+        font_size=min(42, max(20, int(700 / len(str(x['name']))))),
+        text=str(x['name']),
+        color=(255, 255, 255),
+        max_size=(460, 50)
+    ),
+]
+
+
 DEFAULT_GUILD_SETTINGS = {
     'NEW_USER_LEVEL': 1.0,
     'NEW_USER_XP_MULTIPLIER': 1.0,
     'MESSAGE_XP': 0.2,
-    'VOICE_XP_PER_MINUTE': 1.0,
+    'VOICE_XP_PER_MINUTE': 2.0,
+    'BOOST_EXPIRES_DAYS': 7.0,
+    'BOOST_ADD_XP_MULTIPLIER': 0.25,
+    'SEND_WELCOME_IMAGE': True,
     'COMMAND_NOT_FOUND_RESPONSES': [
         'Kenn ich nicht, den command',
         '??',
@@ -466,5 +507,6 @@ DEFAULT_GUILD_SETTINGS = {
     'PROFILE_IMAGE': profile_image,
     'LEVEL_UP_IMAGE': level_up_image,
     'RANK_UP_IMAGE': rank_up_image,
-    'RANKING_IMAGE': ranking_image
+    'RANKING_IMAGE': ranking_image,
+    'WELCOME_IMAGE': welcome_image,
 }
