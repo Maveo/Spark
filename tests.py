@@ -50,10 +50,18 @@ class VoiceDummy:
 
 
 class MemberDummy:
-    def __init__(self, uid=0, name='Dummy', nick='Dummy', guild=None, bot=False, voice=None):
+    def __init__(self,
+                 uid=0,
+                 name='Dummy',
+                 nick='Dummy',
+                 display_name='Dummy',
+                 guild=None,
+                 bot=False,
+                 voice=None):
         self.id = uid
         self.name = name
         self.nick = nick
+        self.display_name = display_name
         self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
         self.roles = {}
         self.top_role = RoleDummy(0)
@@ -93,7 +101,7 @@ class MessageDummy:
 
 
 def main():
-    from bot import DiscordBot
+    from bot import DiscordBot, ENUMS
     from helpers.imgtools import ImageCreator, TextLayer, EmptyLayer
     import sqlite3
     import numpy as np
@@ -386,6 +394,62 @@ def main():
             user1 = await self.bot.get_user(m1)
             return user0['blacklist'] == 1 and user1['blacklist'] == 0
 
+        # test boost user
+        async def test_24_boost_user(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+
+            await self.bot.set_boost_user(m0, m1)
+            user_boost = await self.bot.get_boost_user(m0)
+            return user_boost['boostedid'] == 1\
+                and 59.9 < (user_boost['expires'] - time.time()) / (24 * 60 * 60) < 60.1
+
+        # test boosting yourself
+        async def test_25_boost_yourself(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+
+            boost_result = await self.bot.set_boost_user(m0, m0)
+            user_boost = await self.bot.get_boost_user(m0)
+            return boost_result == ENUMS.BOOSTING_YOURSELF_FORBIDDEN and user_boost is None
+
+        # test boost while boost has not ended
+        async def test_26_boost_while_boost_not_ended(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+            m2 = MemberDummy(2, guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+
+            await self.bot.set_boost_user(m0, m1)
+
+            boost_succes = await self.bot.set_boost_user(m0, m2)
+
+            user_boost = await self.bot.get_boost_user(m0)
+
+            return boost_succes == ENUMS.BOOST_NOT_EXPIRED and user_boost['boostedid'] == 1
+
+        # test boost adds xp multiplier
+        async def test_27_boost_adds_xp_multiplier(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+            m2 = MemberDummy(2, guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+
+            await self.bot.set_boost_user(m1, m0)
+            await self.bot.set_boost_user(m2, m0)
+            adds = await self.bot.xp_multiplier_adds(m0.id, g.id)
+            return adds == 10
+
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
             roles = [
@@ -506,8 +570,8 @@ def main():
 
         print("TEST {:03d}: ".format(test_number), end='')
 
+        start = time.time()
         try:
-            start = time.time()
             if await getattr(t, method)():
                 print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
                 return True
