@@ -416,7 +416,7 @@ def main():
             self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
 
             await self.bot.set_boost_user(m0, m1)
-            user_boost = await self.bot.get_boost_user(m0)
+            user_boost = await self.bot.get_boost_user(m0, time.time())
             return user_boost['boostedid'] == 1\
                 and 59.9 < (user_boost['expires'] - time.time()) / (24 * 60 * 60) < 60.1
 
@@ -428,7 +428,7 @@ def main():
             self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
 
             boost_result = await self.bot.set_boost_user(m0, m0)
-            user_boost = await self.bot.get_boost_user(m0)
+            user_boost = await self.bot.get_boost_user(m0, time.time())
             return boost_result == ENUMS.BOOSTING_YOURSELF_FORBIDDEN and user_boost is None
 
         # test boost while boost has not ended
@@ -444,7 +444,7 @@ def main():
 
             boost_succes = await self.bot.set_boost_user(m0, m2)
 
-            user_boost = await self.bot.get_boost_user(m0)
+            user_boost = await self.bot.get_boost_user(m0, time.time())
 
             return boost_succes == ENUMS.BOOST_NOT_EXPIRED and user_boost['boostedid'] == 1
 
@@ -478,6 +478,61 @@ def main():
             adds = await self.bot.xp_multiplier_adds(m0.id, g.id)
             return adds == 0
 
+        # test create promo code
+        async def test_29_create_promo_code(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = 60
+
+            promo_code = await self.bot.create_promo_code(m0)
+
+            promo = await self.bot.get_promo_code(m1, promo_code)
+
+            return promo['uid'] == 0 and 59.9 < (promo['expires'] - time.time()) / (60 * 60) < 60.1
+
+        # test promo code expires
+        async def test_30_promo_code_expires(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = -1
+
+            promo_code = await self.bot.create_promo_code(m0)
+
+            result = await self.bot.get_promo_code(m1, promo_code)
+
+            return result is None
+
+        # test promo code boosts
+        async def test_31_promo_code_boosts(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, guild=g)
+            m1 = MemberDummy(1, guild=g)
+            m2 = MemberDummy(2, guild=g)
+
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = 5
+            self.bot.default_guild_settings['PROMO_BOOST_EXPIRES_DAYS'] = 60.0
+            self.bot.default_guild_settings['PROMO_BOOST_ADD_XP_MULTIPLIER'] = 99.0
+            self.bot.default_guild_settings['PROMO_USER_SET_LEVEL'] = 99.0
+
+            promo_code = await self.bot.create_promo_code(m0)
+
+            promo1 = await self.bot.get_promo_code(m1, promo_code)
+            promo2 = await self.bot.get_promo_code(m2, promo_code)
+
+            await self.bot.use_promo_code(m1, promo1)
+            await self.bot.use_promo_code(m2, promo2)
+
+            adds = await self.bot.xp_multiplier_adds(m0.id, g.id)
+
+            user1 = await self.bot.get_user(m1)
+            user2 = await self.bot.get_user(m2)
+
+            return adds == 198 and user1['lvl'] == 99 and user2['lvl'] == 99
+
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
             roles = [
@@ -491,11 +546,24 @@ def main():
             embed = await self.bot.lvlsys_get_embed(g)
             return embed.description.split('\n')[0] == 'Level: 10 | Role: ✅DummyRole | ID: 10'
 
+        # test boost embed
+        async def test_802_boost_get_embed(self):
+            g = GuildDummy()
+            m0 = MemberDummy(0, display_name='User0', guild=g)
+            m1 = MemberDummy(1, display_name='User1', guild=g)
+
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 7.0
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+
+            await self.bot.set_boost_user(m0, m1)
+            embed = await self.bot.boost_get_embed(m1)
+            return embed.fields[0].value == 'By *User0* expires in **6** days **23** hours'
+
         # test profile image creation
         async def test_901_profile_image(self):
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
-            await self.bot.member_set_lvl_xp(m, 5.5)
+            await self.bot.member_set_lvl(m, 5.5)
 
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
