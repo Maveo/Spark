@@ -287,6 +287,11 @@ class DiscordBot:
             settings[key] = await self.get_setting(guild_id, key)
         return settings
 
+    async def remove_setting(self, guild_id, key):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM settings WHERE gid=? AND skey=?', (guild_id, key,))
+        self.db_conn.commit()
+
     async def set_setting(self, guild_id, key, value):
         if key not in self.default_guild_settings:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
@@ -816,6 +821,19 @@ class DiscordBot:
 
             if len(args) == 0:
                 pass
+            elif args[0] in ['reset'] and len(args) >= 2:
+                key = ' '.join(args[1:])
+                if key not in self.parent.default_guild_settings:
+                    return await ctx.send(embed=discord.Embed(title='Error',
+                                                              description='the key "{}" was not found in the settings'
+                                                              .format(key),
+                                                              color=discord.Color.red()))
+                await self.parent.remove_setting(ctx.message.author.guild.id, key)
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Successfully reset setting "{}"!'
+                                                          .format(key),
+                                                          color=discord.Color.green()))
+
             elif args[0] in ['set', 's'] and len(args) >= 3:
                 key = args[1]
                 value = ' '.join(args[2:])
@@ -864,6 +882,7 @@ class DiscordBot:
             await ctx.send(embed=discord.Embed(title='Help',
                                                description='"settings get" to display the settings\n'
                                                            '"settings get {key}" to display a setting\n'
+                                                           '"settings reset {key}" to reset a setting\n'
                                                            '"settings set {key} {value}" to set a setting\n',
                                                color=discord.Color.gold()))
 
