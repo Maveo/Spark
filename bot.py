@@ -848,7 +848,7 @@ class DiscordBot:
                                           color=discord.Color.gold())
 
                     embed.add_field(name='{}'.format(key),
-                                    value='{}'.format(await self.parent.get_setting(ctx.message.author.guild.id, key)),
+                                    value='"{}"'.format(await self.parent.get_setting(ctx.message.author.guild.id, key)),
                                     inline=False)
                     return await ctx.send(embed=embed)
                 except KeyError:
@@ -866,14 +866,14 @@ class DiscordBot:
                         key = ' '.join(args[1:])
                         res = await self.parent.get_setting(ctx.message.author.guild.id, key)
                         embed.add_field(name='{}'.format(key),
-                                        value='{}'.format(res),
+                                        value='"{}"'.format(res),
                                         inline=False)
                         return await ctx.send(embed=embed)
                     except KeyError:
                         pass
 
                 for key, value in (await self.parent.get_settings(ctx.message.author.guild.id)).items():
-                    res = '{}'.format(value)
+                    res = '"{}"'.format(value)
                     embed.add_field(name='{}'.format(key),
                                     value=(res[:80] + '...') if len(str(res)) > 80 else res,
                                     inline=False)
