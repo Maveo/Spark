@@ -422,6 +422,44 @@ def ranking_image(x):
     return layers
 
 
+def welcome_image(x): return [
+    FileImageLayer(
+        file=os.path.join(current_dir, 'images', 'welcome_template.png')
+    ),
+    WebImageLayer(
+        pos=(85, 35),
+        resize=(60, 60),
+        url=x['guild_icon_url']
+    ),
+    RectangleLayer(
+        pos=(85, 35),
+        size=(60, 60),
+        color=(55, 50, 48),
+        radius=-30,
+    ),
+    WebImageLayer(
+        pos=(15, 130),
+        resize=(80, 80),
+        url=x['avatar_url']
+    ),
+    RectangleLayer(
+        pos=(15, 130),
+        size=(80, 80),
+        color=(55, 50, 48),
+        radius=-40,
+    ),
+    TextLayer(
+        pos=(110, 170),
+        align_y='center',
+        font='bold',
+        font_size=min(42, max(20, int(700 / len(str(x['name']))))),
+        text=str(x['name']),
+        color=(255, 255, 255),
+        max_size=(460, 50)
+    ),
+]
+
+
 DEFAULT_GUILD_SETTINGS = {
     'NEW_USER_LEVEL': 1.0,
     'NEW_USER_XP_MULTIPLIER': 1.0,
@@ -429,6 +467,7 @@ DEFAULT_GUILD_SETTINGS = {
     'VOICE_XP_PER_MINUTE': 2.0,
     'BOOST_EXPIRES_DAYS': 7.0,
     'BOOST_ADD_XP_MULTIPLIER': 0.25,
+    'SEND_WELCOME_IMAGE': True,
     'COMMAND_NOT_FOUND_RESPONSES': [
         'Kenn ich nicht, den command',
         '??',
@@ -468,5 +507,6 @@ DEFAULT_GUILD_SETTINGS = {
     'PROFILE_IMAGE': profile_image,
     'LEVEL_UP_IMAGE': level_up_image,
     'RANK_UP_IMAGE': rank_up_image,
-    'RANKING_IMAGE': ranking_image
+    'RANKING_IMAGE': ranking_image,
+    'WELCOME_IMAGE': welcome_image,
 }

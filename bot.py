@@ -415,6 +415,16 @@ class DiscordBot:
             (await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
+    async def member_create_welcome_image(self, member):
+        name = member.display_name
+        data_obj = {'member': member,
+                    'name': name,
+                    'avatar_url': str(member.avatar_url_as(format="png")),
+                    'guild_icon_url': str(member.guild.icon_url_as(format="png"))}
+        img_buf = await self.image_creator.create(
+            (await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))(data_obj))
+        return discord.File(filename="welcome.png", fp=img_buf)
+
     async def member_create_lvl_image(self, member, old_lvl, new_lvl):
         name = member.display_name
 
@@ -1092,8 +1102,8 @@ class DiscordBot:
         async def on_member_join(self, member):
             if not member.bot:
                 await self.parent.update_member(member)
-            # send a private message on join
-            # await member.send('Private message')
+            if await self.parent.get_setting(member.guild.id, 'SEND_WELCOME_IMAGE'):
+                await member.send(file=await self.parent.member_create_welcome_image(member))
 
         @commands.Cog.listener()
         async def on_member_remove(self, member):

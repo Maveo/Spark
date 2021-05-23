@@ -37,9 +37,13 @@ class GuildDummy:
         if system_channel is None:
             system_channel = ChannelDummy()
         self.system_channel = system_channel
+        self.icon_url = 'https://cdn.discordapp.com/icons/188893186435973121/a_71ba803956e5189b9dab7d5d2d6b331f.png'
 
     def member_join(self, member):
         self.members.append(member)
+
+    def icon_url_as(self, *args, **kwargs):
+        return self.icon_url
 
 
 class VoiceDummy:
@@ -76,8 +80,8 @@ class MemberDummy:
         self.color = ColorDummy()
         self.messages = []
 
-    async def send(self, msg):
-        self.messages.append(msg)
+    async def send(self, *args, **kwargs):
+        self.messages.append((args, kwargs))
 
     async def add_roles(self, role):
         self.roles[role.id] = True
@@ -142,6 +146,9 @@ def main():
         # test user joined server
         async def test_2_user_joined(self):
             m = MemberDummy()
+
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+
             await self.bot.events.on_member_join(m)
             user = await self.bot.get_user(m)
             return user['uid'] == 0 and float_match(user['lvl'], 1.0)
@@ -149,6 +156,9 @@ def main():
         # test user left server
         async def test_3_user_left(self):
             m = MemberDummy()
+
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+
             await self.bot.events.on_member_join(m)
             await self.bot.events.on_member_remove(m)
             user = await self.bot.get_user(m)
@@ -469,18 +479,6 @@ def main():
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_set_lvl_xp(m, 5.5)
 
-            def _profile_image(x):
-                d = list(x.items())
-                layers = [
-                    EmptyLayer(resize=(900, len(d)*20 + 20)),
-                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='PROFILE IMAGE')
-                ]
-                for i in range(len(d)):
-                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
-                return layers
-
-            self.bot.default_guild_settings['PROFILE_IMAGE'] = _profile_image
-
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -490,18 +488,6 @@ def main():
         # test level up image creation
         async def test_902_level_up_image(self):
             m = MemberDummy()
-
-            def _level_up_image(x):
-                d = list(x.items())
-                layers = [
-                    EmptyLayer(resize=(900, len(d)*20 + 20)),
-                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='LEVEL UP IMAGE')
-                ]
-                for i in range(len(d)):
-                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
-                return layers
-
-            self.bot.default_guild_settings['LEVEL_UP_IMAGE'] = _level_up_image
 
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -515,18 +501,6 @@ def main():
             r1 = RoleDummy()
             r2 = RoleDummy()
 
-            def _rank_up_image(x):
-                d = list(x.items())
-                layers = [
-                    EmptyLayer(resize=(900, len(d)*20)),
-                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='RANK UP IMAGE')
-                ]
-                for i in range(len(d)):
-                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
-                return layers
-
-            self.bot.default_guild_settings['RANK_UP_IMAGE'] = _rank_up_image
-
             image_buffer = (await self.bot.member_create_rank_up_image(m, 1, 2, r1, r2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -539,19 +513,16 @@ def main():
             m = [MemberDummy(x, guild=g) for x in range(10)]
             [await self.bot.check_member(x) for x in m]
 
-            def _ranking_image(x):
-                d = x
-                layers = [
-                    EmptyLayer(resize=(1500, len(d)*20 + 20)),
-                    TextLayer(pos=(0, 0), color=(255, 255, 255), text='RANKING IMAGE')
-                ]
-                for i in range(len(d)):
-                    layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
-                return layers
-
-            self.bot.default_guild_settings['RANKING_IMAGE'] = _ranking_image
-
             image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
+            image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
+
+            show_image(image)
+            return True
+
+        # test welcome image creation
+        async def test_905_welcome_image(self):
+            m = MemberDummy(display_name='skillor')
+            image_buffer = (await self.bot.member_create_welcome_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
             show_image(image)
@@ -560,25 +531,29 @@ def main():
     async def run_test(method, test_number, test_name):
         con = sqlite3.connect(":memory:")
 
-        from settings import DEFAULT_GUILD_SETTINGS
+        from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
 
-        b = DiscordBot(con, use_slash_commands=False, default_guild_settings=DEFAULT_GUILD_SETTINGS)
+        b = DiscordBot(con, use_slash_commands=False, default_guild_settings=DEFAULT_GUILD_SETTINGS.copy())
 
-        b.set_image_creator(ImageCreator(fonts={}, load_memory=[]))
+        b.set_image_creator(ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
+                                         load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY']))
 
         t = Tests(b, con)
 
         print("TEST {:03d}: ".format(test_number), end='')
+
+        error = 'Test Failed'
 
         start = time.time()
         try:
             if await getattr(t, method)():
                 print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
                 return True
-        except:
-            pass
+        except Exception as e:
+            error = str(e)
 
-        print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+        print("FAILED! elapsed {}ms | {} | Error: {}"
+              .format(round((time.time() - start) * 1000, 1), test_name, error))
         return False
 
     if os.name == 'nt':
@@ -593,15 +568,22 @@ def main():
                           'test_name': ' '.join(splitted_name[1:])})
 
     results = []
+    start_time = time.time()
     for test in sorted(tests, key=lambda x: x['test_number']):
         res = asyncio.run(run_test(test['method_name'], test['test_number'], test['test_name']))
         results.append((test, res))
 
+    run_time = time.time() - start_time
+
     failed_tests = list(filter(lambda x: not x[1], results))
-    print('Total amount of Tests: {} | Tests Failed: {} [{}]'.format(
+    print('Total amount of Tests: {} | Total time: {}s | Tests Failed: {} [{}]'.format(
         len(tests),
+        round(run_time, 1),
         len(failed_tests),
-        ', '.join(map(lambda x: 'TEST {} ({})'.format(x[0]['test_number'], x[0]['test_name']), failed_tests))))
+        ', '.join(map(lambda x: 'TEST {} ({})'.format(
+            x[0]['test_number'],
+            x[0]['test_name']
+        ), failed_tests))))
 
 
 if __name__ == '__main__':
