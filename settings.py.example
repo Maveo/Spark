@@ -427,6 +427,8 @@ DEFAULT_GUILD_SETTINGS = {
     'NEW_USER_XP_MULTIPLIER': 1.0,
     'MESSAGE_XP': 0.2,
     'VOICE_XP_PER_MINUTE': 2.0,
+    'BOOST_EXPIRES_DAYS': 7.0,
+    'BOOST_ADD_XP_MULTIPLIER': 0.25,
     'COMMAND_NOT_FOUND_RESPONSES': [
         'Kenn ich nicht, den command',
         '??',
