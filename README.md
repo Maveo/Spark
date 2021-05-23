@@ -22,9 +22,9 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
   ###### Everything about the level system (can only be used by administrators)
 - #### profile
   ###### Shows your profile-card
+  ###### "profile {username}" Show another user
 - #### boost
   ###### Users can give other users a temporary xp-multiplier (can be adjusted in settings)
-  ###### <kbd>/profile {username}</kbd> Show another user
 - #### ranking-all
   ###### Posts all profile-cards of the server
 - #### send
