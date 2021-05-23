@@ -469,6 +469,8 @@ class ImageCreator:
 
             async def _async_create(_self):
                 img = None
+                if len(layers) == 0:
+                    img = await EmptyLayer().create()
                 for layer in layers:
                     img = await layer.overlay(background=img,
                                               image_memory=self.image_memory,

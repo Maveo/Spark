@@ -151,7 +151,9 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
             msg = MessageDummy(author=m)
-            self.bot.message_give_xp = 10
+
+            self.bot.default_guild_settings['MESSAGE_XP'] = 10
+
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
             return user['uid'] == 0 and float_match(1.1, user['lvl'])
@@ -186,10 +188,10 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
 
-            self.bot.voice_xp_per_minute = 1
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
             await self.bot.member_joined_vc(m, 0)
-            await self.bot.member_left_vc(m, 60 * 60 * 1)
+            await self.bot.member_left_vc(m, 60 * 1 * 1)
             user = await self.bot.get_user(m)
             return user['uid'] == 0 and int(user['lvl']) == 1 and self.bot.lvl_get_xp(user['lvl']
                                                                                       ) == 60 and user['joined'] == -1
@@ -208,10 +210,12 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
 
-            self.bot.voice_xp_per_minute = 1
+            self.bot.default_guild_settings['LEVEL_UP_IMAGE'] = lambda x: []
+
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
             await self.bot.member_joined_vc(m, g.id)
-            await self.bot.member_left_vc(m, 60 * 60 * 62)
+            await self.bot.member_left_vc(m, 60 * 1 * 62)
             user = await self.bot.get_user(m)
             return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(
                 g.system_channel.messages) == 1
@@ -323,7 +327,7 @@ def main():
 
             msg = MessageDummy(author=m)
 
-            self.bot.message_give_xp = 1
+            self.bot.default_guild_settings['MESSAGE_XP'] = 1
 
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
@@ -337,9 +341,9 @@ def main():
             mbs = [MemberDummy(x, guild=g) for x in range(5)]
             [await self.bot.member_joined_vc(x, 0) for x in mbs]
 
-            self.bot.voice_xp_per_minute = 1
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
-            t = 60 * 60 * 6
+            t = 60 * 1 * 6
 
             self.bot.bot.get_guild = types.MethodType(lambda *args: g, self.bot.bot)
 
@@ -353,13 +357,34 @@ def main():
             [await self.bot.member_joined_vc(x, 0) for x in mbs]
             [await self.bot.member_set_blacklist(x, True) for x in mbs]
 
-            self.bot.voice_xp_per_minute = 1
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
-            t = 60 * 60 * 1
+            t = 60 * 1 * 1
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
             return False not in map(lambda x: float_match(x['lvl'], 1.0) and x['joined'] == t, users)
+
+        # test set guild setting
+        async def test_22_set_guild_settings(self):
+            await self.bot.set_setting(0, 'VOICE_XP_PER_MINUTE', '10')
+            await self.bot.set_setting(0, 'VOICE_XP_PER_MINUTE', '70')
+            await self.bot.set_setting(0, 'MESSAGE_XP', '50')
+            return await self.bot.get_setting(0, 'VOICE_XP_PER_MINUTE') == 70\
+                and await self.bot.get_setting(0, 'MESSAGE_XP') == 50
+
+        # test multiple guilds same user
+        async def test_23_multiple_guilds_same_user(self):
+            g0 = GuildDummy(0)
+            g1 = GuildDummy(1)
+            m0 = MemberDummy(guild=g0)
+            m1 = MemberDummy(guild=g1)
+            await self.bot.events.on_member_join(m0)
+            await self.bot.events.on_member_join(m1)
+            await self.bot.member_set_blacklist(m0, True)
+            user0 = await self.bot.get_user(m0)
+            user1 = await self.bot.get_user(m1)
+            return user0['blacklist'] == 1 and user1['blacklist'] == 0
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
@@ -390,7 +415,7 @@ def main():
                     layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
                 return layers
 
-            self.bot.profile_image = _profile_image
+            self.bot.default_guild_settings['PROFILE_IMAGE'] = _profile_image
 
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -412,7 +437,7 @@ def main():
                     layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
                 return layers
 
-            self.bot.level_up_image = _level_up_image
+            self.bot.default_guild_settings['LEVEL_UP_IMAGE'] = _level_up_image
 
             image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -436,7 +461,7 @@ def main():
                     layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
                 return layers
 
-            self.bot.rank_up_image = _rank_up_image
+            self.bot.default_guild_settings['RANK_UP_IMAGE'] = _rank_up_image
 
             image_buffer = (await self.bot.member_create_rank_up_image(m, 1, 2, r1, r2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -460,7 +485,7 @@ def main():
                     layers.append(TextLayer(pos=(0, i*20+20), color=(255, 255, 255), text=str(d[i])))
                 return layers
 
-            self.bot.ranking_image = _ranking_image
+            self.bot.default_guild_settings['RANKING_IMAGE'] = _ranking_image
 
             image_buffer = (await self.bot.create_leaderboard_image(m[0])).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -471,7 +496,9 @@ def main():
     async def run_test(method, test_number, test_name):
         con = sqlite3.connect(":memory:")
 
-        b = DiscordBot(con, use_slash_commands=False)
+        from settings import DEFAULT_GUILD_SETTINGS
+
+        b = DiscordBot(con, use_slash_commands=False, default_guild_settings=DEFAULT_GUILD_SETTINGS)
 
         b.set_image_creator(ImageCreator(fonts={}, load_memory=[]))
 
@@ -479,15 +506,16 @@ def main():
 
         print("TEST {:03d}: ".format(test_number), end='')
 
-        result = False
-        start = time.time()
-        if await getattr(t, method)():
-            print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
-            result = True
-        else:
-            print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+        try:
+            start = time.time()
+            if await getattr(t, method)():
+                print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+                return True
+        except:
+            pass
 
-        return result
+        print("FAILED! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
+        return False
 
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
