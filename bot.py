@@ -115,7 +115,6 @@ class DiscordBot:
                 );
         ''')
 
-
         cur.execute('''
             CREATE TABLE IF NOT EXISTS reactions (
                   gid INTEGER NOT NULL, 
