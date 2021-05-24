@@ -1,5 +1,7 @@
-
 # - Spark -
+[![Build Status](https://www.travis-ci.com/skillor/Spark.svg?branch=master)](https://www.travis-ci.com/skillor/Spark)
+
+
  ### A Discord Bot
 ![alt text](https://cdn.discordapp.com/avatars/843214102108962856/9d05175cc55385fa4a5f5313a858a045.webp?size=128 "Sparks face")
 
