@@ -39,6 +39,7 @@ class DiscordBot:
 
         intents = discord.Intents.default()
         intents.members = True
+        intents.reactions = True
 
         self.print_logging = print_logging
 
@@ -111,6 +112,26 @@ class DiscordBot:
                   pid INTEGER NOT NULL,
                   expires INTEGER NOT NULL,
                   PRIMARY KEY (uid, gid)
+                );
+        ''')
+
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS reactions (
+                  gid INTEGER NOT NULL, 
+                  trigger TEXT NOT NULL,
+                  reaction TEXT NOT NULL,
+                  PRIMARY KEY (gid, trigger)
+                );
+        ''')
+
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS msgreactions (
+                  gid INTEGER NOT NULL,
+                  msgid INTEGER NOT NULL,
+                  reaction TEXT NOT NULL,
+                  actiontype TEXT NOT NULL,
+                  action TEXT NOT NULL
                 );
         ''')
 
@@ -264,6 +285,68 @@ class DiscordBot:
 
         return xp_adds
 
+    async def add_msg_reaction(self, guild_id, msg_id, reaction, action_type, action):
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT INTO msgreactions(gid, msgid, reaction, actiontype, action)'
+                    'VALUES(?, ?, ?, ?, ?);',
+                    (guild_id, msg_id, reaction, action_type, action))
+        self.db_conn.commit()
+
+    async def remove_msg_reaction(self, guild_id, msg_id, reaction):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM msgreactions WHERE gid=? AND msgid=? AND reaction=?',
+                    (guild_id, msg_id, reaction,))
+        self.db_conn.commit()
+
+    async def get_all_msg_reactions(self, guild_id):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM msgreactions WHERE gid=?',
+                    (guild_id,))
+        return cur.fetchall()
+
+    async def get_msg_reactions(self, guild_id, msg_id):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM msgreactions WHERE gid=? AND msgid=?',
+                    (guild_id, msg_id,))
+        return cur.fetchall()
+
+    async def get_msg_reactions_by_reaction(self, guild_id, msg_id, reaction):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM msgreactions WHERE gid=? AND msgid=? AND reaction=?',
+                    (guild_id, msg_id, reaction,))
+        return cur.fetchall()
+
+    async def msg_reaction_event(self, member, msg_id, emoji):
+        actions = await self.get_msg_reactions_by_reaction(member.guild.id, msg_id, str(emoji))
+        for action in actions:
+            if action['actiontype'] == 'add-role':
+                await self.give_role(member.guild, member, int(action['action']))
+            elif action['actiontype'] == 'dm':
+                await member.send(action['action'])
+
+    async def set_reaction(self, guild_id, trigger, reaction):
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT OR REPLACE INTO reactions(gid, trigger, reaction)'
+                    'VALUES(?, ?, ?);',
+                    (guild_id, str(trigger), str(reaction),))
+        self.db_conn.commit()
+
+    async def remove_reaction(self, guild_id, trigger):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM reactions WHERE gid=? AND trigger=?',
+                    (guild_id, str(trigger),))
+        self.db_conn.commit()
+
+    async def get_reactions(self, guild_id):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM reactions WHERE gid=?', (guild_id,))
+        return cur.fetchall()
+
+    async def get_reaction(self, guild_id, trigger):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM reactions WHERE gid=? AND trigger=?', (guild_id, str(trigger),))
+        return cur.fetchone()
+
     async def get_boosted_by(self, member, ctime):
         cur = self.db_conn.cursor()
         cur.execute('SELECT * FROM boosts WHERE gid=? AND boostedid=? AND expires>?',
@@ -272,6 +355,7 @@ class DiscordBot:
 
     async def get_boost_user(self, member, ctime):
         cur = self.db_conn.cursor()
+
         cur.execute('SELECT * FROM boosts WHERE uid=? AND gid=? AND expires>?',
                     (member.id, member.guild.id, ctime,))
         return cur.fetchone()
@@ -353,9 +437,11 @@ class DiscordBot:
             if bool(data['blacklist']) is True:
                 return False
 
-            await self.member_set_lvl(member,
-                                      await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL'),
-                                      old_level=data['lvl'])
+
+            promo_lvl = await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL')
+            if promo_lvl > data['lvl']:
+                await self.member_set_lvl(member, promo_lvl, old_level=data['lvl'])
+
             return True
 
         except sqlite3.IntegrityError:
@@ -1078,6 +1164,190 @@ class DiscordBot:
                                                            '"settings set {key} {value}" to set a setting\n',
                                                color=discord.Color.gold()))
 
+        @commands.command(name='mreact',
+                          aliases=[],
+                          description='message reaction commands',
+                          help=' - Lasse den Bot auf Message Reactions reagieren')
+        @commands.has_permissions(administrator=True)
+        async def _msg_reaction(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
+            if len(args) == 0:
+                pass
+
+            elif args[0] in ['add']:
+                if len(args) >= 3:
+                    try:
+                        msg_id = int(args[1])
+                        message = await ctx.fetch_message(msg_id)
+
+                    except ValueError or discord.NotFound:
+                        return await ctx.send(
+                            embed=discord.Embed(title='',
+                                                description='Message ID was invalid!',
+                                                color=discord.Color.red()))
+
+                    reaction_emoji = args[2]
+
+                    try:
+                        await message.add_reaction(reaction_emoji)
+                    except discord.HTTPException:
+                        return await ctx.send(
+                            embed=discord.Embed(title='',
+                                                description='Reaction is invalid!',
+                                                color=discord.Color.red()))
+
+                    if len(args) >= 5:
+                        if args[3] == 'add-role':
+                            action_type = 'add-role'
+                            try:
+                                action = int(args[4])
+                                role = get(ctx.message.guild.roles, id=action)
+                                if role is None:
+                                    raise ValueError('Role-ID is invalid')
+
+                            except ValueError:
+                                return await ctx.send(
+                                    embed=discord.Embed(title='',
+                                                        description='Role-ID is invalid!',
+                                                        color=discord.Color.red()))
+
+                        elif args[3] == 'dm':
+                            action_type = 'dm'
+                            action = ' '.join(args[4:])
+
+                        else:
+                            return await ctx.send(
+                                embed=discord.Embed(title='',
+                                                    description='Unknown action: {}'.format(args[3]),
+                                                    color=discord.Color.red()))
+
+                        await self.parent.add_msg_reaction(ctx.guild.id,
+                                                           message.id,
+                                                           reaction_emoji,
+                                                           action_type,
+                                                           action)
+
+                    return await ctx.send(
+                        embed=discord.Embed(title='',
+                                            description='Successfully added reaction\n',
+                                            color=discord.Color.green()))
+
+                return await ctx.send(
+                    embed=discord.Embed(title='Help "mreact add"',
+                                        description='"mreact add {msg_id} {reaction_emoji} to just add a emoji"\n'
+                                                    '"mreact add {msg_id} {reaction_emoji} add-role {role_id}" '
+                                                    'to setup adding a role on a reaction\n'
+                                                    '"mreact add {msg_id} {reaction_emoji} dm {dm_content}" '
+                                                    'to setup sending a dm on a reaction\n',
+                                        color=discord.Color.gold()))
+
+            elif args[0] in ['remove', 'delete', 'rm', 'del'] and len(args) >= 2:
+                try:
+                    msg_id = int(args[1])
+                    await self.parent.remove_msg_reaction(ctx.guild.id, msg_id, args[2])
+                    message = await ctx.fetch_message(msg_id)
+
+                except ValueError or discord.NotFound:
+                    return await ctx.send(
+                        embed=discord.Embed(title='',
+                                            description='Message ID is invalid!',
+                                            color=discord.Color.red()))
+
+                try:
+                    await message.clear_reaction(args[2])
+                except discord.HTTPException:
+                    return await ctx.send(
+                        embed=discord.Embed(title='',
+                                            description='Reaction is invalid!',
+                                            color=discord.Color.red()))
+
+                return await ctx.send(
+                    embed=discord.Embed(title='',
+                                        description='Successfully removed reaction\n',
+                                        color=discord.Color.green()))
+
+            elif args[0] in ['get']:
+                if len(args) >= 2:
+                    msg_id = ' '.join(args[1:])
+                    reactions = await self.parent.get_msg_reactions(ctx.guild.id, msg_id)
+                    if len(reactions) == 0:
+                        return await ctx.send(
+                            embed=discord.Embed(title='',
+                                                description='Reaction to "{}" is not found!'.format(msg_id),
+                                                color=discord.Color.red()))
+                    embed = discord.Embed(title='Message "{}" Reactions'.format(msg_id), color=discord.Color.green())
+                    for reaction in reactions:
+                        embed.add_field(name='Reaction: {}'.format(reaction['reaction']),
+                                        value='type: {}\naction: {}'
+                                        .format(reaction['actiontype'], reaction['action']),
+                                        inline=False)
+                    return await ctx.send(embed=embed)
+
+                reactions = await self.parent.get_all_msg_reactions(ctx.guild.id)
+                embed = discord.Embed(title='Message Reactions', color=discord.Color.green())
+                for reaction in reactions:
+                    embed.add_field(name='ID: {}'.format(reaction['msgid']),
+                                    value='reaction: {}\ntype: {}\naction: {}'
+                                    .format(reaction['reaction'], reaction['actiontype'], reaction['action']),
+                                    inline=False)
+                return await ctx.send(embed=embed)
+
+            return await ctx.send(
+                embed=discord.Embed(title='Help',
+                                    description='"mreact get" to show all message reactions\n'
+                                                '"mreact add" to show more information how to setup msg reactions\n'
+                                                '"reaction remove {msg_id} {reaction_emoji}" '
+                                                'to remove a message reaction\n',
+                                    color=discord.Color.gold()))
+
+        @commands.command(name='reaction',
+                          aliases=['reactions'],
+                          description='reaction commands',
+                          help=' - Lasse den Bot auf Nachrichten reagieren')
+        @commands.has_permissions(administrator=True)
+        async def _reaction(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
+            await ctx.trigger_typing()
+
+            if len(args) == 0:
+                pass
+            elif args[0] in ['get']:
+                reactions = await self.parent.get_reactions(ctx.guild.id)
+                embed = discord.Embed(title='Reactions', color=discord.Color.green())
+
+                for reaction in reactions:
+                    embed.add_field(name=reaction['trigger'], value=reaction['reaction'], inline=False)
+
+                return await ctx.send(embed=embed)
+
+            elif args[0] in ['add'] and len(args) >= 3:
+                trigger = args[1]
+                reaction = ' '.join(args[2:])
+                await self.parent.set_reaction(ctx.guild.id, trigger, reaction)
+                return await ctx.send(
+                    embed=discord.Embed(title='',
+                                        description='Now reacting to "{}" with "{}"'.format(trigger, reaction),
+                                        color=discord.Color.green()))
+
+            elif args[0] in ['remove', 'rm', 'delete', 'del'] and len(args) >= 2:
+                trigger = ' '.join(args[1:])
+                await self.parent.remove_reaction(ctx.guild.id, trigger)
+                return await ctx.send(
+                    embed=discord.Embed(title='',
+                                        description='Reaction to {} was removed'.format(trigger),
+                                        color=discord.Color.green()))
+
+            return await ctx.send(
+                embed=discord.Embed(title='Help',
+                                    description='"reaction get" to show all reactions\n'
+                                                '"reaction add {trigger} {reaction}" to add a reaction\n'
+                                                '"reaction remove {trigger}" to remove a reaction\n',
+                                    color=discord.Color.gold()))
+
         @commands.command(name='lvlsys',
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description='level system commands',
@@ -1333,6 +1603,11 @@ class DiscordBot:
             if message.guild is not None:
                 if not message.author.bot:
                     await self.parent.member_message_xp(message.author)
+
+                    reaction = await self.parent.get_reaction(message.guild.id, message.content)
+                    if reaction is not None:
+                        await message.channel.send(reaction['reaction'])
+
                 if await self.parent.get_setting(message.guild.id, 'PROMO_CHANNEL_ID') == str(message.channel.id):
                     if not message.author.bot:
                         promo = await self.parent.get_promo_code(message.author, message.content)
@@ -1354,6 +1629,12 @@ class DiscordBot:
                                                         color=discord.Color.red()))
                     await asyncio.sleep(5)
                     await message.delete()
+
+        @commands.Cog.listener()
+        async def on_raw_reaction_add(self, payload):
+            if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
+                await self.parent.msg_reaction_event(payload.member, payload.message_id, payload.emoji)
+
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
