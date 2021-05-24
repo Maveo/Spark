@@ -95,7 +95,9 @@ class MemberDummy:
 
 
 class MessageDummy:
-    def __init__(self, author=None, guild=None, channel=None):
+    def __init__(self, uid=0, content='', author=None, guild=None, channel=None):
+        self.id = uid
+        self.content = content
         if author is None:
             author = MemberDummy()
         self.author = author
@@ -532,6 +534,28 @@ def main():
             user2 = await self.bot.get_user(m2)
 
             return adds == 198 and user1['lvl'] == 99 and user2['lvl'] == 99
+
+        # test reaction system
+        async def test_32_reaction_system(self):
+            g = GuildDummy()
+            m = MemberDummy(guild=g)
+            c = ChannelDummy()
+            msg = MessageDummy(author=m, content='ping', channel=c)
+            await self.bot.set_reaction(g.id, msg.content, 'pong')
+            await self.bot.events.on_message(msg)
+            return c.messages == [(('pong',), {})]
+
+        # test message reactions
+        async def test_33_message_reaction(self):
+            r = RoleDummy(0)
+            g = GuildDummy(roles=[r])
+            m = MemberDummy(guild=g)
+            msg = MessageDummy()
+            emoji = '😁'
+            await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'add-role', r.id)
+            await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'dm', 'test')
+            await self.bot.msg_reaction_event(m, msg.id, emoji)
+            return m.roles == {0: True} and m.messages == [(('test',), {})]
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):
