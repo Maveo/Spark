@@ -1513,7 +1513,7 @@ class DiscordBot:
                           description='Roll a dice to your Witcher!',
                           help=' - Würfelt eine Zahl zwischen 1-6')
         async def _dice(self, ctx, *args):
-            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(random.randint(1, 6)))))
+            await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(random.randint(1, 6)))))
 
         @commands.command(name='random',
                           aliases=[],
