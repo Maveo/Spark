@@ -114,6 +114,15 @@ class DiscordBot:
                 );
         ''')
 
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS reactions (
+                  gid INTEGER NOT NULL, 
+                  trigger TEXT NOT NULL,
+                  reaction TEXT NOT NULL,
+                  PRIMARY KEY (gid, trigger)
+                );
+        ''')
+
         self.db_conn.commit()
 
         self.bot = commands.Bot(command_prefix=command_prefix,
@@ -263,6 +272,29 @@ class DiscordBot:
         xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'PROMO_BOOST_ADD_XP_MULTIPLIER')
 
         return xp_adds
+
+    async def set_reaction(self, guild_id, trigger, reaction):
+        cur = self.db_conn.cursor()
+        cur.execute('INSERT OR REPLACE INTO reactions(gid, trigger, reaction)'
+                    'VALUES(?, ?, ?);',
+                    (guild_id, str(trigger), str(reaction),))
+        self.db_conn.commit()
+
+    async def remove_reaction(self, guild_id, trigger):
+        cur = self.db_conn.cursor()
+        cur.execute('DELETE FROM reactions WHERE gid=? AND trigger=?',
+                    (guild_id, str(trigger),))
+        self.db_conn.commit()
+
+    async def get_reactions(self, guild_id):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM reactions WHERE gid=?', (guild_id,))
+        return cur.fetchall()
+
+    async def get_reaction(self, guild_id, trigger):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM reactions WHERE gid=? AND trigger=?', (guild_id, str(trigger),))
+        return cur.fetchone()
 
     async def get_boosted_by(self, member, ctime):
         cur = self.db_conn.cursor()
@@ -1078,6 +1110,52 @@ class DiscordBot:
                                                            '"settings set {key} {value}" to set a setting\n',
                                                color=discord.Color.gold()))
 
+        @commands.command(name='reaction',
+                          aliases=['reactions', 'react'],
+                          description='reaction commands',
+                          help=' - Lasse den Bot reagieren')
+        @commands.has_permissions(administrator=True)
+        async def _reaction(self, ctx, *args):
+            if ctx.guild is None:
+                raise commands.NoPrivateMessage()
+
+            await ctx.trigger_typing()
+
+            if len(args) == 0:
+                pass
+            elif args[0] in ['get']:
+                reactions = await self.parent.get_reactions(ctx.guild.id)
+                embed = discord.Embed(title='Reactions', color=discord.Color.green())
+
+                for reaction in reactions:
+                    embed.add_field(name=reaction['trigger'], value=reaction['reaction'], inline=False)
+
+                return await ctx.send(embed=embed)
+
+            elif args[0] in ['add'] and len(args) >= 3:
+                trigger = args[1]
+                reaction = ' '.join(args[2:])
+                await self.parent.set_reaction(ctx.guild.id, trigger, reaction)
+                return await ctx.send(
+                    embed=discord.Embed(title='',
+                                        description='Now reacting to "{}" with "{}"'.format(trigger, reaction),
+                                        color=discord.Color.green()))
+
+            elif args[0] in ['remove', 'rm', 'delete', 'del'] and len(args) >= 2:
+                trigger = ' '.join(args[1:])
+                await self.parent.remove_reaction(ctx.guild.id, trigger)
+                return await ctx.send(
+                    embed=discord.Embed(title='',
+                                        description='Reaction to {} was removed'.format(trigger),
+                                        color=discord.Color.green()))
+
+            return await ctx.send(
+                embed=discord.Embed(title='Help',
+                                    description='"reaction get" to show all reactions\n'
+                                                '"reaction add {trigger} {reaction}" to add a reaction\n'
+                                                '"reaction remove {trigger}" to remove a reaction\n',
+                                    color=discord.Color.gold()))
+
         @commands.command(name='lvlsys',
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description='level system commands',
@@ -1333,6 +1411,9 @@ class DiscordBot:
             if message.guild is not None:
                 if not message.author.bot:
                     await self.parent.member_message_xp(message.author)
+                    reaction = await self.parent.get_reaction(message.guild.id, message.content)
+                    if reaction is not None:
+                        await message.channel.send(reaction['reaction'])
                 if await self.parent.get_setting(message.guild.id, 'PROMO_CHANNEL_ID') == str(message.channel.id):
                     if not message.author.bot:
                         promo = await self.parent.get_promo_code(message.author, message.content)
