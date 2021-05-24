@@ -115,6 +115,7 @@ class DiscordBot:
                 );
         ''')
 
+
         cur.execute('''
             CREATE TABLE IF NOT EXISTS reactions (
                   gid INTEGER NOT NULL, 
@@ -354,6 +355,7 @@ class DiscordBot:
 
     async def get_boost_user(self, member, ctime):
         cur = self.db_conn.cursor()
+
         cur.execute('SELECT * FROM boosts WHERE uid=? AND gid=? AND expires>?',
                     (member.id, member.guild.id, ctime,))
         return cur.fetchone()
@@ -435,9 +437,11 @@ class DiscordBot:
             if bool(data['blacklist']) is True:
                 return False
 
+
             promo_lvl = await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL')
             if promo_lvl > data['lvl']:
                 await self.member_set_lvl(member, promo_lvl, old_level=data['lvl'])
+
             return True
 
         except sqlite3.IntegrityError:
@@ -1599,9 +1603,11 @@ class DiscordBot:
             if message.guild is not None:
                 if not message.author.bot:
                     await self.parent.member_message_xp(message.author)
+
                     reaction = await self.parent.get_reaction(message.guild.id, message.content)
                     if reaction is not None:
                         await message.channel.send(reaction['reaction'])
+
                 if await self.parent.get_setting(message.guild.id, 'PROMO_CHANNEL_ID') == str(message.channel.id):
                     if not message.author.bot:
                         promo = await self.parent.get_promo_code(message.author, message.content)
@@ -1628,6 +1634,7 @@ class DiscordBot:
         async def on_raw_reaction_add(self, payload):
             if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
                 await self.parent.msg_reaction_event(payload.member, payload.message_id, payload.emoji)
+
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
