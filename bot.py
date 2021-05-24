@@ -1636,18 +1636,18 @@ class DiscordBot:
                 res = 'kopf'
             else:
                 res = 'zahl'
+
+            prev_author = ctx.message.author
+
             message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
 
             voice_client = None
-            if random.random() < await self.parent.get_setting(ctx.message.author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
-                if ctx.message.author.voice is not None and ctx.message.author.voice.channel is not None:
-                    try:
-                        voice_channel = ctx.message.author.voice.channel
-                        voice_client = await voice_channel.connect()
-                        audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
-                        voice_client.play(audio_source)
-                    except discord.ClientException:
-                        pass
+            if random.random() < await self.parent.get_setting(prev_author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
+                if prev_author.voice is not None and prev_author.voice.channel is not None:
+                    voice_channel = prev_author.voice.channel
+                    voice_client = await voice_channel.connect()
+                    audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
+                    voice_client.play(audio_source)
 
             await asyncio.sleep(13)
 
