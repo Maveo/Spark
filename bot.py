@@ -284,6 +284,104 @@ class DiscordBot:
 
         return xp_adds
 
+    async def info_get_embed(self, member):
+        await self.check_member(member)
+        embed = discord.Embed(title=member.display_name,
+                              description='',
+                              color=discord.Color.green())
+        embed.set_thumbnail(url=member.avatar_url)
+        data = await self.get_user(member)
+
+        embed.add_field(name='ID', value='{}'.format(data['uid']), inline=False)
+        embed.add_field(name='Level', value='{:.2f}'.format(data['lvl']), inline=False)
+        embed.add_field(name='XP Multiplier', value='{:.2f}'.format(data['xp_multiplier']), inline=False)
+
+        if data['joined'] < 0:
+            embed.add_field(name='Last XP Update',
+                            value='None',
+                            inline=False)
+        else:
+            embed.add_field(name='Last XP Update',
+                            value='{}s ago'.format(int(time.time() - data['joined'])),
+                            inline=False)
+
+        embed.add_field(name='Blacklisted', value='{}'.format(bool(data['blacklist'])), inline=False)
+
+        boost_data = await self.boost_get_infos(member)
+
+        if boost_data['boosting'] is None:
+            embed.add_field(name='Boosting',
+                            value='None',
+                            inline=False)
+        else:
+            embed.add_field(name='Boosting',
+                            value='*{}*, expires in **{}** days **{}** hours'
+                            .format(boost_data['boosting_name'],
+                                    boost_data['boosting_remaining_days'],
+                                    boost_data['boosting_remaining_hours']),
+                            inline=False)
+
+        def _get_value(arr):
+            if len(arr) > 0:
+                return '\n'.join(arr)
+            return 'Empty'
+
+        embed.add_field(name='Boosts',
+                        value=_get_value(boost_data['boosts']),
+                        inline=False)
+
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM promo_boosts WHERE gid=? AND uid=?',
+                    (member.guild.id,
+                     member.id
+                     ))
+        promo = cur.fetchone()
+
+        if promo is None:
+            embed.add_field(name='Promoted By',
+                            value='None',
+                            inline=False)
+        else:
+            promoted_by_name = 'A USER WHO LEFT'
+            promoted_by_user = get(member.guild.members, id=promo['pid'])
+            if promoted_by_user is not None:
+                promoted_by_name = promoted_by_user.display_name
+            embed.add_field(name='Promoted By',
+                            value='*{}*'.format(promoted_by_name),
+                            inline=False)
+
+        embed.add_field(name='Promo Boosts',
+                        value=_get_value(boost_data['promo_boosts']),
+                        inline=False)
+
+        def _format_date(date):
+            if date is None:
+                return 'None'
+            return date.strftime("%d.%m.%Y %H:%M")
+
+        embed.add_field(name='Joined At',
+                        value='{}'.format(_format_date(member.joined_at)),
+                        inline=False)
+
+        embed.add_field(name='Boosting Server since',
+                        value='{}'.format(_format_date(member.premium_since)),
+                        inline=False)
+
+        hype_squad = None
+        if member.public_flags.hypesquad_bravery:
+            hype_squad = 'Brave'
+        elif member.public_flags.hypesquad_brilliance:
+            hype_squad = 'Brilliant'
+        elif member.public_flags.hypesquad_balance:
+            hype_squad = 'Balanced'
+
+        if hype_squad is not None:
+            embed.add_field(name='Hype',
+                            value=hype_squad,
+                            inline=False)
+
+        return embed
+
     async def add_msg_reaction(self, guild_id, msg_id, reaction, action_type, action):
         cur = self.db_conn.cursor()
         cur.execute('INSERT INTO msgreactions(gid, msgid, reaction, actiontype, action)'
@@ -447,15 +545,12 @@ class DiscordBot:
 
         return False
 
-    async def boost_get_embed(self, member):
+    async def boost_get_infos(self, member):
         current_time = time.time()
 
         boosting = await self.get_boost_user(member, current_time)
 
-        embed = discord.Embed(title='Boosts',
-                              description='You are currently boosting no one!\n'
-                                          'Use **"boost {member}"** to start boosting!',
-                              color=discord.Color.gold())
+        data = {'boosting': boosting}
 
         id_names = {}
 
@@ -479,33 +574,56 @@ class DiscordBot:
         if boosting is not None:
             member_name = _get_name(boosting['boostedid'])
 
+            data['boosting_name'] = member_name
+
             boost_remaining_days, boost_remaining_hours = _get_days_hours(boosting['expires'])
-            embed = discord.Embed(title='Boosts',
-                                  description='You are boosting **{}**!\n'
-                                              'Boost expires in **{}** days **{}** hours!'
-                                  .format(member_name,
-                                          boost_remaining_days,
-                                          boost_remaining_hours),
-                                  color=discord.Color.gold())
+
+            data['boosting_remaining_days'] = boost_remaining_days
+            data['boosting_remaining_hours'] = boost_remaining_hours
 
         def _boost_to_str(boost):
             brd, brh = _get_days_hours(boost['expires'])
             return 'By *{}* expires in **{}** days **{}** hours'.format(_get_name(boost['uid']), brd, brh)
 
         boosted_by = await self.get_boosted_by(member, current_time)
-        if len(boosted_by) > 0:
+
+        data['boosts'] = list(map(_boost_to_str, boosted_by))
+
+        promo_boosted_by = await self.get_promo_boosted_by(member, current_time)
+
+        data['promo_boosts'] = list(map(_boost_to_str, promo_boosted_by))
+
+        return data
+
+    async def boost_get_embed(self, member):
+        data = await self.boost_get_infos(member)
+
+        embed = discord.Embed(title='Boosts',
+                              description='You are currently boosting no one!\n'
+                                          'Use **"boost {member}"** to start boosting!',
+                              color=discord.Color.gold())
+
+        if data['boosting'] is not None:
+            embed = discord.Embed(title='Boosts',
+                                  description='You are boosting **{}**!\n'
+                                              'Boost expires in **{}** days **{}** hours!'
+                                  .format(data['boosting_name'],
+                                          data['boosting_remaining_days'],
+                                          data['boosting_remaining_hours']),
+                                  color=discord.Color.gold())
+
+        if len(data['boosts']) > 0:
             embed.add_field(name='Your Boosts (x{})'
                             .format(await self.get_setting(member.guild.id,
                                                            'BOOST_ADD_XP_MULTIPLIER')),
-                            value='\n'.join(map(_boost_to_str, boosted_by)),
+                            value='\n'.join(data['boosts']),
                             inline=False)
 
-        promo_boosted_by = await self.get_promo_boosted_by(member, current_time)
-        if len(promo_boosted_by) > 0:
+        if len(data['promo_boosts']) > 0:
             embed.add_field(name='Your Promo Boosts (x{})'
                             .format(await self.get_setting(member.guild.id,
                                                            'PROMO_BOOST_ADD_XP_MULTIPLIER')),
-                            value='\n'.join(map(_boost_to_str, promo_boosted_by)),
+                            value='\n'.join(data['promo_boosts']),
                             inline=False)
         return embed
 
@@ -1161,6 +1279,22 @@ class DiscordBot:
                                                            '"settings reset {key}" to reset a setting\n'
                                                            '"settings set {key} {value}" to set a setting\n',
                                                color=discord.Color.gold()))
+
+        @commands.command(name='info',
+                          aliases=[],
+                          description='user infos',
+                          help=' - Lass dir Infos zu einem Benuter anzeigen')
+        async def _info(self, ctx, *args):
+            if len(args) == 0:
+                return await ctx.send(embed=await self.parent.info_get_embed(ctx.message.author))
+            search = ' '.join(args)
+            member = await self.parent.search_member(ctx, search)
+            if member is not None:
+                return await ctx.send(embed=await self.parent.info_get_embed(member))
+            return await ctx.send(embed=discord.Embed(title='',
+                                                      description='User {} was not found!'
+                                                      .format(search),
+                                                      color=discord.Color.red()))
 
         @commands.command(name='mreact',
                           aliases=[],
