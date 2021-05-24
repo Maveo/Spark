@@ -143,6 +143,9 @@ These settings are applied for each Discord guild (server) and **can be changed*
 - **PROMO_USER_SET_LEVEL**
 
   Configures the level reward given to the new user who entered someone elses promo code (again, you can use a float)
+- **COIN_FLIP_AUDIO_CHANCE**
+
+  Set the chance at which the bot will join a voice channel and play an audio track for the coinflip command (a float as percentage, e.g. 0.4 equals 40%)
 - **COMMAND_NOT_FOUND_RESPONSES**
 
   Set **entire list** of available response choices the bot replies with, if a unknown command was used

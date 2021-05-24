@@ -1637,9 +1637,25 @@ class DiscordBot:
             else:
                 res = 'zahl'
             message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
-            await asyncio.sleep(5)
+
+            voice_client = None
+            if random.random() < await self.parent.get_setting(ctx.message.author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
+                if ctx.message.author.voice is not None and ctx.message.author.voice.channel is not None:
+                    try:
+                        voice_channel = ctx.message.author.voice.channel
+                        voice_client = await voice_channel.connect()
+                        audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
+                        voice_client.play(audio_source)
+                    except discord.ClientException:
+                        pass
+
+            await asyncio.sleep(13)
+
             await message.delete()
             await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(res))))
+
+            if voice_client is not None:
+                await voice_client.disconnect()
 
         @commands.command(name='dice',
                           aliases=[],

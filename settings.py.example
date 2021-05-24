@@ -474,6 +474,7 @@ DEFAULT_GUILD_SETTINGS = {
     'PROMO_BOOST_EXPIRES_DAYS': 7.0,
     'PROMO_BOOST_ADD_XP_MULTIPLIER': 2.0,
     'PROMO_USER_SET_LEVEL': 2.0,
+    'COIN_FLIP_AUDIO_CHANCE': 0.01,  # chance as percentage
     'COMMAND_NOT_FOUND_RESPONSES': [
         'Kenn ich nicht, den command',
         '??',
