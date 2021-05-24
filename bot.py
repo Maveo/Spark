@@ -1163,7 +1163,7 @@ class DiscordBot:
         @commands.command(name='mreact',
                           aliases=[],
                           description='message reaction commands',
-                          help=' - Lasse den Bot reagieren')
+                          help=' - Lasse den Bot auf Message Reactions reagieren')
         @commands.has_permissions(administrator=True)
         async def _msg_reaction(self, ctx, *args):
             if ctx.guild is None:
@@ -1301,7 +1301,7 @@ class DiscordBot:
         @commands.command(name='reaction',
                           aliases=['reactions'],
                           description='reaction commands',
-                          help=' - Lasse den Bot reagieren')
+                          help=' - Lasse den Bot auf Nachrichten reagieren')
         @commands.has_permissions(administrator=True)
         async def _reaction(self, ctx, *args):
             if ctx.guild is None:
