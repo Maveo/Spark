@@ -1111,7 +1111,7 @@ class DiscordBot:
                                                color=discord.Color.gold()))
 
         @commands.command(name='reaction',
-                          aliases=['reactions', 'react'],
+                          aliases=['reactions'],
                           description='reaction commands',
                           help=' - Lasse den Bot reagieren')
         @commands.has_permissions(administrator=True)
