@@ -437,7 +437,6 @@ class DiscordBot:
             if bool(data['blacklist']) is True:
                 return False
 
-
             promo_lvl = await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL')
             if promo_lvl > data['lvl']:
                 await self.member_set_lvl(member, promo_lvl, old_level=data['lvl'])
