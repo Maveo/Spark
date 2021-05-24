@@ -695,6 +695,9 @@ def main():
             x[0]['test_name']
         ), failed_tests))))
 
+    if len(failed_tests) > 0:
+        exit(1)
+
 
 if __name__ == '__main__':
     main()

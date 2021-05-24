@@ -1,0 +1,12 @@
+language: python
+before_install:
+  # command to update pip
+  - python -m pip install --upgrade pip
+  # command to copy settings
+  - cp settings.py.example settings.py
+# command to install dependencies
+install:
+  - pip install --user -r requirements.txt
+# command to run tests
+script:
+  - tests
