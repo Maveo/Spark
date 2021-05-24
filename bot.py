@@ -1634,7 +1634,6 @@ class DiscordBot:
             if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
                 await self.parent.msg_reaction_event(payload.member, payload.message_id, payload.emoji)
 
-
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
             if member.bot:
