@@ -295,7 +295,9 @@ class ImageLayer(AlignLayer):
         self.resize = self.get_kwarg('resize', False)
 
     def validated(self, img):
-        if img.shape[2] == 3:
+        if len(img.shape) == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGBA)
+        elif img.shape[2] == 3:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
         return img
 
@@ -366,7 +368,7 @@ class EmojiLayer(ImageLayer):
 
         if img is None:
             if kwargs['emoji_not_found_image'] is not None and os.path.exists(kwargs['emoji_not_found_image']):
-                img = cv2.imread(file, cv2.IMREAD_UNCHANGED)
+                img = cv2.imread(kwargs['emoji_not_found_image'], cv2.IMREAD_UNCHANGED)
             else:
                 return None
 
@@ -752,10 +754,10 @@ class AnimatedImage(Createable):
 
                 image_data.append(t)
 
-        image_bytes = io.BytesIO()
+        gif_image_bytes = io.BytesIO()
 
         kwargs = {
-            'fp': image_bytes,
+            'fp': gif_image_bytes,
             'format': 'gif',
             'save_all': True,
             'append_images': image_data[1:],
@@ -768,9 +770,11 @@ class AnimatedImage(Createable):
 
         image_data[0].save(**kwargs)
 
-        image_bytes.seek(0)
+        gif_image_bytes.seek(0)
 
-        return image_bytes
+        is_success, last_image_bytes = cv2.imencode('.png', cv2.cvtColor(np.array(image_data[-1]), cv2.COLOR_RGBA2BGRA))
+
+        return gif_image_bytes, io.BytesIO(last_image_bytes)
 
 
 class FontLoader:
@@ -824,6 +828,10 @@ class ImageCreator:
                                                       'images',
                                                       'emojis'))
         self.emoji_path = emoji_path
+
+        if emoji_not_found_image is None:
+            emoji_not_found_image = os.path.join(emoji_path, '0.png')
+
         self.emoji_not_found_image = emoji_not_found_image
         self.download_emojis = download_emojis
         self.save_downloaded_emojis = save_downloaded_emojis

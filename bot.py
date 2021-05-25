@@ -1598,6 +1598,7 @@ class DiscordBot:
                 raise commands.NoPrivateMessage()
 
             await ctx.trigger_typing()
+
             if len(args) == 0:
                 pass
             elif len(args) >= 1:
@@ -1662,10 +1663,22 @@ class DiscordBot:
                           description='Spin the wheel!',
                           help=' - Dreh am Rad')
         async def _wheelspin(self, ctx, *args):
-            obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
-            img_buf = await self.parent.image_creator.create(
-                (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(obj))
-            await ctx.send(file=discord.File(filename="spin.gif", fp=img_buf))
+            await ctx.trigger_typing()
+
+            async def _spin_wheel(sobj):
+                gif_img_buf, last_img_buf = await self.parent.image_creator.create(
+                    (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(sobj))
+
+                message = await ctx.send(file=discord.File(filename="spin.gif", fp=gif_img_buf))
+                await asyncio.sleep(10)
+                await message.delete()
+                await ctx.send(file=discord.File(filename="spin_result.png", fp=last_img_buf))
+
+            if len(args) == 0:
+                return await _spin_wheel({'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)})
+
+            choices = list(tools.only_emojis(''.join(args)))
+            return await _spin_wheel({'choices': choices, 'result': random.randint(0, len(choices))})
 
         @commands.command(name='dice',
                           aliases=[],
@@ -1824,10 +1837,14 @@ if __name__ == '__main__':
                    command_prefix=GLOBAL_SETTINGS['COMMAND_PREFIX'],
                    description=GLOBAL_SETTINGS['DESCRIPTION'],
                    print_logging=GLOBAL_SETTINGS['PRINT_LOGGING'],
-                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS']
+                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
                    )
 
-    b.set_image_creator(imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
-                                              load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY']))
+    image_creator = imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
+                                          load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
+                                          download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
+                                          save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'])
+
+    b.set_image_creator(image_creator)
 
     b.run(GLOBAL_SETTINGS['TOKEN'])

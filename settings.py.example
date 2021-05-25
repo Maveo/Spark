@@ -10,17 +10,19 @@ GLOBAL_SETTINGS = {
     'PRINT_LOGGING': True,
     'USE_SLASH_COMMANDS': False,
     'UPDATE_VOICE_XP_INTERVAL': 30,  # in seconds
+    'DOWNLOAD_EMOJIS': True,
+    'SAVE_EMOJIS': True,
     'FONTS': {
         'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
         'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
     },
     'IMAGES_LOAD_MEMORY': [
-        DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
+        # DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
     ]
 }
 
 
-def profile_image(x): return [
+def profile_image(x): return ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -136,10 +138,10 @@ def profile_image(x): return [
         color=(170, 170, 170),
         max_size=(280, 18)
     )
-]
+])
 
 
-def level_up_image(x): return [
+def level_up_image(x): return ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -221,10 +223,10 @@ def level_up_image(x): return [
         color=(255, 255, 255),
         max_size=(180, 16)
     ),
-]
+])
 
 
-def rank_up_image(x): return [
+def rank_up_image(x): return ImageStack([
     # BG
     RectangleLayer(
         pos=(0, 0),
@@ -308,7 +310,7 @@ def rank_up_image(x): return [
         color=(255, 255, 255),
         max_size=(180, 16)
     ),
-]
+])
 
 
 def ranking_image(x):
@@ -419,10 +421,10 @@ def ranking_image(x):
             color=(29, 29, 29),
             max_size=(250, 150)
         ))
-    return layers
+    return ImageStack(layers)
 
 
-def welcome_image(x): return [
+def welcome_image(x): return ImageStack([
     FileImageLayer(
         file=os.path.join(current_dir, 'images', 'welcome_template.png')
     ),
@@ -457,7 +459,52 @@ def welcome_image(x): return [
         color=(255, 255, 255),
         max_size=(460, 50)
     ),
-]
+])
+
+
+def wheel_spin_image(x):
+    offset = 360 / len(x['choices'])
+    rotation = 1440.0 + (x['result'] * offset) + offset * 0.5
+    spin_func = lambda z: (3 * (z ** 2) - 2 * (z ** 3)) * rotation
+    choices = [EmojiLayer(emoji=emoji, resize=(27, 27)) for emoji in x['choices']]
+    return AnimatedImage(
+        bg_color=(128, 128, 128),
+        rotate=ImageStack([
+            ColorLayer(
+                pos=(0, 0),
+                resize=(300, 300),
+                color=SingleColor(
+                    (128, 128, 128)
+                ),
+            ),
+            PieLayer(
+                align_x='center',
+                align_y='center',
+                pos=(150, 150),
+                radius=140,
+                color=LinearGradientColor(
+                    color1=(0, 255, 0),
+                    color2=(0, 0, 255)
+                ),
+                line_width=3,
+                border_width=10,
+                choices=choices
+            )
+        ]),
+        static_fg=ImageStack([
+            EmptyLayer(
+                resize=(300, 300)
+            ),
+            ColorLayer(
+                pos=(145, 0),
+                resize=(10, 35),
+                color=(255, 255, 255)
+            )
+        ]),
+        rotation_func=spin_func,
+        fps=30,
+        seconds=7,
+    )
 
 
 DEFAULT_GUILD_SETTINGS = {
@@ -516,4 +563,5 @@ DEFAULT_GUILD_SETTINGS = {
     'RANK_UP_IMAGE': rank_up_image,
     'RANKING_IMAGE': ranking_image,
     'WELCOME_IMAGE': welcome_image,
+    'WHEEL_SPIN_IMAGE': wheel_spin_image,
 }
