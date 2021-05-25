@@ -1657,6 +1657,16 @@ class DiscordBot:
             if voice_client is not None:
                 await voice_client.disconnect()
 
+        @commands.command(name='wheelspin',
+                          aliases=[],
+                          description='Spin the wheel!',
+                          help=' - Dreh am Rad')
+        async def _wheelspin(self, ctx, *args):
+            obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
+            img_buf = await self.parent.image_creator.create(
+                (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(obj))
+            await ctx.send(file=discord.File(filename="spin.gif", fp=img_buf))
+
         @commands.command(name='dice',
                           aliases=[],
                           description='Roll a dice to your Witcher!',

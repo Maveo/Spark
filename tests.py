@@ -119,7 +119,7 @@ def main():
     import os
     import asyncio
 
-    SHOW_IMAGES = False
+    SHOW_IMAGES = True
 
     EPS = 0.00000001
 

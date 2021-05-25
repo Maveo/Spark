@@ -1,4 +1,6 @@
-from settings import GLOBAL_SETTINGS
+import random
+
+from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
 from helpers.imgtools import *
 
 
@@ -29,57 +31,37 @@ def main():
         async def test__h1(self):
             return tools.to_char(tools.from_char('✅')) == '✅' and tools.to_char(tools.from_char('🆘')) == '🆘'
 
-        # test image creation
         async def test__h2(self):
-            rotation = 1440.0 - 10
-            spin_func = lambda x: (3 * (x ** 2) - 2 * (x ** 3)) * rotation
 
-            image = AnimatedImage(
-                bg_color=(128, 128, 128),
-                rotate=ImageStack([
-                    ColorLayer(
-                        pos=(0, 0),
-                        resize=(300, 300),
-                        color=SingleColor(
-                            (128, 128, 128)
-                        ),
-                    ),
-                    PieLayer(
-                        align_x='center',
-                        align_y='center',
-                        pos=(150, 150),
-                        radius=140,
-                        color=LinearGradientColor(
-                            color1=(0, 255, 0),
-                            color2=(0, 0, 255)
-                        ),
-                        line_width=3,
-                        border_width=10,
-                        choices=[
-                            EmojiLayer(
-                                emoji='✅',
-                                resize=(20, 20)
-                            ) for _ in range(10)
-                        ]
-                    )
-                ]),
-                static_fg=ImageStack([
-                    EmptyLayer(
-                        resize=(300, 300)
-                    ),
-                    ColorLayer(
-                        pos=(140, 0),
-                        resize=(20, 30),
-                        color=(126, 127, 0)
-                    )
-                ]),
-                # rotation=360,
-                rotation_func=spin_func,
-                fps=30,
-                seconds=7,
-            )
+            image = ImageStack([
+                EmptyLayer(
+                    resize=(300, 300)
+                ),
+                TextLayer(
+                    pos=(150, 150),
+                    align_x='center',
+                    align_y='center',
+                    max_size=(300, 300),
+                    font='regular',
+                    font_size=35,
+                    text_lines=['Hey whats up', 'What you do?', 'What'],
+                    text_align='right',
+                    color=(255, 0, 0)
+                )
+            ])
 
             image_buffer = await self.image_creator.create(image)
+
+            # image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+
+            # show_image(image)
+            return True
+
+        # test image creation
+        async def test__h3(self):
+            obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
+
+            image_buffer = await self.image_creator.create(DEFAULT_GUILD_SETTINGS['WHEEL_SPIN_IMAGE'](obj))
 
             with open('test.gif', 'wb') as f:
                 f.write(image_buffer.read())
@@ -87,6 +69,28 @@ def main():
             # image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
 
             # show_image(image)
+            return True
+
+        # test download emoji
+        async def test__h4(self):
+            image = ImageStack([
+                EmptyLayer(
+                    resize=(300, 300)
+                ),
+                EmojiLayer(
+                    emoji='😎',
+                    pos=(150, 150),
+                    resize=(30, 30)
+                )
+            ])
+
+            self.image_creator.download_emojis = True
+
+            image_buffer = await self.image_creator.create(image)
+
+            image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+
+            show_image(image)
             return True
 
     async def run_test(test_name):

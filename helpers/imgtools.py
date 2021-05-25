@@ -4,20 +4,15 @@ import time
 from helpers import tools
 import numpy as np
 import cv2
-import pygame
-import pygame.freetype
 import unicodedata
 import io
 import os
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import warnings
 import asyncio
 import requests
 from math import *
-
-os.environ['SDL_AUDIODRIVER'] = 'dsp'
-
-pygame.freetype.init()
+from textwrap import wrap
 
 ALPHA_COLOR = (255, 255, 255, 255)
 LINE_TYPE = cv2.LINE_AA
@@ -110,22 +105,10 @@ def rotate_image(iimage, angle, bg_color=(0, 0, 0, 0), padding=False):
 
 
 def overlay_matching(background, foreground):
-    fr_alpha = np.zeros_like(background, np.float32)
-
-    np.multiply(foreground[..., 3:], np.float32(1 / 255.0), fr_alpha)
-
-    if np.count_nonzero(fr_alpha == np.float32(1)) == 0:
-        return background
-    if np.count_nonzero(fr_alpha == np.float32(0)) == 0:
-        return foreground
-
-    fr_fg_weighed = cv2.multiply(foreground, fr_alpha, dtype=cv2.CV_32FC4)
-
-    fr_bg_weighed = cv2.multiply(background, 1.0 - fr_alpha, dtype=cv2.CV_32FC4)
-
-    result = cv2.add(fr_fg_weighed, fr_bg_weighed, dtype=cv2.CV_8UC4)
-
-    return result
+    fg_image = Image.fromarray(foreground)
+    bg_image = Image.fromarray(background)
+    bg_image.paste(fg_image, (0, 0), fg_image)
+    return np.array(bg_image)
 
 
 def point_on_circle(angle=0, radius=1, center=(0, 0)):
@@ -226,7 +209,6 @@ class FileImageLoader(ImageLoader):
 
     def load_into(self, func):
         img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
         func(self.prefix + '/' + os.path.basename(self.file), img)
 
 
@@ -351,16 +333,43 @@ class MemoryImageLayer(ImageLayer):
 
 
 class EmojiLayer(ImageLayer):
+    base_emoji_url = 'http://emojipedia.org/'
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.emoji = self.get_kwarg('emoji')
         super()._init_finished()
 
+    def get_emoji_image_url(self, provider):
+        r = requests.get(self.base_emoji_url + self.emoji)
+        for x in r.text.split('data-src="')[1:]:
+            url = x.split('"')[0]
+            if '/{}/'.format(provider) in url:
+                return url
+
     async def create(self, **kwargs):
         emoji_id = tools.from_char(self.emoji)
-        if 'emojis/' + emoji_id + '.png' not in kwargs['image_memory']:
-            emoji_id = '0'
-        img = kwargs['image_memory']['emojis/' + emoji_id + '.png']
+
+        file = os.path.join(kwargs['emoji_path'], emoji_id + '.png')
+        img = None
+        if os.path.exists(file):
+            img = cv2.imread(file, cv2.IMREAD_UNCHANGED)
+        elif kwargs['download_emojis']:
+            url = self.get_emoji_image_url(kwargs['download_emoji_provider'])
+            if url is None:
+                warnings.warn('Emoji "{}" was not found on "{}"!'.format(self.emoji, self.base_emoji_url))
+            else:
+                img_bytes = requests.get(url).content
+                img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
+                if kwargs['save_downloaded_emojis']:
+                    cv2.imwrite(file, img)
+
+        if img is None:
+            if kwargs['emoji_not_found_image'] is not None and os.path.exists(kwargs['emoji_not_found_image']):
+                img = cv2.imread(file, cv2.IMREAD_UNCHANGED)
+            else:
+                return None
+
         img = self.validated(img)
         return self.resized(img)
 
@@ -383,22 +392,70 @@ class TextLayer(ColoredLayer):
         super().__init__(**kwargs)
         self.font = self.get_kwarg('font', 'default')
         self.font_size = self.get_kwarg('font_size', 16)
-        self.text = self.get_kwarg('text')
-        self.text = unicodedata.normalize('NFKC', self.text)
+
+        self.line_margin = self.get_kwarg('line_margin', 0)
+
+        self.text_align = self.get_kwarg('text_align', 'left')
+
+        self.text_lines = self.get_kwarg('text_lines', False)
+        if self.text_lines is False:
+            self.text = self.get_kwarg('text')
+            self.text = unicodedata.normalize('NFKC', self.text)
+            self.wrap_limit = self.get_kwarg('wrap_limit', -1)
+
+            if self.wrap_limit > 0:
+                self.text_lines = wrap(self.text, self.wrap_limit)
+            else:
+                self.text_lines = [self.text]
+
         super()._init_finished()
 
+    def get_text_dimensions(self, font):
+        ascent, descent = font.getmetrics()
+
+        line_heights = [
+            font.getmask(text_line).getbbox()[3] + self.line_margin
+            for text_line in self.text_lines[:-1]
+        ]
+
+        line_heights.append(font.getmask(self.text_lines[-1]).getbbox()[3])
+
+        line_widths = [
+            font.getmask(text_line).getbbox()[2]
+            for text_line in self.text_lines
+        ]
+
+        total_height = sum(line_heights)
+
+        total_width = max(line_widths)
+
+        return total_width, total_height, line_widths, line_heights, descent
+
     async def create(self, **kwargs):
-        if self.font not in kwargs['fonts']:
-            raise Exception('Error font: "' + self.font + '" was not found!')
+        if sum(map(len, self.text_lines)) == 0:
+            return None
 
-        text_surf, _ = kwargs['fonts'][self.font].render(self.text, ALPHA_COLOR, size=self.font_size)
+        font = kwargs['font_loader'].load_font(self.font, self.font_size)
 
-        text_img_t = pygame.surfarray.pixels3d(text_surf).swapaxes(0, 1)
-        text_img = np.zeros((text_img_t.shape[0], text_img_t.shape[1], 4), dtype=np.uint8)
-        text_alpha = pygame.surfarray.pixels_alpha(text_surf).swapaxes(0, 1)
-        text_img[:, :, 3] = text_alpha
-        text_img[:, :, :3] = text_img_t
-        return self.colored(text_img)
+        total_width, total_height, line_widths, line_heights, descent = self.get_text_dimensions(font)
+
+        img = Image.new("RGBA", (total_width, total_height), color=(0, 0, 0, 0))
+
+        draw = ImageDraw.Draw(img)
+
+        draw.fontmode = "L"
+
+        y = 0
+        for i in range(len(self.text_lines)):
+            x = 0
+            if self.text_align == 'center':
+                x = int(total_width / 2 - line_widths[i] / 2)
+            elif self.text_align == 'right':
+                x = total_width - line_widths[i]
+            draw.text((x, y - descent), self.text_lines[i], ALPHA_COLOR, font=font)
+            y += line_heights[i]
+
+        return self.colored(np.array(img))
 
 
 class LineLayer(ColoredLayer):
@@ -601,7 +658,12 @@ class ImageStack(Createable):
         for layer in self.layers:
             img = await layer.overlay(background=img,
                                       image_memory=image_creator.image_memory,
-                                      fonts=image_creator.fonts)
+                                      font_loader=image_creator.font_loader,
+                                      emoji_path=image_creator.emoji_path,
+                                      emoji_not_found_image=image_creator.emoji_not_found_image,
+                                      download_emojis=image_creator.download_emojis,
+                                      save_downloaded_emojis=image_creator.save_downloaded_emojis,
+                                      download_emoji_provider=image_creator.download_emoji_provider)
 
         if 'max_size' in kwargs:
             max_size = kwargs['max_size']
@@ -692,19 +754,50 @@ class AnimatedImage(Createable):
 
         image_bytes = io.BytesIO()
 
-        image_data[0].save(fp=image_bytes,
-                           format='gif',
-                           save_all=True,
-                           append_images=image_data[1:],
-                           loop=self.loop,
-                           duration=int(1000/self.fps),
-                           # transparency=0,
-                           disposal=3,
-                           )
+        kwargs = {
+            'fp': image_bytes,
+            'format': 'gif',
+            'save_all': True,
+            'append_images': image_data[1:],
+            'duration': int(1000/self.fps),
+            # 'transparency': 0,
+            'disposal': 3,
+        }
+        if self.loop != 1:
+            kwargs['loop'] = self.loop
+
+        image_data[0].save(**kwargs)
 
         image_bytes.seek(0)
 
         return image_bytes
+
+
+class FontLoader:
+    def __init__(self, fonts=None):
+        self.registered_fonts = {}
+        self.loaded_fonts = {}
+        self.max_fonts_loaded = 10
+
+        if fonts is not None:
+            for k, v in fonts.items():
+                self.registered_fonts[k] = v
+
+    def load_font(self, font_name, size):
+        if font_name not in self.registered_fonts:
+            raise Exception('Error font: "' + font_name + '" was not found!')
+
+        if (font_name, size) not in self.loaded_fonts:
+
+            if len(self.loaded_fonts) >= self.max_fonts_loaded:
+                del self.loaded_fonts[min(self.loaded_fonts.items(), key=lambda x: x[1][1])[0]]
+
+            font = ImageFont.truetype(self.registered_fonts[font_name], size)
+            self.loaded_fonts[(font_name, size)] = [font, 1]
+            return font
+        else:
+            self.loaded_fonts[(font_name, size)][1] += 1
+            return self.loaded_fonts[(font_name, size)][0]
 
 
 class AsyncEvent(asyncio.Event):
@@ -714,14 +807,27 @@ class AsyncEvent(asyncio.Event):
 
 
 class ImageCreator:
-    def __init__(self, fonts=None, load_memory=None):
-        self.fonts = {
-            'default': pygame.freetype.SysFont(pygame.freetype.get_default_font(), 16)
-        }
-        if fonts is not None:
-            for k, v in fonts.items():
-                self.fonts[k] = pygame.freetype.Font(v)
-                self.fonts[k].antialiased = True
+    def __init__(self,
+                 fonts=None,
+                 load_memory=None,
+                 emoji_path=None,
+                 emoji_not_found_image=None,
+                 download_emojis=False,
+                 save_downloaded_emojis=True,
+                 download_emoji_provider='microsoft'
+                 ):
+        self.font_loader = FontLoader(fonts)
+
+        if emoji_path is None:
+            emoji_path = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                      '..',
+                                                      'images',
+                                                      'emojis'))
+        self.emoji_path = emoji_path
+        self.emoji_not_found_image = emoji_not_found_image
+        self.download_emojis = download_emojis
+        self.save_downloaded_emojis = save_downloaded_emojis
+        self.download_emoji_provider = download_emoji_provider
 
         if load_memory is None:
             load_memory = []
