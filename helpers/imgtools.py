@@ -1,4 +1,6 @@
 import threading
+import time
+
 from helpers import tools
 import numpy as np
 import cv2
@@ -7,14 +9,15 @@ import pygame.freetype
 import unicodedata
 import io
 import os
+from PIL import Image
 import warnings
 import asyncio
 import requests
+from math import *
 
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 pygame.freetype.init()
-
 
 ALPHA_COLOR = (255, 255, 255, 255)
 LINE_TYPE = cv2.LINE_AA
@@ -73,9 +76,71 @@ def rgb_to_bgr(rgb):
     return rgb[2], rgb[1], rgb[0]
 
 
-def overlay(background, foreground, x, y, max_size, align_x, align_y):
+def rotate_image(iimage, angle, bg_color=(0, 0, 0, 0), padding=False):
+    if padding:
+        diagonal_length = int(ceil(sqrt(iimage.shape[0]**2 + iimage.shape[1]**2)))
+        image = np.zeros((diagonal_length, diagonal_length, iimage.shape[2]), dtype=np.uint8)
+
+        image_center = (int(image.shape[0] * 0.5), int(image.shape[1] * 0.5))
+
+        ho1, wo1 = int(iimage.shape[0] * 0.5), int(iimage.shape[1] * 0.5)
+        ho2, wo2 = iimage.shape[0] - ho1, iimage.shape[1] - wo1
+
+        image[
+            image_center[0] - ho1:image_center[0] + ho2,
+            image_center[1] - wo1:image_center[1] + wo2
+        ] = iimage
+
+    else:
+        image = iimage
+        image_center = tuple(np.array(image.shape[1::-1]) * 0.5)
+
+    rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+
+    bg_color = list(reversed(bg_color[:3])) + list(bg_color[3:])
+
+    result = cv2.warpAffine(image,
+                            rot_mat,
+                            image.shape[1::-1],
+                            flags=cv2.INTER_LINEAR,
+                            borderMode=cv2.BORDER_CONSTANT,
+                            borderValue=bg_color
+                            )
+    return result
+
+
+def overlay_matching(background, foreground):
+    fr_alpha = np.zeros_like(background, np.float32)
+
+    np.multiply(foreground[..., 3:], np.float32(1 / 255.0), fr_alpha)
+
+    if np.count_nonzero(fr_alpha == np.float32(1)) == 0:
+        return background
+    if np.count_nonzero(fr_alpha == np.float32(0)) == 0:
+        return foreground
+
+    fr_fg_weighed = cv2.multiply(foreground, fr_alpha, dtype=cv2.CV_32FC4)
+
+    fr_bg_weighed = cv2.multiply(background, 1.0 - fr_alpha, dtype=cv2.CV_32FC4)
+
+    result = cv2.add(fr_fg_weighed, fr_bg_weighed, dtype=cv2.CV_8UC4)
+
+    return result
+
+
+def point_on_circle(angle=0, radius=1, center=(0, 0)):
+    angle = radians(int(angle))
+    x = center[0] + (radius * cos(angle))
+    y = center[1] + (radius * sin(angle))
+    return int(x), int(y)
+
+
+def overlay(background, foreground, x=0, y=0, max_size=(-1, -1), align_x='left', align_y='top'):
     if background is None:
         return foreground
+
+    if foreground is None:
+        return background
 
     h, w = foreground.shape[0], foreground.shape[1]
 
@@ -83,15 +148,15 @@ def overlay(background, foreground, x, y, max_size, align_x, align_y):
         n_h = h
         if max_size[1] >= 0:
             n_h = min(max_size[1], h)
-        by_start = max(0, y-n_h)
+        by_start = max(0, y - n_h)
         by_end = min(y, background.shape[0])
-        fy_start = h-n_h
+        fy_start = h - n_h
         fy_end = by_end
     elif align_y == 'center':
         n_h = h
         if max_size[1] >= 0:
             n_h = min(max_size[1], h)
-        hh_a = int(n_h / 2)
+        hh_a = int(n_h * 0.5)
         hh_b = n_h - hh_a
         by_start = max(0, y - hh_a)
         by_end = min(y + hh_b, background.shape[0])
@@ -110,16 +175,16 @@ def overlay(background, foreground, x, y, max_size, align_x, align_y):
         n_w = w
         if max_size[0] >= 0:
             n_w = min(max_size[0], w)
-        bx_start = max(0, x-n_w)
+        bx_start = max(0, x - n_w)
         bx_end = min(x, background.shape[1])
-        fx_start = w-n_w
+        fx_start = w - n_w
         fx_end = bx_end
 
     elif align_x == 'center':
         n_w = w
         if max_size[0] >= 0:
             n_w = min(max_size[0], w)
-        hw_a = int(n_w / 2)
+        hw_a = int(n_w * 0.5)
         hw_b = n_w - hw_a
         bx_start = max(0, x - hw_a)
         bx_end = min(x + hw_b, background.shape[1])
@@ -131,23 +196,20 @@ def overlay(background, foreground, x, y, max_size, align_x, align_y):
         if max_size[0] >= 0:
             w = min(max_size[0], w)
         bx_start = max(0, x)
-        bx_end = min(x+w, background.shape[1])
+        bx_end = min(x + w, background.shape[1])
         fx_start = 0
         fx_end = bx_end - bx_start
 
     if by_end - by_start < 0 or bx_end - bx_start < 0:
         return background
 
-    overlay_image = foreground[fy_start:fy_end, fx_start:fx_end, :]
-    mask = overlay_image[..., 3:] / 255.0
+    background = background.copy()
 
     background[
         by_start:by_end,
         bx_start:bx_end
-    ] = (1.0 - mask) * background[
-                        by_start:by_end,
-                        bx_start:bx_end
-                       ] + mask * overlay_image
+    ] = overlay_matching(background[by_start:by_end, bx_start:bx_end],
+                         foreground[fy_start:fy_end, fx_start:fx_end])
 
     return background
 
@@ -339,6 +401,28 @@ class TextLayer(ColoredLayer):
         return self.colored(text_img)
 
 
+class LineLayer(ColoredLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.target = self.get_kwarg('target')
+        self.line_width = self.get_kwarg('line_width', -1)
+        super()._init_finished()
+
+    async def create(self, **kwargs):
+        src = np.zeros((abs(self.target[1]), abs(self.target[0]), 4), dtype=np.uint8)
+        start = [0, 0]
+        end = [abs(self.target[0]), abs(self.target[1])]
+        if self.target[0] < 0:
+            start[0] = end[0]
+            end[0] = 0
+        if self.target[1] < 0:
+            start[1] = end[1]
+            end[1] = 0
+
+        cv2.line(src, start, end, ALPHA_COLOR, self.line_width, LINE_TYPE)
+        return self.colored(src)
+
+
 class RectangleLayer(ColoredLayer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -375,19 +459,23 @@ class RectangleLayer(ColoredLayer):
 
         if thickness < 0:
             # big rect
-            start_pos = (p1[0]+corner_radius, p1[1])
-            end_pos = (p3[0]-corner_radius, p3[1])
+            start_pos = (p1[0] + corner_radius, p1[1])
+            end_pos = (p3[0] - corner_radius, p3[1])
             cv2.rectangle(src, start_pos, end_pos, ALPHA_COLOR, thickness=thickness, lineType=LINE_TYPE)
-            start_pos = (p1[0], p1[1]+corner_radius)
-            end_pos = (p3[0], p3[1]-corner_radius)
+            start_pos = (p1[0], p1[1] + corner_radius)
+            end_pos = (p3[0], p3[1] - corner_radius)
             cv2.rectangle(src, start_pos, end_pos, ALPHA_COLOR, thickness=thickness, lineType=LINE_TYPE)
 
         else:
             # draw straight lines
-            cv2.line(src, (p1[0] + corner_radius, p1[1]), (p2[0] - corner_radius, p2[1]), ALPHA_COLOR, thickness, LINE_TYPE)
-            cv2.line(src, (p2[0], p2[1] + corner_radius), (p3[0], p3[1] - corner_radius), ALPHA_COLOR, thickness, LINE_TYPE)
-            cv2.line(src, (p3[0] - corner_radius, p4[1]), (p4[0] + corner_radius, p3[1]), ALPHA_COLOR, thickness, LINE_TYPE)
-            cv2.line(src, (p4[0], p4[1] - corner_radius), (p1[0], p1[1] + corner_radius), ALPHA_COLOR, thickness, LINE_TYPE)
+            cv2.line(src, (p1[0] + corner_radius, p1[1]), (p2[0] - corner_radius, p2[1]), ALPHA_COLOR, thickness,
+                     LINE_TYPE)
+            cv2.line(src, (p2[0], p2[1] + corner_radius), (p3[0], p3[1] - corner_radius), ALPHA_COLOR, thickness,
+                     LINE_TYPE)
+            cv2.line(src, (p3[0] - corner_radius, p4[1]), (p4[0] + corner_radius, p3[1]), ALPHA_COLOR, thickness,
+                     LINE_TYPE)
+            cv2.line(src, (p4[0], p4[1] - corner_radius), (p1[0], p1[1] + corner_radius), ALPHA_COLOR, thickness,
+                     LINE_TYPE)
 
         if corner_radius > 0:
             # draw arcs
@@ -429,6 +517,196 @@ class ProgressLayer(RectangleLayer):
         super().__init__(**kwargs)
 
 
+class PieLayer(ColoredLayer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.radius = self.get_kwarg('radius', 0)
+        self.pieces = self.get_kwarg('pieces', 5)
+        self.border_width = self.get_kwarg('border_width', 1)
+        self.line_width = self.get_kwarg('line_width', 1)
+        self.choices = self.get_kwarg('choices')
+        self.choices_radius = self.get_kwarg('choices_radius', (self.radius - self.border_width) * 0.75)
+        self.rotate_choices = self.get_kwarg('rotate_choices', True)
+        super()._init_finished()
+
+    async def create(self, **kwargs):
+        angle_offset = 270
+
+        diameter = self.radius * 2
+        radius = self.radius
+        half_border_width = int(self.border_width * 0.5)
+
+        adjusted_radius = radius - half_border_width - 1
+
+        center = (radius, radius)
+
+        src = np.zeros((diameter, diameter, 4), dtype=np.uint8)
+
+        slices = len(self.choices)
+        slice_size = int(360 / slices)
+        half_slice_size = int(slice_size * 0.5)
+
+        cv2.circle(src,
+                   center,
+                   adjusted_radius,
+                   ALPHA_COLOR,
+                   self.border_width)
+
+        for i in range(slices):
+            start = point_on_circle(angle=slice_size * i + angle_offset,
+                                    radius=adjusted_radius,
+                                    center=center)
+
+            cv2.line(src,
+                     start,
+                     center,
+                     ALPHA_COLOR,
+                     self.line_width,
+                     LINE_TYPE)
+
+        img = self.colored(src)
+
+        for i in range(slices):
+            c = point_on_circle(angle=slice_size * i + half_slice_size + angle_offset,
+                                radius=int(self.choices_radius),
+                                center=center)
+
+            cimg = await self.choices[i].create(**kwargs)
+
+            if self.rotate_choices:
+                cimg = rotate_image(cimg, angle=-(slice_size * i + half_slice_size), padding=True)
+
+            ho1, wo1 = int(cimg.shape[0] * 0.5), int(cimg.shape[1] * 0.5)
+            ho2, wo2 = cimg.shape[0] - ho1, cimg.shape[1] - wo1
+            img[c[1] - ho1:c[1] + ho2, c[0] - wo1:c[0] + wo2] = cimg
+
+        return img
+
+
+class Createable:
+    async def create(self, *args, **kwargs):
+        raise Exception('Raw usage of Createable is forbidden!')
+
+
+class ImageStack(Createable):
+    def __init__(self, layers=None):
+        if layers is None:
+            layers = []
+        self.layers = layers
+
+    async def raw_create(self, image_creator, **kwargs):
+        img = None
+        if len(self.layers) == 0:
+            img = await EmptyLayer().create()
+        for layer in self.layers:
+            img = await layer.overlay(background=img,
+                                      image_memory=image_creator.image_memory,
+                                      fonts=image_creator.fonts)
+
+        if 'max_size' in kwargs:
+            max_size = kwargs['max_size']
+            resize_factor = 1
+            if 0 < max_size[0] < img.shape[1]:
+                resize_factor = max_size[0] / img.shape[1]
+            if 0 < max_size[1] < img.shape[0]:
+                resize_factor = min(resize_factor, max_size[1] / img.shape[0])
+
+            if resize_factor < 1:
+                img = cv2.resize(img, (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor)))
+        return img
+
+    async def create(self, image_creator, **kwargs):
+        img = await self.raw_create(image_creator, **kwargs)
+
+        is_success, buffer = cv2.imencode('.png', img)
+        return io.BytesIO(buffer)
+
+
+class AnimatedImage(Createable):
+    def __init__(self,
+                 rotate=None,
+                 static_fg=None,
+                 static_bg=None,
+                 seconds=5,
+                 fps=5,
+                 rotation_func=None,
+                 rotation=90,
+                 loop=1,
+                 bg_color=(0, 0, 0, 0)):
+        self.rotate = rotate
+        self.static_fg = static_fg
+        self.static_bg = static_bg
+        self.seconds = seconds
+        self.fps = fps
+        if rotation_func is None:
+            rotation_func = lambda i: rotation * i
+        self.rotation_func = rotation_func
+        self.loop = loop
+
+        if len(bg_color) == 3:
+            bg_color = bg_color[0], bg_color[1], bg_color[2], 255
+        self.bg_color = bg_color
+
+    async def create(self, image_creator, **kwargs):
+        rimage = await self.rotate.raw_create(image_creator, **kwargs)
+        rimage = cv2.cvtColor(rimage, cv2.COLOR_RGBA2BGRA)
+
+        fgimage = None
+        if self.static_fg is not None:
+            fgimage = await self.static_fg.raw_create(image_creator, **kwargs)
+            fgimage = cv2.cvtColor(fgimage, cv2.COLOR_RGBA2BGRA)
+
+        bgimage = None
+        if self.static_bg is not None:
+            bgimage = await self.static_bg.raw_create(image_creator, **kwargs)
+            bgimage = cv2.cvtColor(bgimage, cv2.COLOR_RGBA2BGRA)
+
+        def normalize_angle(a):
+            a = int(a)
+            while a < 0:
+                a += 360
+            while a >= 360:
+                a -= 360
+            return a
+
+        buffered_images = {}
+
+        image_data = []
+        for i in np.arange(0, 1, 1 / (self.fps * self.seconds)):
+            angle = normalize_angle(self.rotation_func(i))
+            hit = None
+            if len(buffered_images) > 0:
+                hit = min(buffered_images.keys(), key=lambda x: abs(x-angle))
+            if hit is not None and abs(angle-hit) <= 1:
+                image_data.append(buffered_images[hit])
+            else:
+                t = rotate_image(rimage, angle, bg_color=self.bg_color)
+                t = overlay(bgimage, t)
+                t = overlay(t, fgimage)
+
+                t = Image.fromarray(t)
+
+                buffered_images[angle] = t
+
+                image_data.append(t)
+
+        image_bytes = io.BytesIO()
+
+        image_data[0].save(fp=image_bytes,
+                           format='gif',
+                           save_all=True,
+                           append_images=image_data[1:],
+                           loop=self.loop,
+                           duration=int(1000/self.fps),
+                           # transparency=0,
+                           disposal=3,
+                           )
+
+        image_bytes.seek(0)
+
+        return image_bytes
+
+
 class AsyncEvent(asyncio.Event):
     def set(self):
         # TODO: _loop is not documented
@@ -457,7 +735,10 @@ class ImageCreator:
             raise Exception('image with same name was loaded before! Use a prefix')
         self.image_memory[name] = img
 
-    async def create(self, layers, max_size=(-1, -1)):
+    async def create(self, stack, max_size=(-1, -1)):
+        if stack is None:
+            return None
+
         class _CreateImage:
             def __init__(_self, event):
                 _self.result = None
@@ -468,25 +749,7 @@ class ImageCreator:
                 loop.run_until_complete(_self._async_create())
 
             async def _async_create(_self):
-                img = None
-                if len(layers) == 0:
-                    img = await EmptyLayer().create()
-                for layer in layers:
-                    img = await layer.overlay(background=img,
-                                              image_memory=self.image_memory,
-                                              fonts=self.fonts)
-
-                resize_factor = 1
-                if 0 < max_size[0] < img.shape[1]:
-                    resize_factor = max_size[0] / img.shape[1]
-                if 0 < max_size[1] < img.shape[0]:
-                    resize_factor = min(resize_factor, max_size[1] / img.shape[0])
-
-                if resize_factor < 1:
-                    img = cv2.resize(img, (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor)))
-
-                is_success, buffer = cv2.imencode('.png', img)
-                _self.result = io.BytesIO(buffer)
+                _self.result = await stack.create(self)
                 _self.event.set()
 
         e = AsyncEvent()
