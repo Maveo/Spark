@@ -233,8 +233,6 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
 
-            self.bot.default_guild_settings['LEVEL_UP_IMAGE'] = lambda x: []
-
             self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
             await self.bot.member_joined_vc(m, g.id)
