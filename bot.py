@@ -294,7 +294,10 @@ class DiscordBot:
 
         embed.add_field(name='ID', value='{}'.format(data['uid']), inline=False)
         embed.add_field(name='Level', value='{:.2f}'.format(data['lvl']), inline=False)
-        embed.add_field(name='XP Multiplier', value='{:.2f}'.format(data['xp_multiplier']), inline=False)
+        base_xp_mult = data['xp_multiplier']
+        embed.add_field(name='Base XP Multiplier', value='{:.2f}'.format(base_xp_mult), inline=False)
+        xp_mult = base_xp_mult + await self.xp_multiplier_adds(member.id, member.guild.id)
+        embed.add_field(name='Current XP Multiplier', value='{:.2f}'.format(xp_mult), inline=False)
 
         if data['joined'] < 0:
             embed.add_field(name='Last XP Update',
