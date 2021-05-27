@@ -1,3 +1,5 @@
+import threading
+
 import discord
 from discord.ext import commands
 from discord.utils import get
@@ -12,6 +14,8 @@ import time
 import random
 import string
 from ast import literal_eval
+
+from webserver.webserver import WebServer
 
 
 class ENUMS:
@@ -225,7 +229,7 @@ class DiscordBot:
 
     @staticmethod
     def max_xp_for(lvl):
-        return max(100, DiscordBot.get_lvl(lvl) * 10 + 90)
+        return int(max(100, DiscordBot.get_lvl(lvl) * 10 + 90))
 
     @staticmethod
     def xp_for(xp, boost):
@@ -627,9 +631,9 @@ class DiscordBot:
                             inline=False)
         return embed
 
-    async def get_users(self, guild):
+    async def get_users(self, guild_id):
         cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
+        cur.execute('SELECT * FROM users WHERE gid=?', (guild_id,))
         return cur.fetchall()
 
     async def check_member(self, member):
@@ -715,11 +719,11 @@ class DiscordBot:
         self.db_conn.commit()
 
     async def get_blacklisted_users(self, guild):
-        users = await self.get_users(guild)
+        users = await self.get_users(guild.id)
         return filter(lambda x: bool(x['blacklist']), users)
 
     async def get_ranking(self, guild):
-        users = await self.get_users(guild)
+        users = await self.get_users(guild.id)
         users = sorted(users, key=lambda x: x['lvl'], reverse=True)
         for i in range(len(users)):
             users[i]['rank'] = i + 1
@@ -837,19 +841,26 @@ class DiscordBot:
             (await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
-    async def create_ranking_image(self, member, ranked_users):
-        data_obj = []
+    async def get_advanced_user_infos(self, guild, ranked_users):
+        user_infos = []
         for user in ranked_users:
-            member = get(member.guild.members, id=int(user['uid']))
+            member = get(guild.members, id=int(user['uid']))
             if member is not None and not member.bot:
                 name = member.display_name
-                data_obj.append({
+                user_infos.append({
                     'member': member,
                     'rank': user['rank'],
                     'lvl': self.get_lvl(user['lvl']),
+                    'xp': self.lvl_get_xp(user['lvl']),
+                    'max_xp': self.max_xp_for(user['lvl']),
                     'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb())
+                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'avatar_url': str(member.avatar_url_as(format="png")),
                 })
+        return user_infos
+
+    async def create_ranking_image(self, member, ranked_users):
+        data_obj = await self.get_advanced_user_infos(member.guild, ranked_users)
 
         img_buf = await self.image_creator.create(
             (await self.get_setting(member.guild.id, 'RANKING_IMAGE'))(data_obj), max_size=(-1, 8000))
@@ -1825,12 +1836,13 @@ class DiscordBot:
                 self.parent.lprint(member, 'joined', after.channel)
 
 
-if __name__ == '__main__':
+def main():
     from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
 
     if not os.path.exists('dbs'):
         os.mkdir('dbs')
-    con = sqlite3.connect('dbs/bot.db')
+    con = sqlite3.connect('dbs/bot.db', check_same_thread=False)
+
     b = DiscordBot(con,
                    default_guild_settings=DEFAULT_GUILD_SETTINGS,
                    update_voice_xp_interval=GLOBAL_SETTINGS['UPDATE_VOICE_XP_INTERVAL'],
@@ -1840,6 +1852,13 @@ if __name__ == '__main__':
                    use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
                    )
 
+    web = WebServer(
+        oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
+        oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
+        oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
+        discord_bot=b,
+    )
+
     image_creator = imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
                                           load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
                                           download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
@@ -1847,4 +1866,10 @@ if __name__ == '__main__':
 
     b.set_image_creator(image_creator)
 
+    web.start()
+
     b.run(GLOBAL_SETTINGS['TOKEN'])
+
+
+if __name__ == '__main__':
+    main()

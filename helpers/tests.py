@@ -61,12 +61,13 @@ def main():
         async def test__h3(self):
             obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
 
-            image_buffer = await self.image_creator.create(DEFAULT_GUILD_SETTINGS['WHEEL_SPIN_IMAGE'](obj))
+            gif_image_buffer, last_image_buffer =\
+                await self.image_creator.create(DEFAULT_GUILD_SETTINGS['WHEEL_SPIN_IMAGE'](obj))
 
             with open('test.gif', 'wb') as f:
-                f.write(image_buffer.read())
+                f.write(gif_image_buffer.read())
 
-            # image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+            # image = cv2.imdecode(np.frombuffer(gif_image_buffer.read(), np.uint8), -1)
 
             # show_image(image)
             return True
@@ -78,19 +79,20 @@ def main():
                     resize=(300, 300)
                 ),
                 EmojiLayer(
-                    emoji='😎',
+                    emoji='🥱',
                     pos=(150, 150),
                     resize=(30, 30)
                 )
             ])
 
             self.image_creator.download_emojis = True
+            self.image_creator.save_downloaded_emojis = False
 
             image_buffer = await self.image_creator.create(image)
 
-            image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+            # image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
 
-            show_image(image)
+            # show_image(image)
             return True
 
     async def run_test(test_name):

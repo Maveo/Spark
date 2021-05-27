@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'nav.html' %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-secondary sticky-top"><button class="navbar-toggler" type="button"
+        data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+        aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link" href="leaderboard">Leaderboard</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div style="margin: 10px;">
+    <p class="h4 mb-2 mt-2">{{guild.name}}</p>
+
+    <ul style="list-style-type: none; margin: 0; padding: 0;">
+        {%for user in ranking%}
+        <li style="margin: 10px;">
+            <div class="card">
+                <div class="d-flex">
+                    <div class="flex-fill">
+                        <img class="card-img"
+                             src="{{user.avatar_url}}"
+                             alt="Image"
+                             style="height:100px; width:100px; object-fit: scale-down;"
+                        >
+                    </div>
+                    <div class="flex-fill">
+                        <div class="card-body">
+                            <h5 class="card-title">{{user.name}}, Lvl. {{user.lvl}}, XP {{user.xp}}/{{user.max_xp}}, Rank: #{{user.rank}}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </li>
+        {%endfor%}
+    </ul>
+</div>
+{% endblock %}
