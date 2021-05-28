@@ -647,6 +647,9 @@ class Createable:
         raise Exception('Raw usage of Createable is forbidden!')
 
 
+
+
+
 class ImageStack(Createable):
     def __init__(self, layers=None):
         if layers is None:
@@ -686,7 +689,7 @@ class ImageStack(Createable):
         return io.BytesIO(buffer)
 
 
-class AnimatedImage(Createable):
+class AnimatedImageStack(Createable):
     def __init__(self,
                  rotate=None,
                  static_fg=None,

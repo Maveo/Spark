@@ -4,6 +4,8 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 GLOBAL_SETTINGS = {
     'APPLICATION_ID': '',
+    'APPLICATION_SECRET': '',
+    'OATH2_REDIRECT_URI': '',
     'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
@@ -467,7 +469,7 @@ def wheel_spin_image(x):
     rotation = 1440.0 + (x['result'] * offset) + offset * 0.5
     spin_func = lambda z: (3 * (z ** 2) - 2 * (z ** 3)) * rotation
     choices = [EmojiLayer(emoji=emoji, resize=(27, 27)) for emoji in x['choices']]
-    return AnimatedImage(
+    return AnimatedImageStack(
         bg_color=(128, 128, 128),
         rotate=ImageStack([
             ColorLayer(
