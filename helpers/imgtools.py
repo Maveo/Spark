@@ -1,5 +1,7 @@
 import threading
 import time
+import copy
+
 
 from helpers import tools
 import numpy as np
@@ -18,11 +20,18 @@ ALPHA_COLOR = (255, 255, 255, 255)
 LINE_TYPE = cv2.LINE_AA
 
 
-class Color:
-    pass
+class ColorInterface:
+    @staticmethod
+    def validated(color):
+        if issubclass(type(color), VariableInterface) or issubclass(type(color), ColorInterface):
+            return color
+        return SingleColor(color)
+
+    def create(self, size):
+        raise Exception('Raw usage of ColorInterface forbidden!')
 
 
-class SingleColor(Color, np.ndarray):
+class SingleColor(ColorInterface, np.ndarray):
     def __new__(cls, color):
         if len(color) == 1:
             color = (color, color, color, 255)
@@ -30,6 +39,9 @@ class SingleColor(Color, np.ndarray):
             color = (color[0], color[1], color[2], 255)
         color = [max(0, min(255, x)) for x in color]
         return np.array(color).view(cls)
+
+    def get(self):
+        return self
 
     def lightened(self, factor):
         return SingleColor([self[0] * factor, self[1] * factor, self[2] * factor, self[3]])
@@ -44,14 +56,14 @@ class SingleColor(Color, np.ndarray):
         return np.full((size[0], size[1], self.shape[0]), self, dtype=np.uint8)
 
 
-class LinearGradientColor(Color):
+class LinearGradientColor(ColorInterface):
     def __init__(self, color1, color2, axis=0):
-        self.color1 = SingleColor(color1)
-        self.color2 = SingleColor(color2)
+        self.color1 = self.validated(color1)
+        self.color2 = self.validated(color2)
         self.direction_axis = axis
 
     def color_mix(self, mix):
-        return (1 - mix) * self.color1 + mix * self.color2
+        return (1 - mix) * self.color1.get() + mix * self.color2.get()
 
     def create(self, size):
         if self.direction_axis == 0:
@@ -197,50 +209,206 @@ def overlay(background, foreground, x=0, y=0, max_size=(-1, -1), align_x='left',
     return background
 
 
-class ImageLoader:
-    def load_into(self, func):
-        raise Exception('Raw usage of Image Loader forbidden, use FileImageLoader')
+class VariableInterface:
+    @staticmethod
+    def get_variable(variable):
+        if issubclass(type(variable), VariableInterface):
+            return variable.get()
+        if isinstance(variable, list) or isinstance(variable, tuple):
+            return [VariableInterface.get_variable(v) for v in variable]
+        return variable
+
+    @staticmethod
+    def one_key_to_var(key, value):
+        if key is None:
+            return value
+        if issubclass(type(key), VariableInterface):
+            key.set(value)
+            return key.get()
+        if isinstance(key, str) and hasattr(value, key):
+            return getattr(value, key)
+        return value[key]
+
+    @staticmethod
+    def key_to_var(key, value):
+        if isinstance(key, list) or isinstance(key, tuple):
+            v = value
+            for k in key:
+                v = VariableInterface.one_key_to_var(k, v)
+            return v
+        return VariableInterface.one_key_to_var(key, value)
+
+    def set(self, value_dict):
+        raise Exception('Raw Usage of VariableInterface forbidden')
+
+    def get(self):
+        raise Exception('Raw Usage of VariableInterface forbidden')
 
 
-class FileImageLoader(ImageLoader):
-    def __init__(self, file=None, prefix=''):
-        self.file = file
-        self.prefix = prefix
+class Variable(VariableInterface):
+    def __init__(self, key=None):
+        self.key = key
+        self.value = None
+        self.operations = []
 
-    def load_into(self, func):
-        img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
-        func(self.prefix + '/' + os.path.basename(self.file), img)
+    def add_operation(self, op_name, args, kwargs):
+        self.operations.append((op_name, (args, kwargs)))
+
+    def set(self, value):
+        self.set_value(self.key_to_var(self.key, value))
+
+    def set_value(self, value):
+        self.value = value
+        for op in self.operations:
+            self.value = getattr(self.value, op[0])(*op[1][0], **op[1][1])
+
+    def get(self):
+        return self.get_variable(self.value)
+
+    # TO-DO: implement all necessary requests
+
+    def __add__(self, *args, **kwargs):
+        self.add_operation('__add__', args, kwargs)
+        return self
+
+    def __mul__(self, *args, **kwargs):
+        self.add_operation('__mul__', args, kwargs)
+        return self
+
+    def __sub__(self, *args, **kwargs):
+        self.add_operation('__sub__', args, kwargs)
+        return self
+
+    def __truediv__(self, *args, **kwargs):
+        self.add_operation('__truediv__', args, kwargs)
+        return self
+
+    def __floordiv__(self, *args, **kwargs):
+        self.add_operation('__floordiv__', args, kwargs)
+        return self
 
 
-class DirectoryImageLoader(ImageLoader):
-    def __init__(self, directory=None, prefix=''):
-        self.directory = directory
-        self.prefix = prefix
+class EqualityVariable(Variable):
+    def __init__(self, key, compare, on_equals, on_greater, on_smaller=None):
+        super().__init__(key)
+        self.compare = compare
+        self.on_equals = on_equals
+        self.on_greater = on_greater
+        self.on_smaller = on_smaller
 
-    def load_into(self, func):
-        for f in os.listdir(self.directory):
-            if f.endswith('.png'):
-                img = cv2.imread(os.path.join(self.directory, f), cv2.IMREAD_UNCHANGED)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
-                func(self.prefix + '/' + f, img)
+    def set(self, value):
+        super().set(value)
+        for v in [self.on_equals, self.on_greater, self.on_smaller]:
+            if issubclass(type(v), VariableInterface):
+                v.set(value)
+
+    def get(self):
+        if self.value == self.compare:
+            return VariableInterface.get_variable(self.on_equals)
+        if self.on_smaller is None or self.value > self.compare:
+            return VariableInterface.get_variable(self.on_greater)
+        return VariableInterface.get_variable(self.on_smaller)
 
 
-class AlignLayer:
+class FormattedVariable(Variable):
+    def __init__(self, key, vformat):
+        super().__init__(key)
+        self.vformat = vformat
+
+    def get(self):
+        return self.vformat.format(super().get())
+
+
+class LengthVariable(Variable):
+    def set(self, value):
+        super().set_value(len(self.key_to_var(self.key, value)))
+
+    def get(self):
+        return super().get()
+
+
+class IteratorVariable(Variable):
+    current_i = 0
+    max_i = 0
+    finished = False
+
+    def set(self, value):
+        self.max_i = len(self.key_to_var(self.key, value))
+        self.set_value(self.current_i)
+
+    def _len(self):
+        return self.max_i
+
+    def _next(self):
+        if self.finished:
+            return
+        if self.current_i >= self.max_i - 1:
+            self.finished = True
+            return
+        self.current_i += 1
+        self.set_value(self.current_i)
+        return self.get()
+
+
+class SingleColorVariable(Variable):
+    def __init__(self, key):
+        super().__init__(key)
+        self.operations = []
+
+    def set(self, value):
+        super().set_value(SingleColor(self.key_to_var(self.key, value)))
+
+    def lightened(self, *args, **kwargs):
+        self.add_operation('lightened', args, kwargs)
+        return self
+
+    def darkened(self, *args, **kwargs):
+        self.add_operation('darkened', args, kwargs)
+        return self
+
+    def alpha(self, *args, **kwargs):
+        self.add_operation('alpha', args, kwargs)
+        return self
+
+
+class FormattedVariables(VariableInterface):
+    def __init__(self, keys, vformat):
+        self.vars = [Variable(key) for key in keys]
+        self.vformat = vformat
+
+    def set(self, value):
+        for var in self.vars:
+            var.set(value)
+
+    def get(self):
+        return self.vformat.format(*[v.get() for v in self.vars])
+
+
+class VariableKwargManager:
+    def used_kwarg(self, key):
+        self.used_kwargs.append(key)
+
     def get_kwarg(self, key, default=None):
         if default is not None and key not in self.kwargs:
             return default
         if key not in self.kwargs:
             raise Exception('"{}" was not found in {}'.format(key, type(self).__name__))
         self.used_kwargs.append(key)
+        value = self.kwargs[key]
+        return VariableInterface.get_variable(value)
+
+    def get_raw_kwarg(self, key):
+        if key not in self.kwargs:
+            raise Exception('"{}" was not found in {}'.format(key, type(self).__name__))
+        self.used_kwargs.append(key)
         return self.kwargs[key]
+
+    def set_kwarg(self, key, value):
+        self.kwargs[key] = value
 
     def __init__(self, **kwargs):
         self.used_kwargs = []
         self.kwargs = kwargs
-        self.pos = self.get_kwarg('pos', (0, 0))
-        self.align_x = self.get_kwarg('align_x', 'left')
-        self.align_y = self.get_kwarg('align_y', 'top')
-        self.max_size = self.get_kwarg('max_size', (-1, -1))
 
     def _init_finished(self):
         if 'no-check' in self.kwargs and self.kwargs['no-check'] is True:
@@ -249,8 +417,18 @@ class AlignLayer:
             if key not in self.used_kwargs:
                 warnings.warn('{} "{}" was not used'.format(type(self).__name__, key))
 
-    async def create(self, **kwargs):
-        raise Exception('Raw usage of Align Layer forbidden!')
+
+class Createable:
+    async def create(self, *args, **kwargs):
+        raise Exception('Raw usage of Createable is forbidden!')
+
+
+class AlignLayer(VariableKwargManager, Createable):
+    def _init(self):
+        self.pos = self.get_kwarg('pos', (0, 0))
+        self.align_x = self.get_kwarg('align_x', 'left')
+        self.align_y = self.get_kwarg('align_y', 'top')
+        self.max_size = self.get_kwarg('max_size', (-1, -1))
 
     async def overlay(self, **kwargs):
         layer = await self.create(**kwargs)
@@ -258,10 +436,10 @@ class AlignLayer:
 
 
 class ColoredLayer(AlignLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.color = self.get_kwarg('color', (0, 0, 0, 0))
-        if not issubclass(type(self.color), Color):
+        if not issubclass(type(self.color), ColorInterface):
             self.color = SingleColor(self.color)
 
     async def create(self, **kwargs):
@@ -274,8 +452,8 @@ class ColoredLayer(AlignLayer):
 
 
 class ColorLayer(ColoredLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.resize = self.get_kwarg('resize', (1, 1))
         super()._init_finished()
 
@@ -284,14 +462,14 @@ class ColorLayer(ColoredLayer):
 
 
 class EmptyLayer(ColorLayer):
-    def __init__(self, **kwargs):
-        kwargs['color'] = (0, 0, 0, 0)
-        super().__init__(**kwargs)
+    def _init__(self):
+        self.set_kwarg('color', (0, 0, 0, 0))
+        super()._init()
 
 
 class ImageLayer(AlignLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.resize = self.get_kwarg('resize', False)
 
     def validated(self, img):
@@ -311,8 +489,8 @@ class ImageLayer(AlignLayer):
 
 
 class FileImageLayer(ImageLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.file = self.get_kwarg('file')
         super()._init_finished()
 
@@ -323,8 +501,8 @@ class FileImageLayer(ImageLayer):
 
 
 class MemoryImageLayer(ImageLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.memory = self.get_kwarg('memory')
         super()._init_finished()
 
@@ -337,8 +515,8 @@ class MemoryImageLayer(ImageLayer):
 class EmojiLayer(ImageLayer):
     base_emoji_url = 'http://emojipedia.org/'
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.emoji = self.get_kwarg('emoji')
         super()._init_finished()
 
@@ -377,8 +555,8 @@ class EmojiLayer(ImageLayer):
 
 
 class WebImageLayer(ImageLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.url = self.get_kwarg('url')
         super()._init_finished()
 
@@ -390,8 +568,8 @@ class WebImageLayer(ImageLayer):
 
 
 class TextLayer(ColoredLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.font = self.get_kwarg('font', 'default')
         self.font_size = self.get_kwarg('font_size', 16)
 
@@ -402,7 +580,7 @@ class TextLayer(ColoredLayer):
         self.text_lines = self.get_kwarg('text_lines', False)
         if self.text_lines is False:
             self.text = self.get_kwarg('text')
-            self.text = unicodedata.normalize('NFKC', self.text)
+            self.text = unicodedata.normalize('NFKC', str(self.text))
             self.wrap_limit = self.get_kwarg('wrap_limit', -1)
 
             if self.wrap_limit > 0:
@@ -461,8 +639,8 @@ class TextLayer(ColoredLayer):
 
 
 class LineLayer(ColoredLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.target = self.get_kwarg('target')
         self.line_width = self.get_kwarg('line_width', -1)
         super()._init_finished()
@@ -483,8 +661,8 @@ class LineLayer(ColoredLayer):
 
 
 class RectangleLayer(ColoredLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.size = self.get_kwarg('size', (0, 0))
         self.radius = self.get_kwarg('radius', 0)
         self.line_width = self.get_kwarg('line_width', -1)
@@ -554,31 +732,22 @@ class RectangleLayer(ColoredLayer):
 
 
 class ProgressLayer(RectangleLayer):
-    def __init__(self, **kwargs):
-        direction = 'x'
-        percentage = 1
-        if 'direction' in kwargs:
-            direction = kwargs['direction']
-        if 'percentage' in kwargs:
-            percentage = kwargs['percentage']
+    def _init(self):
+        direction = self.get_kwarg('direction', 'x')
+        percentage = self.get_kwarg('percentage', 1)
 
+        size = self.get_kwarg('size')
         if direction == 'y':
-            kwargs['size'] = (kwargs['size'][0],
-                              int(kwargs['size'][1] * percentage))
+            self.set_kwarg('size', (size[0], int(size[1] * percentage)))
         else:
-            kwargs['size'] = (int(kwargs['size'][0] * percentage),
-                              kwargs['size'][1])
+            self.set_kwarg('size', (int(size[0] * percentage), size[1]))
 
-        if 'percentage' in kwargs:
-            del kwargs['percentage']
-        if 'direction' in kwargs:
-            del kwargs['direction']
-        super().__init__(**kwargs)
+        super()._init()
 
 
 class PieLayer(ColoredLayer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def _init(self):
+        super()._init()
         self.radius = self.get_kwarg('radius', 0)
         self.pieces = self.get_kwarg('pieces', 5)
         self.border_width = self.get_kwarg('border_width', 1)
@@ -642,19 +811,56 @@ class PieLayer(ColoredLayer):
         return img
 
 
-class Createable:
-    async def create(self, *args, **kwargs):
-        raise Exception('Raw usage of Createable is forbidden!')
+class ListLayer(AlignLayer):
+    def _init(self):
+        super()._init()
+        self.ifor = self.get_raw_kwarg('ifor')
+        self.template = self.get_kwarg('template')
+        self.direction = self.get_kwarg('direction', 'y')
+        self.margin = self.get_kwarg('margin', 0)
+        super()._init_finished()
+
+    def concat(self, img1, img2):
+        if self.direction == 'x':
+            return cv2.hconcat([img1, img2])
+        return cv2.vconcat([img1, img2])
+
+    def concat_margin(self, img):
+        if self.direction == 'x':
+            return cv2.hconcat([img, np.zeros((img.shape[0], self.margin, img.shape[2]), dtype=np.uint8)])
+        return cv2.vconcat([img, np.zeros((self.margin, img.shape[1], img.shape[2]), dtype=np.uint8)])
+
+    async def create(self, **kwargs):
+        olength = self.ifor._len()
+        for i in range(olength):
+            img = await self.template.create(**kwargs)
+            self.template._init()
+            if i < olength - 1:
+                img = self.concat_margin(img)
+
+            # margin
+        # cv2.imshow('test', img)
+        # cv2.waitKey(0)
+        # while True:
+        #     next(self.ifor)
+        # print(self.ifor)
+        # print(self.ifor)
+        # next(self.ifor)
+
+        return img
 
 
+class ImageStack(Createable, VariableKwargManager):
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
+        if len(args) > 1:
+            self.set_kwarg('layers', list(args))
+        elif len(args) == 1 and isinstance(args[0], list):
+            self.set_kwarg('layers', args[0])
 
-
-
-class ImageStack(Createable):
-    def __init__(self, layers=None):
-        if layers is None:
-            layers = []
-        self.layers = layers
+    def _init(self):
+        self.layers = self.get_kwarg('layers', [])
+        super()._init_finished()
 
     async def raw_create(self, image_creator, **kwargs):
         img = None
@@ -689,42 +895,30 @@ class ImageStack(Createable):
         return io.BytesIO(buffer)
 
 
-class AnimatedImageStack(Createable):
-    def __init__(self,
-                 rotate=None,
-                 static_fg=None,
-                 static_bg=None,
-                 seconds=5,
-                 fps=5,
-                 rotation_func=None,
-                 rotation=90,
-                 loop=1,
-                 bg_color=(0, 0, 0, 0)):
-        self.rotate = rotate
-        self.static_fg = static_fg
-        self.static_bg = static_bg
-        self.seconds = seconds
-        self.fps = fps
-        if rotation_func is None:
-            rotation_func = lambda i: rotation * i
-        self.rotation_func = rotation_func
-        self.loop = loop
-
-        if len(bg_color) == 3:
-            bg_color = bg_color[0], bg_color[1], bg_color[2], 255
-        self.bg_color = bg_color
+class AnimatedImageStack(Createable, VariableKwargManager):
+    def _init(self):
+        self.rotate = self.get_kwarg('rotate')
+        self.static_fg = self.get_kwarg('static_fg', False)
+        self.static_bg = self.get_kwarg('static_bg', False)
+        self.seconds = self.get_kwarg('seconds', 5)
+        self.fps = self.get_kwarg('fps', 5)
+        self.rotation_func = self.get_kwarg('rotation_func', lambda i: self.get_kwarg('rotation', None) * i)
+        self.loop = self.get_kwarg('loop', 1)
+        self.bg_color = self.get_kwarg('bg_color', (0, 0, 0, 0))
+        if len(self.bg_color) == 3:
+            self.bg_color = self.bg_color[0], self.bg_color[1], self.bg_color[2], 255
 
     async def create(self, image_creator, **kwargs):
         rimage = await self.rotate.raw_create(image_creator, **kwargs)
         rimage = cv2.cvtColor(rimage, cv2.COLOR_RGBA2BGRA)
 
         fgimage = None
-        if self.static_fg is not None:
+        if self.static_fg is not False:
             fgimage = await self.static_fg.raw_create(image_creator, **kwargs)
             fgimage = cv2.cvtColor(fgimage, cv2.COLOR_RGBA2BGRA)
 
         bgimage = None
-        if self.static_bg is not None:
+        if self.static_bg is not False:
             bgimage = await self.static_bg.raw_create(image_creator, **kwargs)
             bgimage = cv2.cvtColor(bgimage, cv2.COLOR_RGBA2BGRA)
 
@@ -780,11 +974,83 @@ class AnimatedImageStack(Createable):
         return gif_image_bytes, io.BytesIO(last_image_bytes)
 
 
+class ImageStackResolve:
+    def __init__(self, creatable):
+        self.untouched_creatable = creatable
+        self.current_arg = None
+
+    def _resolve_list(self, x):
+        for value in x:
+            self._resolve(value)
+
+    def _resolve_dict(self, d):
+        for key, value in d.items():
+            self._resolve(value)
+
+    def _resolve(self, i):
+        if isinstance(i, list) or isinstance(i, tuple):
+            self._resolve_list(i)
+        elif isinstance(i, dict):
+            self._resolve_dict(i)
+        elif issubclass(type(i), VariableKwargManager):
+            self.to_init.append(i)
+            self._resolve_dict(i.kwargs)
+        elif isinstance(i, LinearGradientColor):
+            self._resolve(i.color1)
+            self._resolve(i.color2)
+        elif issubclass(type(i), VariableInterface):
+            i.set(self.current_arg)
+
+    def _resolve_variables(self):
+        self._resolve(self.creatable)
+
+    def _resolve_init(self):
+        for x in self.to_init:
+            x._init()
+
+    def __call__(self, arg):
+        self.current_arg = arg
+        self.creatable = copy.deepcopy(self.untouched_creatable)
+        self.to_init = []
+        self._resolve_variables()
+        self._resolve_init()
+        self.current_arg = None
+        return self.creatable
+
+
+class ImageLoader:
+    def load_into(self, func):
+        raise Exception('Raw usage of Image Loader forbidden, use FileImageLoader')
+
+
+class FileImageLoader(ImageLoader):
+    def __init__(self, file=None, prefix=''):
+        self.file = file
+        self.prefix = prefix
+
+    def load_into(self, func):
+        img = cv2.imread(self.file, cv2.IMREAD_UNCHANGED)
+        func(self.prefix + '/' + os.path.basename(self.file), img)
+
+
+class DirectoryImageLoader(ImageLoader):
+    def __init__(self, directory=None, prefix=''):
+        self.directory = directory
+        self.prefix = prefix
+
+    def load_into(self, func):
+        for f in os.listdir(self.directory):
+            if f.endswith('.png'):
+                img = cv2.imread(os.path.join(self.directory, f), cv2.IMREAD_UNCHANGED)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
+                func(self.prefix + '/' + f, img)
+
+
 class FontLoader:
-    def __init__(self, fonts=None):
+    def __init__(self, fonts=None, max_fonts_loaded=10):
         self.registered_fonts = {}
         self.loaded_fonts = {}
-        self.max_fonts_loaded = 10
+        self.max_fonts_loaded = max_fonts_loaded
 
         if fonts is not None:
             for k, v in fonts.items():

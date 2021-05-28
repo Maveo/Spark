@@ -32,8 +32,7 @@ def main():
             return tools.to_char(tools.from_char('✅')) == '✅' and tools.to_char(tools.from_char('🆘')) == '🆘'
 
         async def test__h2(self):
-
-            image = ImageStack([
+            image = ImageStackResolve(ImageStack(layers=[
                 EmptyLayer(
                     resize=(300, 300)
                 ),
@@ -44,31 +43,34 @@ def main():
                     max_size=(300, 300),
                     font='regular',
                     font_size=35,
-                    text_lines=['Hey whats up', 'What you do?', 'What'],
+                    text=Variable('cool'),
                     text_align='right',
                     color=(255, 0, 0)
                 )
-            ])
+            ]))
 
-            image_buffer = await self.image_creator.create(image)
+            image_buffer = await self.image_creator.create(image({'cool': 'cool'}))
+            image_res = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+            show_image(image_res)
 
-            # image = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+            image_buffer = await self.image_creator.create(image({'cool': 'nice'}))
+            image_res = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
+            show_image(image_res)
 
-            # show_image(image)
             return True
 
         # test image creation
         async def test__h3(self):
-            obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
-
-            gif_image_buffer, last_image_buffer =\
-                await self.image_creator.create(DEFAULT_GUILD_SETTINGS['WHEEL_SPIN_IMAGE'](obj))
-
-            with open('test.gif', 'wb') as f:
-                f.write(gif_image_buffer.read())
-
+            # obj = {'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)}
+            #
+            # gif_image_buffer, last_image_buffer =\
+            #     await self.image_creator.create(DEFAULT_GUILD_SETTINGS['WHEEL_SPIN_IMAGE'](obj))
+            #
+            # with open('test.gif', 'wb') as f:
+            #     f.write(gif_image_buffer.read())
+            #
             # image = cv2.imdecode(np.frombuffer(gif_image_buffer.read(), np.uint8), -1)
-
+            #
             # show_image(image)
             return True
 
