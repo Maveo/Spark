@@ -2,7 +2,6 @@ import threading
 import time
 import copy
 
-
 from helpers import tools
 import numpy as np
 import cv2
@@ -15,6 +14,7 @@ import asyncio
 import requests
 from math import *
 from textwrap import wrap
+import tokenize
 
 ALPHA_COLOR = (255, 255, 255, 255)
 LINE_TYPE = cv2.LINE_AA
@@ -85,7 +85,7 @@ def rgb_to_bgr(rgb):
 
 def rotate_image(iimage, angle, bg_color=(0, 0, 0, 0), padding=False):
     if padding:
-        diagonal_length = int(ceil(sqrt(iimage.shape[0]**2 + iimage.shape[1]**2)))
+        diagonal_length = int(ceil(sqrt(iimage.shape[0] ** 2 + iimage.shape[1] ** 2)))
         image = np.zeros((diagonal_length, diagonal_length, iimage.shape[2]), dtype=np.uint8)
 
         image_center = (int(image.shape[0] * 0.5), int(image.shape[1] * 0.5))
@@ -94,8 +94,8 @@ def rotate_image(iimage, angle, bg_color=(0, 0, 0, 0), padding=False):
         ho2, wo2 = iimage.shape[0] - ho1, iimage.shape[1] - wo1
 
         image[
-            image_center[0] - ho1:image_center[0] + ho2,
-            image_center[1] - wo1:image_center[1] + wo2
+        image_center[0] - ho1:image_center[0] + ho2,
+        image_center[1] - wo1:image_center[1] + wo2
         ] = iimage
 
     else:
@@ -201,8 +201,8 @@ def overlay(background, foreground, x=0, y=0, max_size=(-1, -1), align_x='left',
     background = background.copy()
 
     background[
-        by_start:by_end,
-        bx_start:bx_end
+    by_start:by_end,
+    bx_start:bx_end
     ] = overlay_matching(background[by_start:by_end, bx_start:bx_end],
                          foreground[fy_start:fy_end, fx_start:fx_end])
 
@@ -933,8 +933,8 @@ class AnimatedImageStack(Createable, VariableKwargManager):
             angle = normalize_angle(self.rotation_func(i))
             hit = None
             if len(buffered_images) > 0:
-                hit = min(buffered_images.keys(), key=lambda x: abs(x-angle))
-            if hit is not None and abs(angle-hit) <= 1:
+                hit = min(buffered_images.keys(), key=lambda x: abs(x - angle))
+            if hit is not None and abs(angle - hit) <= 1:
                 image_data.append(buffered_images[hit])
             else:
                 t = rotate_image(rimage, angle, bg_color=self.bg_color)
@@ -954,7 +954,7 @@ class AnimatedImageStack(Createable, VariableKwargManager):
             'format': 'gif',
             'save_all': True,
             'append_images': image_data[1:],
-            'duration': int(1000/self.fps),
+            'duration': int(1000 / self.fps),
             # 'transparency': 0,
             'disposal': 3,
         }
@@ -1010,6 +1010,118 @@ class ImageStackResolve:
         self._resolve_init()
         self.current_arg = None
         return self.creatable
+
+
+class Node:
+    def __init__(self, name=None, itype=-1, parent=None):
+        self.name = name
+        self.type = itype
+        self.content = ''
+        self.parent = parent
+        self.is_kwarg = False
+        self.children = []
+
+    def append_content(self, string):
+        self.content += string
+
+    def add(self, name, itype):
+        self.children.append(Node(name=name, itype=itype, parent=self))
+        return self.last()
+
+    def last(self):
+        if len(self.children) == 0:
+            return None
+        return self.children[-1]
+
+    def __str__(self, level=0):
+        ret = "\t" * level + str(self.type) + ' | ' + str(self.name) \
+              + ' [' \
+              + (', '.join([str(self.is_kwarg)])) \
+              + '] [' \
+              + (self.content) \
+              + "]\n"
+        for child in self.children:
+            ret += child.__str__(level + 1)
+        return ret
+
+    def __repr__(self):
+        return str(self)
+
+
+class ImageStackStringParser:
+    OPENING_TYPES = [
+        tokenize.LPAR,
+        tokenize.LSQB,
+    ]
+
+    CLOSING_TYPES = [
+        tokenize.RPAR,
+        tokenize.RSQB,
+    ]
+
+    ACCPTED_CLASSES = {
+        'ImageStack': ImageStack
+    }
+
+    def __init__(self, string):
+        self.tree = Node('MAIN')
+        current = self.tree
+        tokens = tokenize.generate_tokens(io.StringIO(string).readline)
+
+        def _kwarg_check(current):
+            # check if previous sibling is kwarg and i am not
+            if current.parent is not None:
+                ci = current.parent.children.index(current)
+                if ci > 0:
+                    prev_sibling = current.parent.children[ci-1]
+                    if current.is_kwarg != prev_sibling.is_kwarg:
+                        prev_sibling.children.append(current)
+                        current.parent.children.remove(current)
+                        return prev_sibling
+            return current
+
+        for token in tokens:
+            if token.type == tokenize.NAME:
+                current = _kwarg_check(current)
+                current.add(token.string, token.exact_type)
+
+            elif token.exact_type == tokenize.EQUAL:
+                if current.last() is not None:
+                    current.last().is_kwarg = True
+
+            if token.exact_type in self.OPENING_TYPES:
+                if current.last() is not None:
+                    current = current.last().add(None, token.exact_type)
+                else:
+                    current.add(None, token.exact_type)
+                    current = current.last()
+
+            if token.type in [tokenize.OP, tokenize.NUMBER, tokenize.STRING] and token.exact_type != tokenize.EQUAL:
+                # if token.type != tokenize.OP:
+                    # current.last().add(None, token.exact_type).append_content(token.string)
+                    # current.last().append_content(token.string)
+
+                if current.last() is None:
+                    current.append_content(token.string)
+                else:
+                    current.last().append_content(token.string)
+
+            if token.exact_type in self.CLOSING_TYPES:
+                if current.name is None:
+                    current = current.parent
+                current = _kwarg_check(current)
+                current = current.parent
+
+        print(self.tree)
+
+    def build(self):
+        return 'test'
+
+
+class ImageStackResolveString(ImageStackResolve):
+    def __init__(self, string):
+        self.string_parser = ImageStackStringParser(string)
+        super().__init__(self.string_parser.build())
 
 
 class ImageLoader:

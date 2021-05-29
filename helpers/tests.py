@@ -32,22 +32,116 @@ def main():
             return tools.to_char(tools.from_char('✅')) == '✅' and tools.to_char(tools.from_char('🆘')) == '🆘'
 
         async def test__h2(self):
-            image = ImageStackResolve(ImageStack(layers=[
-                EmptyLayer(
-                    resize=(300, 300)
-                ),
-                TextLayer(
-                    pos=(150, 150),
-                    align_x='center',
-                    align_y='center',
-                    max_size=(300, 300),
-                    font='regular',
-                    font_size=35,
-                    text=Variable('cool'),
-                    text_align='right',
-                    color=(255, 0, 0)
-                )
-            ]))
+            image = ImageStackResolveString('''ImageStack([
+    # Background
+    RectangleLayer(
+        pos=(0, 0),
+        line_width=-1,
+        size=(1200, LengthVariable() * 85 + 410),
+        radius=55,
+        color=(55, 50, 48),
+    ),
+    # Leaderboard Text Border
+    RectangleLayer(
+        pos=(30, 40),
+        line_width=10,
+        size=(1140, 180),
+        radius=45,
+        color=LinearGradientColor((76, 142, 217),
+                                  (7, 222, 255),
+                                  1)
+    ),
+    # Leaderboard Text
+    TextLayer(
+        pos=(310, 93),
+        font='bold',
+        font_size=100,
+        text='Leaderboard',
+        color=(255, 255, 255),
+        max_size=(900, 100)
+    ),
+    # Name Header Text
+    TextLayer(
+        pos=(90, 255),
+        font='regular',
+        font_size=65,
+        text='Name',
+        color=(87, 87, 87),
+        max_size=(300, 50)
+    ),
+
+    # Level Header Text
+    TextLayer(
+        pos=(1025, 255),
+        font='regular',
+        font_size=65,
+        text='Lvl.',
+        color=(87, 87, 87),
+        max_size=(300, 50)
+    ),
+
+    # Members Background
+    RectangleLayer(
+        pos=(37, 320),
+        line_width=-1,
+        size=(1100, LengthVariable() * 85 + 410 - 355),
+        radius=55,
+        color=(65, 59, 57),
+    ),
+
+    # Levels Background
+    RectangleLayer(
+        pos=(978, 320),
+        line_width=-1,
+        size=(185, LengthVariable() * 85 + 410 - 355),
+        radius=45,
+        color=LinearGradientColor((130, 214, 254),
+                                  (49, 177, 232),
+                                  1)
+    ),
+
+    # All Users
+    ListLayer(
+        pos=(0, 360),
+        repeat=LengthVariable(),
+        template=ImageStack(
+            EmptyLayer(
+              resize=(1200, 85)
+            ),
+            TextLayer(
+                pos=(135, 8),
+                font='bold',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('rank').formatted('#{}'),
+                color=(255, 255, 255),
+                max_size=(200, -1),
+            ),
+            EmojiLayer(
+                pos=(240, 0),
+                resize=(60, 60),
+                emoji=IteratorVariable()(('member', 'top_role', 'name', 0,)),
+            ),
+            TextLayer(
+                pos=(323, 8),
+                font='regular',
+                font_size=60,
+                text=IteratorVariable()('name'),
+                color=(255, 255, 255),
+                max_size=(600, -1)
+            ),
+            TextLayer(
+                pos=(1069, 8),
+                font='regular',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('lvl'),
+                color=(29, 29, 29),
+                max_size=(250, -1)
+            )
+        )
+    )
+])''')
 
             image_buffer = await self.image_creator.create(image({'cool': 'cool'}))
             image_res = cv2.imdecode(np.frombuffer(image_buffer.read(), np.uint8), -1)
