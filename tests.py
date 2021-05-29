@@ -1,6 +1,3 @@
-import types
-
-
 class ColorDummy:
     def __init__(self, rgb=(0, 255, 0)):
         self.rgb = rgb
@@ -111,15 +108,18 @@ class MessageDummy:
 
 def main():
     from bot import DiscordBot, ENUMS
-    from helpers.imgtools import ImageCreator, TextLayer, EmptyLayer
+    from helpers.imgtools import ImageCreator
     import sqlite3
     import numpy as np
     import cv2
     import time
     import os
     import asyncio
+    import traceback
+    import types
 
     SHOW_IMAGES = True
+    PRINT_TRACEBACK = False
 
     EPS = 0.00000001
 
@@ -400,6 +400,7 @@ def main():
             g1 = GuildDummy(1)
             m0 = MemberDummy(guild=g0)
             m1 = MemberDummy(guild=g1)
+
             await self.bot.events.on_member_join(m0)
             await self.bot.events.on_member_join(m1)
             await self.bot.member_set_blacklist(m0, True)
@@ -586,6 +587,7 @@ def main():
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_set_lvl(m, 5.5)
+            await self.bot.member_set_xp_multiplier(m, 1.5)
 
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -658,6 +660,8 @@ def main():
                 print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
                 return True
         except Exception as e:
+            if PRINT_TRACEBACK:
+                traceback.print_tb(e.__traceback__)
             error = str(e)
 
         print("FAILED! elapsed {}ms | {} | Error: {}"

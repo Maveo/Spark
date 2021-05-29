@@ -250,9 +250,13 @@ class Variable(VariableInterface):
         self.key = key
         self.value = None
         self.operations = []
+        self.after_operations = []
 
     def add_operation(self, op_name, args, kwargs):
         self.operations.append((op_name, (args, kwargs)))
+
+    def add_after_operation(self, op):
+        self.after_operations.append(op)
 
     def set(self, value):
         self.set_value(self.key_to_var(self.key, value))
@@ -263,7 +267,14 @@ class Variable(VariableInterface):
             self.value = getattr(self.value, op[0])(*op[1][0], **op[1][1])
 
     def get(self):
-        return self.get_variable(self.value)
+        v = self.get_variable(self.value)
+        for op in self.after_operations:
+            v = op(v)
+        return v
+
+    def formatted(self, s):
+        self.add_after_operation(lambda x: s.format(x))
+        return self
 
     # TO-DO: implement all necessary requests
 
@@ -285,6 +296,10 @@ class Variable(VariableInterface):
 
     def __floordiv__(self, *args, **kwargs):
         self.add_operation('__floordiv__', args, kwargs)
+        return self
+
+    def __getitem__(self, *args, **kwargs):
+        self.add_operation('__getitem__', args, kwargs)
         return self
 
 
@@ -310,15 +325,6 @@ class EqualityVariable(Variable):
         return VariableInterface.get_variable(self.on_smaller)
 
 
-class FormattedVariable(Variable):
-    def __init__(self, key, vformat):
-        super().__init__(key)
-        self.vformat = vformat
-
-    def get(self):
-        return self.vformat.format(super().get())
-
-
 class LengthVariable(Variable):
     def set(self, value):
         super().set_value(len(self.key_to_var(self.key, value)))
@@ -330,24 +336,22 @@ class LengthVariable(Variable):
 class IteratorVariable(Variable):
     current_i = 0
     max_i = 0
-    finished = False
+    iterable = None
+    after_key = None
 
     def set(self, value):
-        self.max_i = len(self.key_to_var(self.key, value))
-        self.set_value(self.current_i)
+        self.iterable = self.key_to_var(self.key, value)
+        self.max_i = len(self.iterable)
 
-    def _len(self):
-        return self.max_i
+    def get(self):
+        if self.current_i < self.max_i:
+            self.set_value(self.key_to_var(self.after_key, self.iterable[self.current_i]))
+            self.current_i += 1
+        return super().get()
 
-    def _next(self):
-        if self.finished:
-            return
-        if self.current_i >= self.max_i - 1:
-            self.finished = True
-            return
-        self.current_i += 1
-        self.set_value(self.current_i)
-        return self.get()
+    def __call__(self, key=None):
+        self.after_key = key
+        return self
 
 
 class SingleColorVariable(Variable):
@@ -507,7 +511,7 @@ class MemoryImageLayer(ImageLayer):
         super()._init_finished()
 
     async def create(self, **kwargs):
-        img = kwargs['image_memory'][self.memory]
+        img = kwargs['image_creator'].image_memory[self.memory]
         img = self.validated(img)
         return self.resized(img)
 
@@ -530,23 +534,24 @@ class EmojiLayer(ImageLayer):
     async def create(self, **kwargs):
         emoji_id = tools.from_char(self.emoji)
 
-        file = os.path.join(kwargs['emoji_path'], emoji_id + '.png')
+        file = os.path.join(kwargs['image_creator'].emoji_path, emoji_id + '.png')
         img = None
         if os.path.exists(file):
             img = cv2.imread(file, cv2.IMREAD_UNCHANGED)
-        elif kwargs['download_emojis']:
-            url = self.get_emoji_image_url(kwargs['download_emoji_provider'])
+        elif kwargs['image_creator'].download_emojis:
+            url = self.get_emoji_image_url(kwargs['image_creator'].download_emoji_provider)
             if url is None:
                 warnings.warn('Emoji "{}" was not found on "{}"!'.format(self.emoji, self.base_emoji_url))
             else:
                 img_bytes = requests.get(url).content
                 img = cv2.imdecode(np.frombuffer(img_bytes, np.uint8), cv2.IMREAD_UNCHANGED)
-                if kwargs['save_downloaded_emojis']:
+                if kwargs['image_creator'].save_downloaded_emojis:
                     cv2.imwrite(file, img)
 
         if img is None:
-            if kwargs['emoji_not_found_image'] is not None and os.path.exists(kwargs['emoji_not_found_image']):
-                img = cv2.imread(kwargs['emoji_not_found_image'], cv2.IMREAD_UNCHANGED)
+            if kwargs['image_creator'].emoji_not_found_image is not None and \
+                    os.path.exists(kwargs['image_creator'].emoji_not_found_image):
+                img = cv2.imread(kwargs['image_creator'].emoji_not_found_image, cv2.IMREAD_UNCHANGED)
             else:
                 return None
 
@@ -615,7 +620,7 @@ class TextLayer(ColoredLayer):
         if sum(map(len, self.text_lines)) == 0:
             return None
 
-        font = kwargs['font_loader'].load_font(self.font, self.font_size)
+        font = kwargs['image_creator'].font_loader.load_font(self.font, self.font_size)
 
         total_width, total_height, line_widths, line_heights, descent = self.get_text_dimensions(font)
 
@@ -814,13 +819,17 @@ class PieLayer(ColoredLayer):
 class ListLayer(AlignLayer):
     def _init(self):
         super()._init()
-        self.ifor = self.get_raw_kwarg('ifor')
+        self.repeat = self.get_kwarg('repeat')
         self.template = self.get_kwarg('template')
         self.direction = self.get_kwarg('direction', 'y')
         self.margin = self.get_kwarg('margin', 0)
         super()._init_finished()
 
     def concat(self, img1, img2):
+        if img1 is None:
+            return img2
+        elif img2 is None:
+            return img1
         if self.direction == 'x':
             return cv2.hconcat([img1, img2])
         return cv2.vconcat([img1, img2])
@@ -831,21 +840,12 @@ class ListLayer(AlignLayer):
         return cv2.vconcat([img, np.zeros((self.margin, img.shape[1], img.shape[2]), dtype=np.uint8)])
 
     async def create(self, **kwargs):
-        olength = self.ifor._len()
-        for i in range(olength):
-            img = await self.template.create(**kwargs)
+        img = None
+        for i in range(self.repeat):
             self.template._init()
-            if i < olength - 1:
+            img = self.concat(img, await self.template.create(**kwargs))
+            if i < self.repeat - 1:
                 img = self.concat_margin(img)
-
-            # margin
-        # cv2.imshow('test', img)
-        # cv2.waitKey(0)
-        # while True:
-        #     next(self.ifor)
-        # print(self.ifor)
-        # print(self.ifor)
-        # next(self.ifor)
 
         return img
 
@@ -860,21 +860,17 @@ class ImageStack(Createable, VariableKwargManager):
 
     def _init(self):
         self.layers = self.get_kwarg('layers', [])
+        for layer in self.layers:
+            layer._init()
         super()._init_finished()
 
-    async def raw_create(self, image_creator, **kwargs):
+    async def create(self, **kwargs):
         img = None
         if len(self.layers) == 0:
             img = await EmptyLayer().create()
         for layer in self.layers:
-            img = await layer.overlay(background=img,
-                                      image_memory=image_creator.image_memory,
-                                      font_loader=image_creator.font_loader,
-                                      emoji_path=image_creator.emoji_path,
-                                      emoji_not_found_image=image_creator.emoji_not_found_image,
-                                      download_emojis=image_creator.download_emojis,
-                                      save_downloaded_emojis=image_creator.save_downloaded_emojis,
-                                      download_emoji_provider=image_creator.download_emoji_provider)
+            kwargs['background'] = img
+            img = await layer.overlay(**kwargs)
 
         if 'max_size' in kwargs:
             max_size = kwargs['max_size']
@@ -888,8 +884,8 @@ class ImageStack(Createable, VariableKwargManager):
                 img = cv2.resize(img, (int(img.shape[1] * resize_factor), int(img.shape[0] * resize_factor)))
         return img
 
-    async def create(self, image_creator, **kwargs):
-        img = await self.raw_create(image_creator, **kwargs)
+    async def create_bytes(self, **kwargs):
+        img = await self.create(**kwargs)
 
         is_success, buffer = cv2.imencode('.png', img)
         return io.BytesIO(buffer)
@@ -993,7 +989,6 @@ class ImageStackResolve:
         elif isinstance(i, dict):
             self._resolve_dict(i)
         elif issubclass(type(i), VariableKwargManager):
-            self.to_init.append(i)
             self._resolve_dict(i.kwargs)
         elif isinstance(i, LinearGradientColor):
             self._resolve(i.color1)
@@ -1005,8 +1000,7 @@ class ImageStackResolve:
         self._resolve(self.creatable)
 
     def _resolve_init(self):
-        for x in self.to_init:
-            x._init()
+        self.creatable._init()
 
     def __call__(self, arg):
         self.current_arg = arg
@@ -1132,7 +1126,7 @@ class ImageCreator:
                 loop.run_until_complete(_self._async_create())
 
             async def _async_create(_self):
-                _self.result = await stack.create(self)
+                _self.result = await stack.create_bytes(image_creator=self, max_size=max_size)
                 _self.event.set()
 
         e = AsyncEvent()

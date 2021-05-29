@@ -114,7 +114,7 @@ profile_image = ImageStackResolve(ImageStack([
         align_x='right',
         font='bold',
         font_size=35,
-        text=FormattedVariable('rank', '#{}'),
+        text=Variable('rank').formatted('#{}'),
         color=Variable('color'),
         max_size=(90, 30)
     ),
@@ -125,7 +125,7 @@ profile_image = ImageStackResolve(ImageStack([
         align_x='right',
         font='regular',
         font_size=20,
-        text=EqualityVariable('xp_multiplier', 1, '', FormattedVariable('xp_multiplier', '{:.2f}x')),
+        text=EqualityVariable('xp_multiplier', 1, '', Variable('xp_multiplier').formatted('{:.2f}x')),
         color=EqualityVariable('xp_multiplier', 1, (0, 0, 0), (102, 172, 47),
                                EqualityVariable('xp_multiplier', 0, (0, 128, 255), (0, 128, 255), (60, 20, 220))),
         max_size=(150, 20),
@@ -202,7 +202,7 @@ level_up_image = ImageStackResolve(ImageStack([
         align_x='right',
         font='regular',
         font_size=12,
-        text=FormattedVariable('old_lvl', 'Lvl. {}'),
+        text=Variable('old_lvl').formatted('Lvl. {}'),
         color=Variable('color'),
         max_size=(50, 22),
     ),
@@ -211,7 +211,7 @@ level_up_image = ImageStackResolve(ImageStack([
         pos=(145, 73),
         font='regular',
         font_size=12,
-        text=FormattedVariable('new_lvl', 'Lvl. {}'),
+        text=Variable('new_lvl').formatted('Lvl. {}'),
         color=Variable('color'),
         max_size=(50, 22),
     ),
@@ -289,7 +289,7 @@ rank_up_image = ImageStackResolve(ImageStack([
         align_x='right',
         font='regular',
         font_size=12,
-        text=FormattedVariable('old_lvl', 'Lvl. {}'),
+        text=Variable('old_lvl').formatted('Lvl. {}'),
         color=SingleColorVariable('old_color'),
         max_size=(50, 22)
     ),
@@ -298,7 +298,7 @@ rank_up_image = ImageStackResolve(ImageStack([
         pos=(145, 73),
         font='regular',
         font_size=12,
-        text=FormattedVariable('new_lvl', 'Lvl. {}'),
+        text=Variable('new_lvl').formatted('Lvl. {}'),
         color=SingleColorVariable('new_color'),
         max_size=(50, 22)
     ),
@@ -385,128 +385,46 @@ ranking_image = ImageStackResolve(ImageStack([
 
     # All Users
     ListLayer(
-        ifor=IteratorVariable(),
-        template=TextLayer(
-            pos=(150, IteratorVariable() * 85 + 370 + 2),
-            font='bold',
-            align_x='center',
-            font_size=60,
-            text=FormattedVariable(IteratorVariable('rank'), '#{}'),
-            color=(255, 255, 255),
-            max_size=(200, 150)
+        pos=(0, 360),
+        repeat=LengthVariable(),
+        template=ImageStack(
+            EmptyLayer(
+              resize=(1200, 85)
+            ),
+            TextLayer(
+                pos=(135, 8),
+                font='bold',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('rank').formatted('#{}'),
+                color=(255, 255, 255),
+                max_size=(200, -1),
+            ),
+            EmojiLayer(
+                pos=(240, 0),
+                resize=(60, 60),
+                emoji=IteratorVariable()(('member', 'top_role', 'name', 0,)),
+            ),
+            TextLayer(
+                pos=(323, 8),
+                font='regular',
+                font_size=60,
+                text=IteratorVariable()('name'),
+                color=(255, 255, 255),
+                max_size=(600, -1)
+            ),
+            TextLayer(
+                pos=(1069, 8),
+                font='regular',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('lvl'),
+                color=(29, 29, 29),
+                max_size=(250, -1)
+            )
         )
     )
 ]))
-
-# def ranking_image(x):
-#     height = len(x) * 85 + 410
-#     layers = [
-#
-#         # Background
-#         RectangleLayer(
-#             pos=(0, 0),
-#             line_width=-1,
-#             size=(1200, height),
-#             radius=55,
-#             color=(55, 50, 48),
-#         ),
-#
-#         # Leaderboard Text Border
-#         RectangleLayer(
-#             pos=(30, 40),
-#             line_width=10,
-#             size=(1140, 180),
-#             radius=45,
-#             color=LinearGradientColor((76, 142, 217),
-#                                       (7, 222, 255),
-#                                       1)
-#         ),
-#
-#         # Leaderboard Text
-#         TextLayer(
-#             pos=(310, 93),
-#             font='bold',
-#             font_size=100,
-#             text='Leaderboard',
-#             color=(255, 255, 255),
-#             max_size=(900, 100)
-#         ),
-#
-#         # Name Header Text
-#         TextLayer(
-#             pos=(90, 255),
-#             font='regular',
-#             font_size=65,
-#             text='Name',
-#             color=(87, 87, 87),
-#             max_size=(300, 50)
-#         ),
-#
-#         # Level Header Text
-#         TextLayer(
-#             pos=(1025, 255),
-#             font='regular',
-#             font_size=65,
-#             text='Lvl.',
-#             color=(87, 87, 87),
-#             max_size=(300, 50)
-#         ),
-#
-#         # Members Background
-#         RectangleLayer(
-#             pos=(37, 320),
-#             line_width=-1,
-#             size=(1100, height - 355),
-#             radius=55,
-#             color=(65, 59, 57),
-#         ),
-#
-#         # Levels Background
-#         RectangleLayer(
-#             pos=(978, 320),
-#             line_width=-1,
-#             size=(185, height - 355),
-#             radius=45,
-#             color=LinearGradientColor((130, 214, 254),
-#                                       (49, 177, 232),
-#                                       1)
-#         ),
-#     ]
-#
-#     for i in range(len(x)):
-#         pos_y = i * 85 + 370
-#         layers.append(TextLayer(
-#             pos=(150, pos_y + 2),
-#             font='bold',
-#             align_x='center',
-#             font_size=60,
-#             text='#' + str(x[i]['rank']),
-#             color=(255, 255, 255),
-#             max_size=(200, 150)
-#         ))
-#         layers.append(EmojiLayer(
-#             pos=(240, pos_y - 10),
-#             resize=(60, 60),
-#             emoji=x[i]['member'].top_role.name[0]
-#         ))
-#         layers.append(TextLayer(
-#             pos=(323, pos_y),
-#             font='regular',
-#             font_size=60,
-#             text=x[i]['name'],
-#             color=(255, 255, 255),
-#             max_size=(600, 150)
-#         ))
-#         layers.append(TextLayer(
-#             pos=(1069, pos_y + 2),
-#             font='regular',
-#             align_x='center',
-#             font_size=60,
-#             text=str(x[i]['lvl']),
-#             color=(29, 29, 29),
-#             max_size=(250, 150)
-#         ))
-#     return ImageStack(layers)
 
 
 welcome_image = ImageStackResolve(ImageStack([
