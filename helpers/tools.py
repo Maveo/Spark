@@ -1,41 +1,5 @@
 import re
-import threading
-
-
-class LockableCursor:
-    def __init__(self, cursor):
-        self.cursor = cursor
-        self.thread_lock = threading.Lock()
-        self.locked = False
-
-    def lock(self):
-        self.thread_lock.acquire()
-        self.locked = True
-
-    def release(self):
-        self.thread_lock.release()
-        self.locked = False
-
-    def execute(self, *args, **kwargs):
-        try:
-            result = self.cursor.execute(*args, **kwargs)
-        except Exception as exception:
-            raise exception
-        return result
-
-    def fetchone(self):
-        try:
-            result = self.cursor.fetchone()
-        except Exception as exception:
-            raise exception
-        return result
-
-    def fetchall(self):
-        try:
-            result = self.cursor.fetchall()
-        except Exception as exception:
-            raise exception
-        return result
+import json
 
 
 def from_char(c):
@@ -69,3 +33,11 @@ def only_emojis(text):
                                u"\u3030"
                                "]+", re.UNICODE)
     return regex_pattern.sub(r'', text)
+
+
+def simple_eval(wanted_type, value):
+    if wanted_type is bool:
+        return str(value).lower() in ['1', 'true']
+    if wanted_type is list:
+        return json.loads(value)
+    return wanted_type(value)

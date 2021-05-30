@@ -1,0 +1,13 @@
+{% include 'nav.html' %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-secondary"><button class="navbar-toggler" type="button"
+        data-toggle="collapse" data-target="#navbarGuildSupportedContent" aria-controls="navbarGuildSupportedContent"
+        aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <span class="h4 mb-0" style="color: rgba(255,255,255,0.5);">{{guild.name}}</span>
+    <div class="collapse navbar-collapse" id="navbarGuildSupportedContent">
+
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link" href="leaderboard">Leaderboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="settings">Settings</a></li>
+        </ul>
+    </div>
+</nav>

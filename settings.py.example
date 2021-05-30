@@ -24,7 +24,7 @@ GLOBAL_SETTINGS = {
 }
 
 
-profile_image = ImageStackResolve(ImageStack([
+profile_image = ImageStackResolveString('''ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -140,10 +140,10 @@ profile_image = ImageStackResolve(ImageStack([
         color=(170, 170, 170),
         max_size=(280, 18)
     )
-]))
+])''')
 
 
-level_up_image = ImageStackResolve(ImageStack([
+level_up_image = ImageStackResolveString('''ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
@@ -225,10 +225,10 @@ level_up_image = ImageStackResolve(ImageStack([
         color=(255, 255, 255),
         max_size=(180, 16),
     ),
-]))
+])''')
 
 
-rank_up_image = ImageStackResolve(ImageStack([
+rank_up_image = ImageStackResolveString('''ImageStack([
     # BG
     RectangleLayer(
         pos=(0, 0),
@@ -312,10 +312,10 @@ rank_up_image = ImageStackResolve(ImageStack([
         color=(255, 255, 255),
         max_size=(180, 16)
     ),
-]))
+])''')
 
 
-ranking_image = ImageStackResolve(ImageStack([
+ranking_image = ImageStackResolveString('''ImageStack([
     # Background
     RectangleLayer(
         pos=(0, 0),
@@ -424,12 +424,12 @@ ranking_image = ImageStackResolve(ImageStack([
             )
         )
     )
-]))
+])''')
 
 
-welcome_image = ImageStackResolve(ImageStack([
-    FileImageLayer(
-        file=os.path.join(current_dir, 'images', 'welcome_template.png')
+welcome_image = ImageStackResolveString('''ImageStack([
+    WebImageLayer(
+        url="http://sparkbot.us.to:4004/static/welcome_template.png"
     ),
     WebImageLayer(
         pos=(85, 35),
@@ -462,7 +462,7 @@ welcome_image = ImageStackResolve(ImageStack([
         color=(255, 255, 255),
         max_size=(460, 50)
     ),
-]))
+])''')
 
 
 def wheel_spin_image(x):

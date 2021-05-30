@@ -1,14 +1,41 @@
 import os
 import threading
 import asyncio
-from flask import Flask, session, redirect, request, url_for, render_template
+from flask import Flask, session, redirect, request, url_for, render_template, jsonify
 from requests_oauthlib import OAuth2Session
 import logging
+
+
+class Page:
+    def __init__(self, path, view_func, methods=None):
+        self.path = path
+        self.view_func = view_func
+        if methods is None:
+            methods = ['GET']
+        self.methods = methods
 
 
 class WebServer(threading.Thread):
     async def is_signed_in(self):
         return session.get('oauth2_token') is not None
+
+    async def get_member_id(self):
+        if session.get('member_id') is None:
+            discord = self.make_session(token=session.get('oauth2_token'))
+
+            while True:
+                user_response = discord.get(self.API_BASE_URL + '/users/@me')
+                if user_response.status_code == 200:
+                    break
+                response_json = user_response.json()
+                if 'retry_after' in response_json:
+                    await asyncio.sleep(int(response_json['retry_after']/1000))
+                else:
+                    raise Exception('could not find id in response')
+
+            session['member_id'] = int(user_response.json()['id'])
+
+        return session.get('member_id')
 
     async def entry(self):
         return render_template('login.html')
@@ -18,7 +45,7 @@ class WebServer(threading.Thread):
             return redirect(url_for('/home'))
         scope = request.args.get(
             'scope',
-            'identify email guilds'
+            'identify'
         )
         discord = self.make_session(scope=scope.split(' '))
         authorization_url, state = discord.authorization_url(self.AUTHORIZATION_BASE_URL)
@@ -40,41 +67,50 @@ class WebServer(threading.Thread):
             authorization_response=request.url
         )
         session['oauth2_token'] = token
+
         return redirect(url_for('/home'))
 
     async def home(self):
         if not await self.is_signed_in():
             return redirect(url_for('/'))
-        discord = self.make_session(token=session.get('oauth2_token'))
 
-        while True:
-            guilds_response = discord.get(self.API_BASE_URL + '/users/@me/guilds')
-            if guilds_response.status_code == 200:
-                break
-            response_json = guilds_response.json()
-            if 'retry_after' in response_json:
-                await asyncio.sleep(int(response_json['retry_after']/1000))
-            else:
-                return render_template('error.html')
-
-        user_guild_ids = list(map(lambda x: int(x['id']), guilds_response.json()))
-        guilds = [x for x in self.dbot.bot.guilds if x.id in user_guild_ids]
+        guilds = [guild for guild in self.dbot.bot.guilds
+                  if guild.get_member(await self.get_member_id()) is not None]
         return render_template('home.html', guilds=guilds)
 
     async def guild(self, guild_id, **kwargs):
         if not await self.is_signed_in():
             return redirect(url_for('/'))
+
         try:
             guild_id = int(guild_id)
         except ValueError:
-            return render_template('not_in_guild.html')
+            return render_template('guild-not-in.html')
         guilds = list(filter(lambda x: x.id == guild_id, self.dbot.bot.guilds))
         if len(guilds) != 1:
-            return render_template('not_in_guild.html')
+            return render_template('guild-not-in.html')
         guild = guilds[0]
+        member = guild.get_member(await self.get_member_id())
+        if member is None:
+            return render_template('guild-not-in.html')
+
+        if 'path' in kwargs and kwargs['path'] == 'settings':
+            if not member.guild_permissions.administrator:
+                return render_template('guild-no-permissions.html')
+
+            if request.method == 'POST':
+                res = await self.dbot.set_setting(guild.id, request.form['key'], request.form['value'])
+                if not res:
+                    return jsonify('Value could not be set'), 400
+                setting = await self.dbot.get_setting(guild.id, request.form['key'])
+                return jsonify(str(setting)), 200
+            settings = await self.dbot.get_settings(guild.id)
+            return render_template('guild-settings.html',
+                                   guild=guild,
+                                   settings=settings)
         ranked_users = await self.dbot.get_ranking(guild)
         user_infos = await self.dbot.get_advanced_user_infos(guild, ranked_users)
-        return render_template('guild.html', guild=guilds[0], ranking=user_infos)
+        return render_template('guild-leaderboard.html', guild=guild, ranking=user_infos)
 
     def __init__(self,
                  name='Webserver',
@@ -117,15 +153,15 @@ class WebServer(threading.Thread):
         self.app.debug = debug
         self.app.config['SECRET_KEY'] = self.OAUTH2_CLIENT_SECRET
 
-        self.pages = {
-            '/': self.entry,
-            '/login': self.login,
-            '/logout': self.logout,
-            '/oath2': self.oath2,
-            '/home': self.home,
-            '/guild/<string:guild_id>/': self.guild,
-            '/guild/<string:guild_id>/<path:path>': self.guild,
-        }
+        self.pages = [
+            Page(path='/', view_func=self.entry),
+            Page(path='/login', view_func=self.login),
+            Page(path='/logout', view_func=self.logout),
+            Page(path='/oath2', view_func=self.oath2),
+            Page(path='/home', view_func=self.home),
+            Page(path='/guild/<string:guild_id>/', view_func=self.guild),
+            Page(path='/guild/<string:guild_id>/<path:path>', view_func=self.guild, methods=['GET', 'POST']),
+        ]
 
         def _wrapper(func):
             def _call(*args, **kwargs):
@@ -135,8 +171,11 @@ class WebServer(threading.Thread):
                 return res
             return _call
 
-        for key, value in self.pages.items():
-            self.app.add_url_rule(rule=key, endpoint=key, view_func=_wrapper(value))
+        for page in self.pages:
+            self.app.add_url_rule(rule=page.path,
+                                  endpoint=page.path,
+                                  view_func=_wrapper(page.view_func),
+                                  methods=page.methods)
 
     @staticmethod
     def token_updater(token):

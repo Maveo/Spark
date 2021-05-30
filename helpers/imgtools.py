@@ -14,7 +14,7 @@ import asyncio
 import requests
 from math import *
 from textwrap import wrap
-import tokenize
+import ast
 
 ALPHA_COLOR = (255, 255, 255, 255)
 LINE_TYPE = cv2.LINE_AA
@@ -1012,116 +1012,245 @@ class ImageStackResolve:
         return self.creatable
 
 
-class Node:
-    def __init__(self, name=None, itype=-1, parent=None):
+class IType:
+    def __init__(self, index, name):
+        self.index = index
         self.name = name
+
+    def __str__(self):
+        return self.name
+
+
+class Node:
+    CALL = IType(0, 'Call')
+    KEYWORD = IType(1, 'Keyword')
+    LIST = IType(2, 'List')
+    TUPLE = IType(3, 'Tuple')
+    CONSTANT = IType(4, 'Constant')
+    UNARY_OP = IType(5, 'UnaryOp')
+    BIN_OP = IType(6, 'BinOp')
+    ATTRIBUTE = IType(7, 'Attribute')
+
+    def __init__(self, value, itype, parent):
         self.type = itype
-        self.content = ''
+        self.value = value
         self.parent = parent
-        self.is_kwarg = False
         self.children = []
 
-    def append_content(self, string):
-        self.content += string
+    def add_child(self, value, itype):
+        node = Node(value=value, itype=itype, parent=self)
+        self.children.append(node)
+        return node
 
-    def add(self, name, itype):
-        self.children.append(Node(name=name, itype=itype, parent=self))
-        return self.last()
-
-    def last(self):
+    def last_child(self):
         if len(self.children) == 0:
             return None
         return self.children[-1]
 
+    def base(self):
+        base = self
+        while base.parent is not None:
+            base = base.parent
+        return base
+
     def __str__(self, level=0):
-        ret = "\t" * level + str(self.type) + ' | ' + str(self.name) \
-              + ' [' \
-              + (', '.join([str(self.is_kwarg)])) \
-              + '] [' \
-              + (self.content) \
-              + "]\n"
+        ret = "\t" * level + str(self.type) + ' | ' + str(self.value) \
+              + "\n"
         for child in self.children:
             ret += child.__str__(level + 1)
         return ret
 
-    def __repr__(self):
-        return str(self)
+
+class ImageStackAnalyser(ast.NodeVisitor):
+    def __init__(self):
+        self.tree = None
+
+    def incremental_visit(self, node, value, itype):
+        if self.tree is None:
+            self.tree = Node(value=value, itype=itype, parent=None)
+            self.generic_visit(node)
+        else:
+            last = self.tree
+            self.tree = self.tree.add_child(value=value, itype=itype)
+            self.generic_visit(node)
+            self.tree = last
+
+    def visit_Call(self, node):
+        self.incremental_visit(node, value=None, itype=Node.CALL)
+
+    def visit_keyword(self, node):
+        self.incremental_visit(node, value=node.arg, itype=Node.KEYWORD)
+
+    def visit_List(self, node):
+        self.incremental_visit(node, value=None, itype=Node.LIST)
+
+    def visit_Tuple(self, node):
+        self.incremental_visit(node, value=None, itype=Node.TUPLE)
+
+    def visit_Constant(self, node):
+        self.incremental_visit(node, value=node.value, itype=Node.CONSTANT)
+
+    def visit_UnaryOp(self, node):
+        self.incremental_visit(node, value=type(node.op).__name__, itype=Node.UNARY_OP)
+
+    def visit_BinOp(self, node):
+        self.incremental_visit(node, value=type(node.op).__name__, itype=Node.BIN_OP)
+
+    def visit_Attribute(self, node):
+        self.incremental_visit(node, value=node.attr, itype=Node.ATTRIBUTE)
+
+    def visit_Name(self, node):
+        self.tree.value = node.id
+
+
+class ImageStackVisitor:
+    def __init__(self):
+        self.image_stack = None
+
+    def check_length(self, value):
+        if isinstance(value, str) and len(value) > 500:
+            raise Exception('Strings longer than 500 are not supported')
+        if isinstance(value, (int, float)) and value > 10000:
+            raise Exception('Values bigger than 10000 are not supported')
+
+    def visit_call(self, node):
+        args = []
+        kwargs = {}
+
+        if node.value is None:
+            if len(node.children) < 1 or node.children[0].type not in [Node.ATTRIBUTE, Node.CALL]:
+                raise Exception('These calls are pretty deep')
+
+            cls = self.visit(node.children[0])
+            children = node.children[1:]
+
+        else:
+            cls = ImageStackStringParser.ACCEPTED_CLASSES[node.value]
+            children = node.children
+
+        for child in children:
+            if child.type == Node.KEYWORD:
+                if len(child.children) != 1:
+                    raise Exception('Keyword does not have exactly one child')
+                kwargs[child.value] = self.visit(child.last_child())
+
+            else:
+                args.append(self.visit(child))
+
+        return cls(*args, **kwargs)
+
+    def visit_attribute(self, node):
+        if len(node.children) != 1:
+            raise Exception('Attribute does not have exactly one child')
+        obj = self.visit(node.last_child())
+        if type(obj) not in ImageStackStringParser.ACCEPTED_CLASSES.values():
+            raise Exception('Attribute access not allowed for this class')
+        if node.value[0] == '_':
+            raise Exception('Access to protected attributes forbidden')
+        return getattr(obj, node.value)
+
+    def visit_list(self, node):
+        li = []
+        for child in node.children:
+            li.append(self.visit(child))
+        return li
+
+    def visit_tuple(self, node):
+        return tuple(self.visit_list(node))
+
+    def visit_unary_op(self, node):
+        if len(node.children) != 1:
+            raise Exception('Unary Operator does not have exactly one child')
+        if node.value == 'USub':
+            return -self.visit(node.last_child())
+        raise Exception('Unknown Unary Operator')
+
+    def visit_bin_op(self, node):
+        if len(node.children) != 2:
+            raise Exception('Bin Operator does not have exactly two children')
+        op1, op2 = node.children
+        res = None
+        if node.value == 'Add':
+            res = self.visit(op1) + self.visit(op2)
+        elif node.value == 'Sub':
+            res = self.visit(op1) - self.visit(op2)
+        elif node.value == 'Mult':
+            res = self.visit(op1) * self.visit(op2)
+        if res is not None:
+            self.check_length(res)
+            return res
+        raise Exception('Unknown Bin Operator: {}'.format(node.value))
+
+    def visit_constant(self, node):
+        if len(node.children) != 0:
+            raise Exception('Constant has a child')
+        self.check_length(node.value)
+        return node.value
+
+    def visit(self, node):
+        if node.type == Node.CALL:
+            return self.visit_call(node)
+        elif node.type == Node.ATTRIBUTE:
+            return self.visit_attribute(node)
+        elif node.type == Node.LIST:
+            return self.visit_list(node)
+        elif node.type == Node.TUPLE:
+            return self.visit_tuple(node)
+        elif node.type == Node.UNARY_OP:
+            return self.visit_unary_op(node)
+        elif node.type == Node.BIN_OP:
+            return self.visit_bin_op(node)
+        elif node.type == Node.CONSTANT:
+            return self.visit_constant(node)
+
+        raise Exception('Unhandled node in the tree {}'.format(node.type))
 
 
 class ImageStackStringParser:
-    OPENING_TYPES = [
-        tokenize.LPAR,
-        tokenize.LSQB,
-    ]
+    ACCEPTED_CLASSES = {
+        'ImageStack': ImageStack,
 
-    CLOSING_TYPES = [
-        tokenize.RPAR,
-        tokenize.RSQB,
-    ]
+        'EmptyLayer': EmptyLayer,
+        'ColorLayer': ColorLayer,
+        'RectangleLayer': RectangleLayer,
+        'LineLayer': LineLayer,
+        'TextLayer': TextLayer,
+        'WebImageLayer': WebImageLayer,
+        'EmojiLayer': EmojiLayer,
+        'ProgressLayer': ProgressLayer,
+        'PieLayer': PieLayer,
+        'ListLayer': ListLayer,
 
-    ACCPTED_CLASSES = {
-        'ImageStack': ImageStack
+        'SingleColor': SingleColor,
+        'LinearGradientColor': LinearGradientColor,
+
+        'Variable': Variable,
+        'SingleColorVariable': SingleColorVariable,
+        'FormattedVariables': FormattedVariables,
+        'EqualityVariable': EqualityVariable,
+        'IteratorVariable': IteratorVariable,
+        'LengthVariable': LengthVariable,
     }
 
     def __init__(self, string):
-        self.tree = Node('MAIN')
-        current = self.tree
-        tokens = tokenize.generate_tokens(io.StringIO(string).readline)
-
-        def _kwarg_check(current):
-            # check if previous sibling is kwarg and i am not
-            if current.parent is not None:
-                ci = current.parent.children.index(current)
-                if ci > 0:
-                    prev_sibling = current.parent.children[ci-1]
-                    if current.is_kwarg != prev_sibling.is_kwarg:
-                        prev_sibling.children.append(current)
-                        current.parent.children.remove(current)
-                        return prev_sibling
-            return current
-
-        for token in tokens:
-            if token.type == tokenize.NAME:
-                current = _kwarg_check(current)
-                current.add(token.string, token.exact_type)
-
-            elif token.exact_type == tokenize.EQUAL:
-                if current.last() is not None:
-                    current.last().is_kwarg = True
-
-            if token.exact_type in self.OPENING_TYPES:
-                if current.last() is not None:
-                    current = current.last().add(None, token.exact_type)
-                else:
-                    current.add(None, token.exact_type)
-                    current = current.last()
-
-            if token.type in [tokenize.OP, tokenize.NUMBER, tokenize.STRING] and token.exact_type != tokenize.EQUAL:
-                # if token.type != tokenize.OP:
-                    # current.last().add(None, token.exact_type).append_content(token.string)
-                    # current.last().append_content(token.string)
-
-                if current.last() is None:
-                    current.append_content(token.string)
-                else:
-                    current.last().append_content(token.string)
-
-            if token.exact_type in self.CLOSING_TYPES:
-                if current.name is None:
-                    current = current.parent
-                current = _kwarg_check(current)
-                current = current.parent
-
-        print(self.tree)
+        tree = ast.parse(string)
+        analyzer = ImageStackAnalyser()
+        analyzer.visit(tree)
+        self.node_tree = analyzer.tree
 
     def build(self):
-        return 'test'
+        v = ImageStackVisitor()
+        return v.visit(self.node_tree)
 
 
 class ImageStackResolveString(ImageStackResolve):
     def __init__(self, string):
-        self.string_parser = ImageStackStringParser(string)
+        self.string = string
+        self.string_parser = ImageStackStringParser(self.string)
         super().__init__(self.string_parser.build())
+
+    def __str__(self):
+        return self.string
 
 
 class ImageLoader:

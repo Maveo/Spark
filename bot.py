@@ -13,7 +13,6 @@ import os
 import time
 import random
 import string
-from ast import literal_eval
 
 from webserver.webserver import WebServer
 
@@ -655,8 +654,8 @@ class DiscordBot:
         guild_setting = cur.fetchone()
         if guild_setting is not None:
             try:
-                # TO-DO: don't use literal eval
-                return type(self.default_guild_settings[key])(literal_eval(guild_setting['svalue']))
+                default_type = type(self.default_guild_settings[key])
+                return tools.simple_eval(default_type, guild_setting['svalue'])
             except TypeError or ValueError:
                 pass
 
@@ -678,9 +677,9 @@ class DiscordBot:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
 
         try:
-            # TO-DO: don't use literal eval
-            type(self.default_guild_settings[key])(literal_eval(value))
-        except TypeError or ValueError:
+            default_type = type(self.default_guild_settings[key])
+            tools.simple_eval(default_type, value)
+        except TypeError or ValueError as e:
             return False
 
         cur = self.db_conn.cursor()
@@ -1251,9 +1250,9 @@ class DiscordBot:
                                           description='',
                                           color=discord.Color.gold())
 
+                    res = '"{}"'.format(await self.parent.get_setting(ctx.message.author.guild.id, key))
                     embed.add_field(name='{}'.format(key),
-                                    value='"{}"'.format(
-                                        await self.parent.get_setting(ctx.message.author.guild.id, key)),
+                                    value=(res[:1020] + '...') if len(res) > 1020 else res,
                                     inline=False)
                     return await ctx.send(embed=embed)
                 except KeyError:
@@ -1269,9 +1268,9 @@ class DiscordBot:
                 if len(args) > 1:
                     try:
                         key = ' '.join(args[1:])
-                        res = await self.parent.get_setting(ctx.message.author.guild.id, key)
+                        res = '"{}"'.format(await self.parent.get_setting(ctx.message.author.guild.id, key))
                         embed.add_field(name='{}'.format(key),
-                                        value='"{}"'.format(res),
+                                        value=(res[:1020] + '...') if len(res) > 1020 else res,
                                         inline=False)
                         return await ctx.send(embed=embed)
                     except KeyError:
@@ -1280,7 +1279,7 @@ class DiscordBot:
                 for key, value in (await self.parent.get_settings(ctx.message.author.guild.id)).items():
                     res = '"{}"'.format(value)
                     embed.add_field(name='{}'.format(key),
-                                    value=(res[:80] + '...') if len(str(res)) > 80 else res,
+                                    value=(res[:80] + '...') if len(res) > 80 else res,
                                     inline=False)
                 return await ctx.send(embed=embed)
 
