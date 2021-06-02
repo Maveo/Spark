@@ -1746,8 +1746,6 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
-            if not member.bot:
-                await self.parent.update_member(member)
             if await self.parent.get_setting(member.guild.id, 'SEND_WELCOME_IMAGE'):
                 await member.send(file=await self.parent.member_create_welcome_image(member))
 
