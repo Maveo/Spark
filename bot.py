@@ -1,10 +1,9 @@
-import threading
-
 import discord
 from discord.ext import commands
 from discord.utils import get
 
-from helpers import tools, imgtools
+from helpers import tools
+import imagestack
 
 import sqlite3
 import asyncio
@@ -679,7 +678,7 @@ class DiscordBot:
         try:
             default_type = type(self.default_guild_settings[key])
             tools.simple_eval(default_type, value)
-        except TypeError or ValueError as e:
+        except TypeError or ValueError:
             return False
 
         cur = self.db_conn.cursor()
@@ -788,7 +787,7 @@ class DiscordBot:
 
         data_obj = {'member': member,
                     'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'color': member.color.to_rgb(),
                     'lvl': self.get_lvl(data['lvl']),
                     'xp': data_xp,
                     'max_xp': data_max_xp,
@@ -817,7 +816,7 @@ class DiscordBot:
         data_obj = {'member': member,
                     'old_lvl': self.get_lvl(old_lvl),
                     'new_lvl': self.get_lvl(new_lvl),
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'color': member.color.to_rgb(),
                     'name': name}
 
         img_buf = await self.image_creator.create(
@@ -832,8 +831,8 @@ class DiscordBot:
                     'new_lvl': self.get_lvl(new_lvl),
                     'old_role': old_role,
                     'new_role': new_role,
-                    'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
-                    'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
+                    'old_color': old_role.color.to_rgb(),
+                    'new_color': new_role.color.to_rgb(),
                     'name': name}
 
         img_buf = await self.image_creator.create(
@@ -846,14 +845,18 @@ class DiscordBot:
             member = get(guild.members, id=int(user['uid']))
             if member is not None and not member.bot:
                 name = member.display_name
+                current_xp = self.lvl_get_xp(user['lvl'])
+                max_xp = self.max_xp_for(user['lvl'])
                 user_infos.append({
                     'member': member,
                     'rank': user['rank'],
                     'lvl': self.get_lvl(user['lvl']),
-                    'xp': self.lvl_get_xp(user['lvl']),
-                    'max_xp': self.max_xp_for(user['lvl']),
+                    'xp': current_xp,
+                    'max_xp': max_xp,
+                    'xp_percentage': current_xp / max_xp,
+                    'xp_multiplier': user['xp_multiplier'],
                     'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'color': member.color.to_rgb(),
                     'avatar_url': str(member.avatar_url_as(format="png")),
                 })
         return user_infos
@@ -1858,10 +1861,10 @@ def main():
         discord_bot=b,
     )
 
-    image_creator = imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
-                                          load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
-                                          download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
-                                          save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'])
+    image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
+                                            load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
+                                            download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
+                                            save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'])
 
     b.set_image_creator(image_creator)
 

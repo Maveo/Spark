@@ -2,15 +2,8 @@ import re
 import json
 
 
-def from_char(c):
-    return ''.join(['{:x}'.format(x) for x in c.encode('utf-8')])
-
-
-def to_char(c):
-    return bytes.fromhex(c).decode('utf-8')
-
-
 def only_emojis(text):
+    # TO-DO: don't hardcode this
     text = text.replace('️', '')
     regex_pattern = re.compile("[^"
                                u"\U0001F600-\U0001F64F"
