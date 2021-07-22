@@ -1,6 +1,4 @@
-from imagestack import ImageStackResolveString, ImageStack
-from imagestack.imagestack import AnimatedImageStack
-from imagestack.layers import *
+from imagestack import *
 import os
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -17,6 +15,7 @@ GLOBAL_SETTINGS = {
     'UPDATE_VOICE_XP_INTERVAL': 30,  # in seconds
     'DOWNLOAD_EMOJIS': True,
     'SAVE_EMOJIS': True,
+    'SAVE_EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
     'FONTS': {
         'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
         'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
@@ -473,30 +472,33 @@ def wheel_spin_image(x):
     rotation = 1440.0 + (x['result'] * offset) + offset * 0.5
     spin_func = lambda z: (3 * (z ** 2) - 2 * (z ** 3)) * rotation
     choices = [EmojiLayer(emoji=emoji, resize=(27, 27)) for emoji in x['choices']]
-    return AnimatedImageStack(
-        bg_color=(128, 128, 128),
-        rotate=ImageStack([
-            ColorLayer(
-                pos=(0, 0),
-                resize=(300, 300),
-                color=SingleColor(
-                    (128, 128, 128)
+    t = AnimatedImageStack(
+        animated=RotationLayer(
+            rotate=ImageStack([
+                ColorLayer(
+                    pos=(0, 0),
+                    resize=(300, 300),
+                    color=SingleColor(
+                        (128, 128, 128)
+                    ),
                 ),
-            ),
-            PieLayer(
-                align_x='center',
-                align_y='center',
-                pos=(150, 150),
-                radius=140,
-                color=LinearGradientColor(
-                    color1=(0, 255, 0),
-                    color2=(0, 0, 255)
-                ),
-                line_width=3,
-                border_width=10,
-                choices=choices
-            )
-        ]),
+                PieLayer(
+                    align_x='center',
+                    align_y='center',
+                    pos=(150, 150),
+                    radius=140,
+                    color=LinearGradientColor(
+                        color1=(0, 255, 0),
+                        color2=(0, 0, 255)
+                    ),
+                    line_width=3,
+                    border_width=10,
+                    choices=choices
+                )
+            ]),
+            rotation_func=spin_func,
+            bg_color=(128, 128, 128),
+        ),
         static_fg=ImageStack([
             EmptyLayer(
                 resize=(300, 300)
@@ -507,10 +509,11 @@ def wheel_spin_image(x):
                 color=(255, 255, 255)
             )
         ]),
-        rotation_func=spin_func,
         fps=30,
         seconds=7,
     )
+    t._init()
+    return t
 
 
 DEFAULT_GUILD_SETTINGS = {
