@@ -1859,6 +1859,7 @@ def main():
         oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
         oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
         discord_bot=b,
+        port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
     )
 
     image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],

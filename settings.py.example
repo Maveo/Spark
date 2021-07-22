@@ -7,6 +7,7 @@ GLOBAL_SETTINGS = {
     'APPLICATION_ID': '',
     'APPLICATION_SECRET': '',
     'OATH2_REDIRECT_URI': '',
+    'WEBSERVER_PORT': 3000,
     'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
