@@ -1,8 +1,6 @@
 discord.py==1.7.2
-opencv-python~=4.5.1.48
-numpy==1.20.3
 discord-py-slash-command==1.1.2
 requests==2.25.1
-Pillow~=8.2.0
 flask==1.1.4
 requests-oauthlib==0.5.0
+imagestack==0.1

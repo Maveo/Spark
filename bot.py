@@ -1864,7 +1864,8 @@ def main():
     image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
                                             load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
                                             download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
-                                            save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'])
+                                            save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'],
+                                            emoji_path=GLOBAL_SETTINGS['SAVE_EMOJIS_PATH'])
 
     b.set_image_creator(image_creator)
 

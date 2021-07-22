@@ -108,7 +108,7 @@ class MessageDummy:
 
 def main():
     from bot import DiscordBot, ENUMS
-    from helpers.imgtools import ImageCreator
+    from imagestack import ImageCreator, ImageStackResolveString
     import sqlite3
     import numpy as np
     import cv2
@@ -118,7 +118,7 @@ def main():
     import traceback
     import types
 
-    SHOW_IMAGES = True
+    SHOW_IMAGES = False
     PRINT_TRACEBACK = False
 
     EPS = 0.00000001
@@ -401,6 +401,8 @@ def main():
             m0 = MemberDummy(guild=g0)
             m1 = MemberDummy(guild=g1)
 
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+
             await self.bot.events.on_member_join(m0)
             await self.bot.events.on_member_join(m1)
             await self.bot.member_set_blacklist(m0, True)
@@ -632,6 +634,41 @@ def main():
         # test welcome image creation
         async def test_905_welcome_image(self):
             m = MemberDummy(display_name='skillor')
+
+            self.bot.default_guild_settings['WELCOME_IMAGE'] = welcome_image = ImageStackResolveString('''ImageStack([
+    WebImageLayer(
+        pos=(85, 35),
+        resize=(60, 60),
+        url=Variable('guild_icon_url'),
+    ),
+    RectangleLayer(
+        pos=(85, 35),
+        size=(60, 60),
+        color=(48, 50, 55),
+        radius=-30,
+    ),
+    WebImageLayer(
+        pos=(15, 130),
+        resize=(80, 80),
+        url=Variable('avatar_url'),
+    ),
+    RectangleLayer(
+        pos=(15, 130),
+        size=(80, 80),
+        color=(48, 50, 55),
+        radius=-40,
+    ),
+    TextLayer(
+        pos=(110, 170),
+        align_y='center',
+        font='bold',
+        font_size=42,
+        text=Variable('name'),
+        color=(255, 255, 255),
+        max_size=(460, 50)
+    ),
+])''')
+
             image_buffer = (await self.bot.member_create_welcome_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 

@@ -2,6 +2,7 @@ import os
 import threading
 import asyncio
 from flask import Flask, session, redirect, request, url_for, render_template, jsonify
+from imagestack import VisitorHtml, ImageStackResolve, ImageStack, ListLayer, LengthVariable
 from requests_oauthlib import OAuth2Session
 import logging
 
@@ -110,7 +111,31 @@ class WebServer(threading.Thread):
                                    settings=settings)
         ranked_users = await self.dbot.get_ranking(guild)
         user_infos = await self.dbot.get_advanced_user_infos(guild, ranked_users)
-        return render_template('guild-leaderboard.html', guild=guild, ranking=user_infos)
+
+        profile_template = await self.dbot.get_setting(guild.id, 'PROFILE_IMAGE')
+        users_html = []
+        v = None
+        for user in user_infos:
+            user_image = profile_template(user)
+            v = VisitorHtml(self.dbot.image_creator)
+            layers_html = []
+            for layer in user_image.layers:
+                layers_html.append(layer.accept(v))
+            users_html.append('<div style="display:flex;" data-tilt data-tilt-scale="1.05" data-tilt-max="5">'
+                              '<div style="position:relative;width:{}px;height:{}px;margin-bottom:20px;">'
+                              '{}'
+                              '</div>'
+                              '</div>'
+                              .format(v.max_size[0], v.max_size[1], ''.join(layers_html)))
+        style = None
+        if v is not None:
+            style = v.style_html()
+        ranking_html = '<style>{}</style><div style="position:relative;">{}</div>'.format(style, ''.join(users_html))
+        # im = (await self.dbot.get_setting(guild.id, 'RANKING_IMAGE'))(user_infos)
+        #
+        # ranking_html = self.dbot.image_creator.create_html(im)
+
+        return render_template('guild-leaderboard.html', guild=guild, ranking_html=ranking_html)
 
     def __init__(self,
                  name='Webserver',
