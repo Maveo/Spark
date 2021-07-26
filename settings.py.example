@@ -16,7 +16,7 @@ GLOBAL_SETTINGS = {
     'UPDATE_VOICE_XP_INTERVAL': 30,  # in seconds
     'DOWNLOAD_EMOJIS': True,
     'SAVE_EMOJIS': True,
-    'SAVE_EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
+    'EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
     'FONTS': {
         'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
         'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),

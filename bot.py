@@ -1866,7 +1866,7 @@ def main():
                                             load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
                                             download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
                                             save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'],
-                                            emoji_path=GLOBAL_SETTINGS['SAVE_EMOJIS_PATH'])
+                                            emoji_path=GLOBAL_SETTINGS['EMOJIS_PATH'])
 
     b.set_image_creator(image_creator)
 
