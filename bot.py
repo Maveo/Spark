@@ -1854,14 +1854,6 @@ def main():
                    use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
                    )
 
-    web = WebServer(
-        oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
-        oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
-        oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
-        discord_bot=b,
-        port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
-    )
-
     image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
                                             load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
                                             download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
@@ -1870,7 +1862,15 @@ def main():
 
     b.set_image_creator(image_creator)
 
-    web.start()
+    if GLOBAL_SETTINGS['ACTIVATE_WEBSERVER']:
+        web = WebServer(
+            oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
+            oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
+            oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
+            discord_bot=b,
+            port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
+        )
+        web.start()
 
     b.run(GLOBAL_SETTINGS['TOKEN'])
 
