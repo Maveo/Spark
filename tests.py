@@ -653,7 +653,8 @@ def main():
         b = DiscordBot(con, use_slash_commands=False, default_guild_settings=DEFAULT_GUILD_SETTINGS.copy())
 
         b.set_image_creator(ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
-                                         load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY']))
+                                         load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
+                                         emoji_path=GLOBAL_SETTINGS['EMOJIS_PATH']))
 
         t = Tests(b, con)
 
