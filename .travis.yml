@@ -7,8 +7,6 @@ python:
 before_install:
   # command to update pip
   - python -m pip install --upgrade pip
-  # command to copy settings
-  - cp settings.py.example settings.py
 # command to install dependencies
 install:
   - pip install -r requirements.txt

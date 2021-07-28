@@ -3,4 +3,4 @@ discord-py-slash-command==1.1.2
 requests==2.25.1
 flask==1.1.4
 requests-oauthlib==0.5.0
-imagestack==0.1
+imagestack==0.1.1

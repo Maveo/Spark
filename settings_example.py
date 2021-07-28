@@ -433,7 +433,7 @@ ranking_image = ImageStackResolveString('''ImageStack([
 
 welcome_image = ImageStackResolveString('''ImageStack([
     WebImageLayer(
-        url="http://sparkbot.us.to:4004/static/welcome_template.png"
+        url="https://raw.githubusercontent.com/skillor/Spark/v1.3.1/images/welcome_template.png"
     ),
     WebImageLayer(
         pos=(85, 35),
