@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include 'guild-nav.html' %}
+<div style="margin: 10px;">
+    <div style="display: inline-block;">
+        {{ ranking_html | safe }}
+    </div>
+</div>
+{% endblock %}

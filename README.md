@@ -62,8 +62,8 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 ## Available Commands
 
 - `>coinflip` Toss a coin to your Witcher!
- - `>random` Generate a random number
- - `>dice` Rolls a six-sided dice
+- `>random` Generate a random number
+- `>dice` Rolls a six-sided dice
 - `>help` A short list of avaliable commands
 - `>leaderboard` Shows the Top 10 of the Server
 - `>profile` Shows your profile-card | "profile {username}" Show another user
@@ -85,6 +85,16 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **APPLICATION_ID**
 
   This is the Application-ID for your Discord Developer Application
+- **APPLICATION_SECRET**
+
+  This is the Oath2-Application-Secret for your Discord Developer Application
+- **OATH2_REDIRECT_URI**
+
+  This is the Oath2-Redirect-Uri for your Discord Developer Application, you need to add "/oath2" for the default setup (e.g. http://your.domain/oath2)
+  You also need to set this up in the Discord Developer Settings
+- **WEBSERVER_PORT**
+
+  This is the Port for the Webserver
 - **TOKEN** 
 
   This is the Token of your Discord Bot
@@ -100,6 +110,16 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **UPDATE_VOICE_XP_INTERVAL**
 
    The interval in which users automatically recieve their xp for being in a voice channel (in seconds | use -1 for no update interval)
+- **DOWNLOAD_EMOJIS**
+
+  If emojis should be acquired from [emojipedia](https://emojipedia.org/).
+- **SAVE_EMOJIS**
+
+  If the downloaded emojis should be saved locally.
+- **EMOJIS_PATH**
+
+  The path to load and save emojis.
+
 
 ### Default Guild Settings
 

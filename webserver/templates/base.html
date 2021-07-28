@@ -1,0 +1,96 @@
+<!doctype html>
+<head style="width: 100%; height: 100%;">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <title>SparkUI</title>
+
+        <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
+
+        <script src="https://code.jquery.com/jquery-3.5.1.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns"
+                crossorigin="anonymous"></script>
+
+        <script>
+    var storageStyleKey = 'siteStylen';
+    var defaultTheme = 'spark';
+    var themes = {
+        'spark': '/static/spark.css',
+        'darkly': 'https://bootswatch.com/4/darkly/bootstrap.min.css',
+        'superhero': 'https://bootswatch.com/4/superhero/bootstrap.min.css',
+        'sketchy': 'https://bootswatch.com/4/sketchy/bootstrap.min.css',
+        'minty': 'https://bootswatch.com/4/minty/bootstrap.min.css',
+        'pulse': 'https://bootswatch.com/4/pulse/bootstrap.min.css',
+        'flo': '/static/flo.css',
+    };
+
+    function getThemeLinkTag(theme) {
+        return '<link id="bootstrapThemeLink" rel="stylesheet" href="' + themes[theme] + '" crossorigin="anonymous">';
+    }
+
+    function changeTheme(theme) {
+        localStorage.setItem(storageStyleKey, theme);
+    }
+
+    if (localStorage.getItem(storageStyleKey) && Object.keys(themes).includes(localStorage.getItem(storageStyleKey))) {
+        document.write(getThemeLinkTag(localStorage.getItem(storageStyleKey)));
+    } else {
+        document.write(getThemeLinkTag(defaultTheme));
+        changeTheme(defaultTheme);
+    }
+
+
+
+        </script>
+        <style>
+    @media (max-width: 768px) {
+
+        html,
+        body {
+            width: auto !important;
+            overflow-x: hidden !important;
+        }
+    }
+
+    @font-face {
+        font-family: "Product Sans";
+        src: url('https://fonts.gstatic.com/s/productsans/v7/HYvgU2fE2nRJvZ5JFAumwegdm0LZdjqr5-oayXSOefg.woff2') format('woff2');
+    }
+
+    a.no-decoration {
+        text-decoration: none;
+    }
+
+    a.no-decoration:hover {
+        text-decoration: none;
+    }
+
+    body.modal-open {
+        padding-right: 0px !important;
+    }
+
+    a.stretched-link {
+        text-decoration: none !important;
+    }
+
+    a.color-primary {
+        color: var(--success) !important;
+    }
+
+    a.color-primary:hover {
+        color: var(--success) !important;
+    }
+
+        </style>
+    </head>
+<body style="text-align: center; width: 100%;">
+{% include 'context-menu.html' %}
+<div style="width: 100%; height: 100vh; display: flex; flex-flow: column;">
+    {% block content %}{% endblock %}
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tilt.js/1.2.1/tilt.jquery.min.js" crossorigin="anonymous"></script>
+</body>
+</html>

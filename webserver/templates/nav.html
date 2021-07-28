@@ -1,0 +1,49 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary"><button class="navbar-toggler" type="button"
+        data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+        aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <a href="/home" class="no-decoration">
+            <div class="mt-2 mt-lg-0 mr-0 mr-lg-2">
+                {% include 'logo.html' %}
+            </div>
+        </a>
+
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link" href="/home">Home</a></li>
+        </ul>
+        <ul class="navbar-nav">
+            <div class="nav-item dropdown">
+                <a id="styleDropdown" class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true"
+                    aria-expanded="false">Style</a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    <script>
+                        Object.keys(themes).forEach(theme => {
+                            document.write('<a class="dropdown-item text-center text-lg-left' + (theme == localStorage.getItem(storageStyleKey) ? ' active' : '') + '" onclick="changeTheme(\'' + theme + '\')" href="">' + theme.substr(0, 1).toUpperCase() + theme.substr(1) + '</a>');
+                        });
+                    </script>
+                </div>
+            </div>
+            <a class="form-inline my-2 my-lg-0 nav-item btn btn-secondary" href="/logout">Logout</a>
+        </ul>
+    </div>
+</nav>
+{% if info_text %}
+<div id="info_box" style="margin: 10px;" class="alert alert-{{info_style}}" role="alert">
+    {{info_text}}
+</div>
+{% endif %}
+<script>
+    $("#styleDropdown").contextMenu({
+        id: 'styleContext',
+        menuSelector: "#contextMenu",
+        menuSelected: ($invokedOn, $selectedMenu) => {
+        },
+        onMenuShow: ($invokedOn) => {
+            $('#contextMenu').html(
+                `<a class="dropdown-item" href="//youtu.be/dQw4w9WgXcQ" target="_blank">With Style</a>`
+            );
+        },
+        onMenuHide: ($invokedOn) => {
+        }
+    });
+</script>

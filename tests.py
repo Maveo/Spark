@@ -1,6 +1,3 @@
-import types
-
-
 class ColorDummy:
     def __init__(self, rgb=(0, 255, 0)):
         self.rgb = rgb
@@ -111,15 +108,18 @@ class MessageDummy:
 
 def main():
     from bot import DiscordBot, ENUMS
-    from helpers.imgtools import ImageCreator, TextLayer, EmptyLayer
+    from imagestack import ImageCreator, ImageStackResolveString
     import sqlite3
     import numpy as np
     import cv2
     import time
     import os
     import asyncio
+    import traceback
+    import types
 
     SHOW_IMAGES = False
+    PRINT_TRACEBACK = False
 
     EPS = 0.00000001
 
@@ -235,8 +235,6 @@ def main():
         async def test_10_leveling(self):
             g = GuildDummy()
             m = MemberDummy(guild=g)
-
-            self.bot.default_guild_settings['LEVEL_UP_IMAGE'] = lambda x: []
 
             self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
 
@@ -405,6 +403,9 @@ def main():
             g1 = GuildDummy(1)
             m0 = MemberDummy(guild=g0)
             m1 = MemberDummy(guild=g1)
+
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+
             await self.bot.events.on_member_join(m0)
             await self.bot.events.on_member_join(m1)
             await self.bot.member_set_blacklist(m0, True)
@@ -592,6 +593,7 @@ def main():
             m = MemberDummy()
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_set_lvl(m, 5.5)
+            await self.bot.member_set_xp_multiplier(m, 1.5)
 
             image_buffer = (await self.bot.member_create_profile_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
@@ -636,6 +638,41 @@ def main():
         # test welcome image creation
         async def test_905_welcome_image(self):
             m = MemberDummy(display_name='skillor')
+
+            self.bot.default_guild_settings['WELCOME_IMAGE'] = welcome_image = ImageStackResolveString('''ImageStack([
+    WebImageLayer(
+        pos=(85, 35),
+        resize=(60, 60),
+        url=Variable('guild_icon_url'),
+    ),
+    RectangleLayer(
+        pos=(85, 35),
+        size=(60, 60),
+        color=(48, 50, 55),
+        radius=-30,
+    ),
+    WebImageLayer(
+        pos=(15, 130),
+        resize=(80, 80),
+        url=Variable('avatar_url'),
+    ),
+    RectangleLayer(
+        pos=(15, 130),
+        size=(80, 80),
+        color=(48, 50, 55),
+        radius=-40,
+    ),
+    TextLayer(
+        pos=(110, 170),
+        align_y='center',
+        font='bold',
+        font_size=42,
+        text=Variable('name'),
+        color=(255, 255, 255),
+        max_size=(460, 50)
+    ),
+])''')
+
             image_buffer = (await self.bot.member_create_welcome_image(m)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
@@ -664,6 +701,8 @@ def main():
                 print("SUCCESS! elapsed {}ms | {}".format(round((time.time() - start) * 1000, 1), test_name))
                 return True
         except Exception as e:
+            if PRINT_TRACEBACK:
+                traceback.print_tb(e.__traceback__)
             error = str(e)
 
         print("FAILED! elapsed {}ms | {} | Error: {}"

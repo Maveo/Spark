@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from helpers import tools, imgtools
+from helpers import tools
+import imagestack
 
 import sqlite3
 import asyncio
@@ -11,7 +12,8 @@ import os
 import time
 import random
 import string
-from ast import literal_eval
+
+from webserver.webserver import WebServer
 
 
 class ENUMS:
@@ -225,7 +227,7 @@ class DiscordBot:
 
     @staticmethod
     def max_xp_for(lvl):
-        return max(100, DiscordBot.get_lvl(lvl) * 10 + 90)
+        return int(max(100, DiscordBot.get_lvl(lvl) * 10 + 90))
 
     @staticmethod
     def xp_for(xp, boost):
@@ -630,9 +632,9 @@ class DiscordBot:
                             inline=False)
         return embed
 
-    async def get_users(self, guild):
+    async def get_users(self, guild_id):
         cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM users WHERE gid=?', (guild.id,))
+        cur.execute('SELECT * FROM users WHERE gid=?', (guild_id,))
         return cur.fetchall()
 
     async def check_member(self, member):
@@ -654,8 +656,8 @@ class DiscordBot:
         guild_setting = cur.fetchone()
         if guild_setting is not None:
             try:
-                # TO-DO: don't use literal eval
-                return type(self.default_guild_settings[key])(literal_eval(guild_setting['svalue']))
+                default_type = type(self.default_guild_settings[key])
+                return tools.simple_eval(default_type, guild_setting['svalue'])
             except TypeError or ValueError:
                 pass
 
@@ -677,8 +679,8 @@ class DiscordBot:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
 
         try:
-            # TO-DO: don't use literal eval
-            type(self.default_guild_settings[key])(literal_eval(value))
+            default_type = type(self.default_guild_settings[key])
+            tools.simple_eval(default_type, value)
         except TypeError or ValueError:
             return False
 
@@ -718,11 +720,11 @@ class DiscordBot:
         self.db_conn.commit()
 
     async def get_blacklisted_users(self, guild):
-        users = await self.get_users(guild)
+        users = await self.get_users(guild.id)
         return filter(lambda x: bool(x['blacklist']), users)
 
     async def get_ranking(self, guild):
-        users = await self.get_users(guild)
+        users = await self.get_users(guild.id)
         users = sorted(users, key=lambda x: x['lvl'], reverse=True)
         for i in range(len(users)):
             users[i]['rank'] = i + 1
@@ -788,7 +790,7 @@ class DiscordBot:
 
         data_obj = {'member': member,
                     'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'color': member.color.to_rgb(),
                     'lvl': self.get_lvl(data['lvl']),
                     'xp': data_xp,
                     'max_xp': data_max_xp,
@@ -817,7 +819,7 @@ class DiscordBot:
         data_obj = {'member': member,
                     'old_lvl': self.get_lvl(old_lvl),
                     'new_lvl': self.get_lvl(new_lvl),
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb()),
+                    'color': member.color.to_rgb(),
                     'name': name}
 
         img_buf = await self.image_creator.create(
@@ -832,27 +834,38 @@ class DiscordBot:
                     'new_lvl': self.get_lvl(new_lvl),
                     'old_role': old_role,
                     'new_role': new_role,
-                    'old_color': imgtools.rgb_to_bgr(old_role.color.to_rgb()),
-                    'new_color': imgtools.rgb_to_bgr(new_role.color.to_rgb()),
+                    'old_color': old_role.color.to_rgb(),
+                    'new_color': new_role.color.to_rgb(),
                     'name': name}
 
         img_buf = await self.image_creator.create(
             (await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
-    async def create_ranking_image(self, member, ranked_users):
-        data_obj = []
+    async def get_advanced_user_infos(self, guild, ranked_users):
+        user_infos = []
         for user in ranked_users:
-            member = get(member.guild.members, id=int(user['uid']))
+            member = get(guild.members, id=int(user['uid']))
             if member is not None and not member.bot:
                 name = member.display_name
-                data_obj.append({
+                current_xp = self.lvl_get_xp(user['lvl'])
+                max_xp = self.max_xp_for(user['lvl'])
+                user_infos.append({
                     'member': member,
                     'rank': user['rank'],
                     'lvl': self.get_lvl(user['lvl']),
+                    'xp': current_xp,
+                    'max_xp': max_xp,
+                    'xp_percentage': current_xp / max_xp,
+                    'xp_multiplier': user['xp_multiplier'],
                     'name': name,
-                    'color': imgtools.rgb_to_bgr(member.color.to_rgb())
+                    'color': member.color.to_rgb(),
+                    'avatar_url': str(member.avatar_url_as(format="png")),
                 })
+        return user_infos
+
+    async def create_ranking_image(self, member, ranked_users):
+        data_obj = await self.get_advanced_user_infos(member.guild, ranked_users)
 
         img_buf = await self.image_creator.create(
             (await self.get_setting(member.guild.id, 'RANKING_IMAGE'))(data_obj), max_size=(-1, 8000))
@@ -1243,9 +1256,9 @@ class DiscordBot:
                                           description='',
                                           color=discord.Color.gold())
 
+                    res = '"{}"'.format(await self.parent.get_setting(ctx.message.author.guild.id, key))
                     embed.add_field(name='{}'.format(key),
-                                    value='"{}"'.format(
-                                        await self.parent.get_setting(ctx.message.author.guild.id, key)),
+                                    value=(res[:1020] + '...') if len(res) > 1020 else res,
                                     inline=False)
                     return await ctx.send(embed=embed)
                 except KeyError:
@@ -1261,9 +1274,9 @@ class DiscordBot:
                 if len(args) > 1:
                     try:
                         key = ' '.join(args[1:])
-                        res = await self.parent.get_setting(ctx.message.author.guild.id, key)
+                        res = '"{}"'.format(await self.parent.get_setting(ctx.message.author.guild.id, key))
                         embed.add_field(name='{}'.format(key),
-                                        value='"{}"'.format(res),
+                                        value=(res[:1020] + '...') if len(res) > 1020 else res,
                                         inline=False)
                         return await ctx.send(embed=embed)
                     except KeyError:
@@ -1272,7 +1285,7 @@ class DiscordBot:
                 for key, value in (await self.parent.get_settings(ctx.message.author.guild.id)).items():
                     res = '"{}"'.format(value)
                     embed.add_field(name='{}'.format(key),
-                                    value=(res[:80] + '...') if len(str(res)) > 80 else res,
+                                    value=(res[:80] + '...') if len(res) > 80 else res,
                                     inline=False)
                 return await ctx.send(embed=embed)
 
@@ -1601,6 +1614,7 @@ class DiscordBot:
                 raise commands.NoPrivateMessage()
 
             await ctx.trigger_typing()
+
             if len(args) == 0:
                 pass
             elif len(args) >= 1:
@@ -1665,6 +1679,28 @@ class DiscordBot:
 
             if voice_client is not None:
                 await voice_client.disconnect()
+
+        @commands.command(name='wheelspin',
+                          aliases=[],
+                          description='Spin the wheel!',
+                          help=' - Dreh am Rad')
+        async def _wheelspin(self, ctx, *args):
+            await ctx.trigger_typing()
+
+            async def _spin_wheel(sobj):
+                gif_img_buf, last_img_buf = await self.parent.image_creator.create(
+                    (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(sobj))
+
+                message = await ctx.send(file=discord.File(filename="spin.gif", fp=gif_img_buf))
+                await asyncio.sleep(10)
+                await message.delete()
+                await ctx.send(file=discord.File(filename="spin_result.png", fp=last_img_buf))
+
+            if len(args) == 0:
+                return await _spin_wheel({'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)})
+
+            choices = list(tools.only_emojis(''.join(args)))
+            return await _spin_wheel({'choices': choices, 'result': random.randint(0, len(choices))})
 
         @commands.command(name='dice',
                           aliases=[],
@@ -1809,22 +1845,42 @@ class DiscordBot:
                 self.parent.lprint(member, 'joined', after.channel)
 
 
-if __name__ == '__main__':
+def main():
     from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
 
     if not os.path.exists('dbs'):
         os.mkdir('dbs')
-    con = sqlite3.connect('dbs/bot.db')
+    con = sqlite3.connect('dbs/bot.db', check_same_thread=False)
+
     b = DiscordBot(con,
                    default_guild_settings=DEFAULT_GUILD_SETTINGS,
                    update_voice_xp_interval=GLOBAL_SETTINGS['UPDATE_VOICE_XP_INTERVAL'],
                    command_prefix=GLOBAL_SETTINGS['COMMAND_PREFIX'],
                    description=GLOBAL_SETTINGS['DESCRIPTION'],
                    print_logging=GLOBAL_SETTINGS['PRINT_LOGGING'],
-                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS']
+                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
                    )
 
-    b.set_image_creator(imgtools.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
-                                              load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY']))
+    image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
+                                            load_memory=GLOBAL_SETTINGS['IMAGES_LOAD_MEMORY'],
+                                            download_emojis=GLOBAL_SETTINGS['DOWNLOAD_EMOJIS'],
+                                            save_downloaded_emojis=GLOBAL_SETTINGS['SAVE_EMOJIS'],
+                                            emoji_path=GLOBAL_SETTINGS['EMOJIS_PATH'])
+
+    b.set_image_creator(image_creator)
+
+    if GLOBAL_SETTINGS['ACTIVATE_WEBSERVER']:
+        web = WebServer(
+            oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
+            oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
+            oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
+            discord_bot=b,
+            port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
+        )
+        web.start()
 
     b.run(GLOBAL_SETTINGS['TOKEN'])
+
+
+if __name__ == '__main__':
+    main()

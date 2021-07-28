@@ -1,44 +1,52 @@
-from helpers.imgtools import *
+from imagestack import *
+import os
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 GLOBAL_SETTINGS = {
     'APPLICATION_ID': '',
+    'APPLICATION_SECRET': '',
+    'ACTIVATE_WEBSERVER': True,
+    'OATH2_REDIRECT_URI': '',
+    'WEBSERVER_PORT': 3000,
     'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
     'PRINT_LOGGING': True,
     'USE_SLASH_COMMANDS': False,
     'UPDATE_VOICE_XP_INTERVAL': 30,  # in seconds
+    'DOWNLOAD_EMOJIS': True,
+    'SAVE_EMOJIS': True,
+    'EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
     'FONTS': {
         'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
         'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
     },
     'IMAGES_LOAD_MEMORY': [
-        DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
+        # DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
     ]
 }
 
 
-def profile_image(x): return [
+profile_image = ImageStackResolveString('''ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
         size=(600, 150),
         radius=20,
-        color=(55, 50, 48),
+        color=(48, 50, 55),
     ),
 
     WebImageLayer(
         pos=(15, 15),
         resize=(120, 120),
-        url=x['avatar_url']
+        url=Variable('avatar_url')
     ),
 
     RectangleLayer(
         pos=(15, 15),
         size=(120, 120),
-        color=(55, 50, 48),
+        color=(48, 50, 55),
         radius=-60,
     ),
 
@@ -46,7 +54,7 @@ def profile_image(x): return [
     EmojiLayer(
         pos=(147, 15),
         resize=(40, 40),
-        emoji=x['member'].top_role.name[0]
+        emoji=Variable(('member', 'top_role', 'name', 0,))
     ),
 
     # Pregressbar BG
@@ -63,13 +71,13 @@ def profile_image(x): return [
     # Progressbar
     ProgressLayer(
         pos=(150, 115),
-        percentage=x['xp_percentage'],
+        percentage=Variable('xp_percentage'),
         line_width=-1,
         direction='x',
         size=(430, 20),
         radius=10,
-        color=LinearGradientColor((24, 110, 241, 255),
-                                  (7, 222, 255, 255),
+        color=LinearGradientColor((241, 110, 24),
+                                  (255, 222, 7),
                                   1)
     ),
 
@@ -78,9 +86,9 @@ def profile_image(x): return [
         pos=(200, 39),
         align_y='center',
         font='regular',
-        font_size=min(35, max(10, int(520 / len(str(x['name']))))),
-        text=str(x['name']),
-        color=x['color'],
+        font_size=35,
+        text=Variable('name'),
+        color=Variable('color'),
         max_size=(280, 35)
     ),
 
@@ -99,7 +107,7 @@ def profile_image(x): return [
         pos=(188, 87),
         font='regular',
         font_size=28,
-        text=str(x['lvl']),
+        text=Variable('lvl'),
         color=(255, 255, 255),
         max_size=(100, 28)
     ),
@@ -110,8 +118,8 @@ def profile_image(x): return [
         align_x='right',
         font='bold',
         font_size=35,
-        text='#' + str(x['rank']),
-        color=x['color'],
+        text=Variable('rank').formatted('#{}'),
+        color=Variable('color'),
         max_size=(90, 30)
     ),
 
@@ -121,10 +129,10 @@ def profile_image(x): return [
         align_x='right',
         font='regular',
         font_size=20,
-        text='{:.2f}x'.format(x['xp_multiplier']) if x['xp_multiplier'] != 1 else '',
-        color=(102, 172, 47) if x['xp_multiplier'] > 1 else (
-            (60, 20, 220) if x['xp_multiplier'] < 0 else (0, 128, 255)),
-        max_size=(150, 20)
+        text=EqualityVariable('xp_multiplier', 1, '', Variable('xp_multiplier').formatted('{:.2f}x')),
+        color=EqualityVariable('xp_multiplier', 1, (0, 0, 0), (47, 172, 102),
+                               EqualityVariable('xp_multiplier', 0, (255, 128, 0), (255, 128, 0), (220, 20, 60))),
+        max_size=(150, 20),
     ),
 
     TextLayer(
@@ -132,20 +140,20 @@ def profile_image(x): return [
         align_x='right',
         font='regular',
         font_size=18,
-        text=str(x['xp']) + ' / ' + str(x['max_xp']) + ' XP',
+        text=FormattedVariables(['xp', 'max_xp'], '{} / {} XP'),
         color=(170, 170, 170),
         max_size=(280, 18)
     )
-]
+])''')
 
 
-def level_up_image(x): return [
+level_up_image = ImageStackResolveString('''ImageStack([
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
         size=(200, 100),
         radius=20,
-        color=(55, 50, 48),
+        color=(48, 50, 55),
     ),
 
     RectangleLayer(
@@ -153,9 +161,9 @@ def level_up_image(x): return [
         line_width=2,
         size=(200, 100),
         radius=20,
-        color=LinearGradientColor(SingleColor(x['color']).darkened(0.5),
-                                  SingleColor(x['color']),
-                                  1)
+        color=LinearGradientColor(SingleColorVariable('color').darkened(0.5),
+                                  SingleColorVariable('color'),
+                                  1),
     ),
 
     # LEVELUP
@@ -164,22 +172,22 @@ def level_up_image(x): return [
         font='bold',
         font_size=22,
         text='LEVELUP',
-        color=LinearGradientColor(SingleColor(x['color']).darkened(0.5),
-                                  SingleColor(x['color']),
+        color=LinearGradientColor(SingleColorVariable('color').darkened(0.5),
+                                  SingleColorVariable('color'),
                                   1),
-        max_size=(170, 25)
+        max_size=(170, 25),
     ),
 
     EmojiLayer(
         pos=(58, 70),
         resize=(16, 16),
-        emoji=x['member'].top_role.name[0],
+        emoji=Variable(('member', 'top_role', 'name', 0,)),
     ),
 
     EmojiLayer(
         pos=(125, 70),
         resize=(16, 16),
-        emoji=x['member'].top_role.name[0],
+        emoji=Variable(('member', 'top_role', 'name', 0,)),
     ),
 
     ProgressLayer(
@@ -188,9 +196,9 @@ def level_up_image(x): return [
         line_width=-1,
         size=(34, 4),
         radius=2,
-        color=LinearGradientColor(SingleColor(x['color']).alpha(0),
-                                  SingleColor(x['color']),
-                                  1)
+        color=LinearGradientColor(SingleColorVariable('color').alpha(0),
+                                  SingleColorVariable('color'),
+                                  1),
     ),
 
     TextLayer(
@@ -198,18 +206,18 @@ def level_up_image(x): return [
         align_x='right',
         font='regular',
         font_size=12,
-        text='Lvl. ' + str(x['old_lvl']),
-        color=x['color'],
-        max_size=(50, 22)
+        text=Variable('old_lvl').formatted('Lvl. {}'),
+        color=Variable('color'),
+        max_size=(50, 22),
     ),
 
     TextLayer(
         pos=(145, 73),
         font='regular',
         font_size=12,
-        text='Lvl. ' + str(x['new_lvl']),
-        color=x['color'],
-        max_size=(50, 22)
+        text=Variable('new_lvl').formatted('Lvl. {}'),
+        color=Variable('color'),
+        max_size=(50, 22),
     ),
 
     TextLayer(
@@ -217,21 +225,21 @@ def level_up_image(x): return [
         font='regular',
         font_size=13,
         align_x='center',
-        text=x['name'],
+        text=Variable('name'),
         color=(255, 255, 255),
-        max_size=(180, 16)
+        max_size=(180, 16),
     ),
-]
+])''')
 
 
-def rank_up_image(x): return [
+rank_up_image = ImageStackResolveString('''ImageStack([
     # BG
     RectangleLayer(
         pos=(0, 0),
         line_width=-1,
         size=(200, 100),
         radius=20,
-        color=(55, 50, 48),
+        color=(48, 50, 55),
     ),
 
     # BG Border
@@ -240,8 +248,8 @@ def rank_up_image(x): return [
         line_width=2,
         size=(200, 100),
         radius=20,
-        color=LinearGradientColor(SingleColor(x['old_color']),
-                                  SingleColor(x['new_color']),
+        color=LinearGradientColor(SingleColorVariable('old_color'),
+                                  SingleColorVariable('new_color'),
                                   1),
     ),
 
@@ -251,8 +259,8 @@ def rank_up_image(x): return [
         font='bold',
         font_size=22,
         text='RANKUP',
-        color=LinearGradientColor(SingleColor(x['old_color']),
-                                  SingleColor(x['new_color']),
+        color=LinearGradientColor(SingleColorVariable('old_color'),
+                                  SingleColorVariable('new_color'),
                                   1),
         max_size=(170, 25)
     ),
@@ -260,13 +268,13 @@ def rank_up_image(x): return [
     EmojiLayer(
         pos=(58, 70),
         resize=(16, 16),
-        emoji=x['old_role'].name[0],
+        emoji=Variable(('old_role', 'name', 0,)),
     ),
 
     EmojiLayer(
         pos=(125, 70),
         resize=(16, 16),
-        emoji=x['new_role'].name[0],
+        emoji=Variable(('new_role', 'name', 0,)),
     ),
 
     ProgressLayer(
@@ -275,9 +283,9 @@ def rank_up_image(x): return [
         line_width=-1,
         size=(34, 4),
         radius=2,
-        color=LinearGradientColor(SingleColor(x['old_color']),
-                                  SingleColor(x['new_color']),
-                                  1)
+        color=LinearGradientColor(SingleColorVariable('old_color'),
+                                  SingleColorVariable('new_color'),
+                                  1),
     ),
 
     TextLayer(
@@ -285,8 +293,8 @@ def rank_up_image(x): return [
         align_x='right',
         font='regular',
         font_size=12,
-        text='Lvl. ' + str(x['old_lvl']),
-        color=x['old_color'],
+        text=Variable('old_lvl').formatted('Lvl. {}'),
+        color=SingleColorVariable('old_color'),
         max_size=(50, 22)
     ),
 
@@ -294,8 +302,8 @@ def rank_up_image(x): return [
         pos=(145, 73),
         font='regular',
         font_size=12,
-        text='Lvl. ' + str(x['new_lvl']),
-        color=x['new_color'],
+        text=Variable('new_lvl').formatted('Lvl. {}'),
+        color=SingleColorVariable('new_color'),
         max_size=(50, 22)
     ),
 
@@ -304,160 +312,210 @@ def rank_up_image(x): return [
         font='regular',
         font_size=13,
         align_x='center',
-        text=x['name'],
+        text=Variable('name'),
         color=(255, 255, 255),
         max_size=(180, 16)
     ),
-]
+])''')
 
 
-def ranking_image(x):
-    height = len(x) * 85 + 410
-    layers = [
+ranking_image = ImageStackResolveString('''ImageStack([
+    # Background
+    RectangleLayer(
+        pos=(0, 0),
+        line_width=-1,
+        size=(1200, LengthVariable() * 85 + 410),
+        radius=55,
+        color=(48, 50, 55),
+    ),
+    # Leaderboard Text Border
+    RectangleLayer(
+        pos=(30, 40),
+        line_width=10,
+        size=(1140, 180),
+        radius=45,
+        color=LinearGradientColor((217, 142, 76),
+                                  (255, 222, 7),
+                                  1)
+    ),
+    # Leaderboard Text
+    TextLayer(
+        pos=(310, 93),
+        font='bold',
+        font_size=100,
+        text='Leaderboard',
+        color=(255, 255, 255),
+        max_size=(900, 100)
+    ),
+    # Name Header Text
+    TextLayer(
+        pos=(90, 255),
+        font='regular',
+        font_size=65,
+        text='Name',
+        color=(87, 87, 87),
+        max_size=(300, 65)
+    ),
 
-        # Background
-        RectangleLayer(
-            pos=(0, 0),
-            line_width=-1,
-            size=(1200, height),
-            radius=55,
-            color=(55, 50, 48),
-        ),
+    # Level Header Text
+    TextLayer(
+        pos=(1025, 255),
+        font='regular',
+        font_size=65,
+        text='Lvl.',
+        color=(87, 87, 87),
+        max_size=(300, 65)
+    ),
 
-        # Leaderboard Text Border
-        RectangleLayer(
-            pos=(30, 40),
-            line_width=10,
-            size=(1140, 180),
-            radius=45,
-            color=LinearGradientColor((76, 142, 217),
-                                      (7, 222, 255),
-                                      1)
-        ),
+    # Members Background
+    RectangleLayer(
+        pos=(37, 320),
+        line_width=-1,
+        size=(1100, LengthVariable() * 85 + 410 - 355),
+        radius=55,
+        color=(57, 59, 65),
+    ),
 
-        # Leaderboard Text
-        TextLayer(
-            pos=(310, 93),
-            font='bold',
-            font_size=100,
-            text='Leaderboard',
-            color=(255, 255, 255),
-            max_size=(900, 100)
-        ),
+    # Levels Background
+    RectangleLayer(
+        pos=(978, 320),
+        line_width=-1,
+        size=(185, LengthVariable() * 85 + 410 - 355),
+        radius=45,
+        color=LinearGradientColor((254, 214, 130),
+                                  (232, 177, 49),
+                                  1)
+    ),
 
-        # Name Header Text
-        TextLayer(
-            pos=(90, 255),
-            font='regular',
-            font_size=65,
-            text='Name',
-            color=(87, 87, 87),
-            max_size=(300, 50)
-        ),
-
-        # Level Header Text
-        TextLayer(
-            pos=(1025, 255),
-            font='regular',
-            font_size=65,
-            text='Lvl.',
-            color=(87, 87, 87),
-            max_size=(300, 50)
-        ),
-
-        # Members Background
-        RectangleLayer(
-            pos=(37, 320),
-            line_width=-1,
-            size=(1100, height - 355),
-            radius=55,
-            color=(65, 59, 57),
-        ),
-
-        # Levels Background
-        RectangleLayer(
-            pos=(978, 320),
-            line_width=-1,
-            size=(185, height - 355),
-            radius=45,
-            color=LinearGradientColor((130, 214, 254),
-                                      (49, 177, 232),
-                                      1)
-        ),
-    ]
-
-    for i in range(len(x)):
-        pos_y = i * 85 + 370
-        layers.append(TextLayer(
-            pos=(150, pos_y + 2),
-            font='bold',
-            align_x='center',
-            font_size=60,
-            text='#' + str(x[i]['rank']),
-            color=(255, 255, 255),
-            max_size=(200, 150)
-        ))
-        layers.append(EmojiLayer(
-            pos=(240, pos_y - 10),
-            resize=(60, 60),
-            emoji=x[i]['member'].top_role.name[0]
-        ))
-        layers.append(TextLayer(
-            pos=(323, pos_y),
-            font='regular',
-            font_size=60,
-            text=x[i]['name'],
-            color=(255, 255, 255),
-            max_size=(600, 150)
-        ))
-        layers.append(TextLayer(
-            pos=(1069, pos_y + 2),
-            font='regular',
-            align_x='center',
-            font_size=60,
-            text=str(x[i]['lvl']),
-            color=(29, 29, 29),
-            max_size=(250, 150)
-        ))
-    return layers
+    # All Users
+    ListLayer(
+        pos=(0, 360),
+        repeat=LengthVariable(),
+        template=ImageStack(
+            EmptyLayer(
+              resize=(1200, 85)
+            ),
+            TextLayer(
+                pos=(135, 8),
+                font='bold',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('rank').formatted('#{}'),
+                color=(255, 255, 255),
+                max_size=(200, -1),
+            ),
+            EmojiLayer(
+                pos=(240, 0),
+                resize=(60, 60),
+                emoji=IteratorVariable()(('member', 'top_role', 'name', 0,)),
+            ),
+            TextLayer(
+                pos=(323, 8),
+                font='regular',
+                font_size=60,
+                text=IteratorVariable()('name'),
+                color=(255, 255, 255),
+                max_size=(600, -1)
+            ),
+            TextLayer(
+                pos=(1069, 8),
+                font='regular',
+                align_x='center',
+                font_size=60,
+                text=IteratorVariable()('lvl'),
+                color=(29, 29, 29),
+                max_size=(250, -1)
+            )
+        )
+    )
+])''')
 
 
-def welcome_image(x): return [
-    FileImageLayer(
-        file=os.path.join(current_dir, 'images', 'welcome_template.png')
+welcome_image = ImageStackResolveString('''ImageStack([
+    WebImageLayer(
+        url="http://sparkbot.us.to:4004/static/welcome_template.png"
     ),
     WebImageLayer(
         pos=(85, 35),
         resize=(60, 60),
-        url=x['guild_icon_url']
+        url=Variable('guild_icon_url'),
     ),
     RectangleLayer(
         pos=(85, 35),
         size=(60, 60),
-        color=(55, 50, 48),
+        color=(48, 50, 55),
         radius=-30,
     ),
     WebImageLayer(
         pos=(15, 130),
         resize=(80, 80),
-        url=x['avatar_url']
+        url=Variable('avatar_url'),
     ),
     RectangleLayer(
         pos=(15, 130),
         size=(80, 80),
-        color=(55, 50, 48),
+        color=(48, 50, 55),
         radius=-40,
     ),
     TextLayer(
         pos=(110, 170),
         align_y='center',
         font='bold',
-        font_size=min(42, max(20, int(700 / len(str(x['name']))))),
-        text=str(x['name']),
+        font_size=42,
+        text=Variable('name'),
         color=(255, 255, 255),
         max_size=(460, 50)
     ),
-]
+])''')
+
+
+def wheel_spin_image(x):
+    offset = 360 / len(x['choices'])
+    rotation = 1440.0 + (x['result'] * offset) + offset * 0.5
+    spin_func = lambda z: (3 * (z ** 2) - 2 * (z ** 3)) * rotation
+    choices = [EmojiLayer(emoji=emoji, resize=(27, 27)) for emoji in x['choices']]
+    t = AnimatedImageStack(
+        animated=RotationLayer(
+            rotate=ImageStack([
+                ColorLayer(
+                    pos=(0, 0),
+                    resize=(300, 300),
+                    color=SingleColor(
+                        (128, 128, 128)
+                    ),
+                ),
+                PieLayer(
+                    align_x='center',
+                    align_y='center',
+                    pos=(150, 150),
+                    radius=140,
+                    color=LinearGradientColor(
+                        color1=(0, 255, 0),
+                        color2=(0, 0, 255)
+                    ),
+                    line_width=3,
+                    border_width=10,
+                    choices=choices
+                )
+            ]),
+            rotation_func=spin_func,
+            bg_color=(128, 128, 128),
+        ),
+        static_fg=ImageStack([
+            EmptyLayer(
+                resize=(300, 300)
+            ),
+            ColorLayer(
+                pos=(145, 0),
+                resize=(10, 35),
+                color=(255, 255, 255)
+            )
+        ]),
+        fps=30,
+        seconds=7,
+    )
+    t._init()
+    return t
 
 
 DEFAULT_GUILD_SETTINGS = {
@@ -516,4 +574,5 @@ DEFAULT_GUILD_SETTINGS = {
     'RANK_UP_IMAGE': rank_up_image,
     'RANKING_IMAGE': ranking_image,
     'WELCOME_IMAGE': welcome_image,
+    'WHEEL_SPIN_IMAGE': wheel_spin_image,
 }

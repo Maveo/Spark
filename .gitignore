@@ -1,6 +1,7 @@
 settings.py
 
 dbs/
+images/emojis/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
