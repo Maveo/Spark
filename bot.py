@@ -658,7 +658,7 @@ class DiscordBot:
             try:
                 default_type = type(self.default_guild_settings[key])
                 return tools.simple_eval(default_type, guild_setting['svalue'])
-            except TypeError or ValueError:
+            except:
                 pass
 
         return self.default_guild_settings[key]
@@ -681,7 +681,7 @@ class DiscordBot:
         try:
             default_type = type(self.default_guild_settings[key])
             tools.simple_eval(default_type, value)
-        except TypeError or ValueError:
+        except:
             return False
 
         cur = self.db_conn.cursor()
