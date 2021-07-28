@@ -1,0 +1,17 @@
+branches:
+  only:
+  - master
+language: python
+python:
+  - "3.7"
+before_install:
+  # command to update pip
+  - python -m pip install --upgrade pip
+  # command to copy settings
+  - cp settings_example.py settings.py
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+# command to run tests
+script:
+  - python tests.py

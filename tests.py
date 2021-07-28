@@ -153,8 +153,11 @@ def main():
             m = MemberDummy()
 
             self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+            self.bot.default_guild_settings['MESSAGE_XP'] = 0
 
             await self.bot.events.on_member_join(m)
+            msg = MessageDummy(author=m)
+            await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
             return user['uid'] == 0 and float_match(user['lvl'], 1.0)
 
@@ -406,6 +409,7 @@ def main():
             await self.bot.events.on_member_join(m0)
             await self.bot.events.on_member_join(m1)
             await self.bot.member_set_blacklist(m0, True)
+            await self.bot.member_set_blacklist(m1, False)
             user0 = await self.bot.get_user(m0)
             user1 = await self.bot.get_user(m1)
             return user0['blacklist'] == 1 and user1['blacklist'] == 0
@@ -678,7 +682,7 @@ def main():
     async def run_test(method, test_number, test_name):
         con = sqlite3.connect(":memory:")
 
-        from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
+        from settings_example import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
 
         b = DiscordBot(con, use_slash_commands=False, default_guild_settings=DEFAULT_GUILD_SETTINGS.copy())
 
@@ -733,6 +737,9 @@ def main():
             x[0]['test_number'],
             x[0]['test_name']
         ), failed_tests))))
+
+    if len(failed_tests) > 0:
+        exit(1)
 
 
 if __name__ == '__main__':

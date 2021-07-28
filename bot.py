@@ -296,7 +296,10 @@ class DiscordBot:
 
         embed.add_field(name='ID', value='{}'.format(data['uid']), inline=False)
         embed.add_field(name='Level', value='{:.2f}'.format(data['lvl']), inline=False)
-        embed.add_field(name='XP Multiplier', value='{:.2f}'.format(data['xp_multiplier']), inline=False)
+        base_xp_mult = data['xp_multiplier']
+        embed.add_field(name='Base XP Multiplier', value='{:.2f}'.format(base_xp_mult), inline=False)
+        xp_mult = base_xp_mult + await self.xp_multiplier_adds(member.id, member.guild.id)
+        embed.add_field(name='Current XP Multiplier', value='{:.2f}'.format(xp_mult), inline=False)
 
         if data['joined'] < 0:
             embed.add_field(name='Last XP Update',
@@ -1650,18 +1653,24 @@ class DiscordBot:
                 res = 'kopf'
             else:
                 res = 'zahl'
+
+            prev_author = ctx.message.author
+
             message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
 
             voice_client = None
-            if random.random() < await self.parent.get_setting(ctx.message.author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
-                if ctx.message.author.voice is not None and ctx.message.author.voice.channel is not None:
-                    try:
-                        voice_channel = ctx.message.author.voice.channel
-                        voice_client = await voice_channel.connect()
-                        audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
-                        voice_client.play(audio_source)
-                    except discord.ClientException:
-                        pass
+            if hasattr(prev_author, 'guild'):
+                if random.random() < await self.parent.get_setting(prev_author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
+                    if prev_author.voice is not None and prev_author.voice.channel is not None:
+                        try:
+                            voice_channel = prev_author.voice.channel
+                            voice_client = await voice_channel.connect()
+                            audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
+                            voice_client.play(audio_source)
+                        except discord.ClientException:
+                            self.parent.lprint('Bot is alreardy connect to a voice channel')
+                        except RuntimeError as e:
+                            self.parent.lprint(e)
 
             await asyncio.sleep(13)
 
@@ -1773,8 +1782,6 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
-            if not member.bot:
-                await self.parent.update_member(member)
             if await self.parent.get_setting(member.guild.id, 'SEND_WELCOME_IMAGE'):
                 await member.send(file=await self.parent.member_create_welcome_image(member))
 
