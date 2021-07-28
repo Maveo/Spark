@@ -3,7 +3,7 @@ branches:
   - master
 language: python
 python:
-  - "3.7"
+  - "3.9"
 before_install:
   # command to update pip
   - python -m pip install --upgrade pip
