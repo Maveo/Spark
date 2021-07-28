@@ -21,9 +21,9 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     python -m pip install -r requirements.txt
 
-> Copy "settings.py.example" to "settings.py"
+> Copy "settings_example.py" to "settings.py"
 
-    copy settings.py.example settings.py
+    copy settings_example.py settings.py
 
 > Edit your "APPLICATION_ID", "TOKEN" etc. in the settings.py
 
@@ -45,9 +45,9 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     pip3 install -r requirements.txt
 
-> Copy "settings.py.example" to "settings.py"
+> Copy "settings_example.py" to "settings.py"
 
-    cp settings.py.example settings.py
+    cp settings_example.py settings.py
 
 > Edit your "APPLICATION_ID", "TOKEN" etc. in the settings
 
