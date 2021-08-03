@@ -642,9 +642,10 @@ class DiscordBot:
             user = await self.get_user(member)
             if user is None:
                 await self.update_user(member, {
-                    'lvl': 1.0,
-                    'xp_multiplier': 1.0,
-                    'blacklist': False
+                    'lvl': await self.get_setting(member.guild.id, 'NEW_USER_LEVEL'),
+                    'xp_multiplier': await self.get_setting(member.guild.id, 'NEW_USER_XP_MULTIPLIER'),
+                    'blacklist': False,
+                    'joined': -1
                 })
 
     async def get_setting(self, guild_id, key):
