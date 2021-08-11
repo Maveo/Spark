@@ -7,7 +7,7 @@
 
 ## Application
 
-Spark is currently being beta-tested on the [StudeGaming Discord Server](https://discord.gg/MzXV5GYRsN "Join the Discord") and continuous to be enhanced by his developer [skillor](https://github.com/skillor "Visit his github profile"). If you are interested in Sparks development, you can view the project roadmap and history in the [Projects]( https://github.com/skillor/Spark/projects "A deep dive into Sparks development") tab. If you have any suggestions or bug reports and want to help the development process, you are welcome to let us know in the [Issues](https://github.com/skillor/Spark/issues/new/choose "Give us feedback") tab. Spark is currently not publicly avaliable, so can't be easily invited to your Discord server. Should you still want to use Spark on your Discord server, feel free to use it's source code to host it yourself.
+Spark is currently being beta-tested on the [StudeGaming Discord Server](https://discord.gg/MzXV5GYRsN "Join the Discord") and continues to be enhanced by his developer [skillor](https://github.com/skillor "Visit his github profile"). If you are interested in Sparks development, you can view the project roadmap and history in the [Projects](https://github.com/skillor/Spark/projects "A deep dive into Sparks development") tab. If you have any suggestions or bug reports and want to help the development process, you are welcome to let us know in the [Issues](https://github.com/skillor/Spark/issues/new/choose "Give us feedback") tab. Spark is currently not publicly avaliable, so can't be easily invited to your Discord server. Should you still want to use Spark on your Discord server, feel free to use it's source code to host it yourself.
 
 ## Installation
 
@@ -206,5 +206,5 @@ Spark has an evergrowing utility set with numerous advanced features:
  - #### Advanced Command Interaction
 	Spark is able to communicate trough Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally Spark can handle user related commands with @mentions.
 
- - #### Custom Image Generation
-	The Bot is equiped with a custom image generator, which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using the build-in design code, that is build similar to knwon webdesign languages like CSS.
+ - #### Custom Image Generation (ImageStack)
+	The Bot is equiped with [ImageStack](https://github.com/skillor/imagestack-python "ImageStacks Git Repository") (a custom image generator), which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using ImageStack Code.
