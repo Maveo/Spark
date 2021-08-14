@@ -57,7 +57,7 @@ class WebServer(threading.Thread):
         session.clear()
         return redirect(url_for('/'))
 
-    async def oath2(self):
+    async def oauth2(self):
         if request.values.get('error'):
             return request.values['error']
         discord = self.make_session(state=session.get('oauth2_state'))
@@ -142,9 +142,9 @@ class WebServer(threading.Thread):
                  host='0.0.0.0',
                  port=4004,
                  discord_bot=None,
-                 oath2_client_id=None,
-                 oath2_client_secret=None,
-                 oath2_redirect_uri=None,
+                 oauth2_client_id=None,
+                 oauth2_client_secret=None,
+                 oauth2_redirect_uri=None,
                  debug=False,
                  logging_level=logging.WARNING
                  ):
@@ -158,9 +158,9 @@ class WebServer(threading.Thread):
 
         self.dbot = discord_bot
 
-        self.OAUTH2_CLIENT_ID = oath2_client_id
-        self.OAUTH2_CLIENT_SECRET = oath2_client_secret
-        self.OAUTH2_REDIRECT_URI = oath2_redirect_uri
+        self.OAUTH2_CLIENT_ID = oauth2_client_id
+        self.OAUTH2_CLIENT_SECRET = oauth2_client_secret
+        self.OAUTH2_REDIRECT_URI = oauth2_redirect_uri
 
         if 'http://' in self.OAUTH2_REDIRECT_URI:
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
@@ -182,7 +182,7 @@ class WebServer(threading.Thread):
             Page(path='/', view_func=self.entry),
             Page(path='/login', view_func=self.login),
             Page(path='/logout', view_func=self.logout),
-            Page(path='/oath2', view_func=self.oath2),
+            Page(path='/oauth2', view_func=self.oauth2),
             Page(path='/home', view_func=self.home),
             Page(path='/guild/<string:guild_id>/', view_func=self.guild),
             Page(path='/guild/<string:guild_id>/<path:path>', view_func=self.guild, methods=['GET', 'POST']),
@@ -228,9 +228,9 @@ def main():
     from settings import GLOBAL_SETTINGS
 
     a = WebServer(
-        oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
-        oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
-        oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
+        oauth2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
+        oauth2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
+        oauth2_redirect_uri=GLOBAL_SETTINGS['OAUTH2_REDIRECT_URI'],
         debug=True
     )
     a.run()

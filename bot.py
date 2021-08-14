@@ -1872,9 +1872,9 @@ def main():
 
     if GLOBAL_SETTINGS['ACTIVATE_WEBSERVER']:
         web = WebServer(
-            oath2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
-            oath2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
-            oath2_redirect_uri=GLOBAL_SETTINGS['OATH2_REDIRECT_URI'],
+            oauth2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
+            oauth2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
+            oauth2_redirect_uri=GLOBAL_SETTINGS['OAUTH2_REDIRECT_URI'],
             discord_bot=b,
             port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
         )

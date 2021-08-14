@@ -87,10 +87,10 @@ These Settings are applied globally and **cannot be changed without restarting**
   This is the Application-ID for your Discord Developer Application
 - **APPLICATION_SECRET**
 
-  This is the Oath2-Application-Secret for your Discord Developer Application
-- **OATH2_REDIRECT_URI**
+  This is the Oauth2-Application-Secret for your Discord Developer Application
+- **OAUTH2_REDIRECT_URI**
 
-  This is the Oath2-Redirect-Uri for your Discord Developer Application, you need to add "/oath2" for the default setup (e.g. http://your.domain/oath2)
+  This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2)
   You also need to set this up in the Discord Developer Settings
 - **WEBSERVER_PORT**
 
