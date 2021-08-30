@@ -423,6 +423,8 @@ class DiscordBot:
         for action in actions:
             if action['actiontype'] == 'add-role':
                 await self.give_role(member.guild, member, int(action['action']))
+            if action['actiontype'] == 'trigger-role':
+                await self.trigger_role(member.guild, member, int(action['action']))
             elif action['actiontype'] == 'dm':
                 await member.send(action['action'])
 
@@ -955,19 +957,23 @@ class DiscordBot:
     @staticmethod
     async def give_role(guild, member, role_id):
         role = get(guild.roles, id=role_id)
-        if role is not None:
-            for r in member.roles:
-                if r.id == role.id:
-                    return
+        if role is not None and role not in member.roles:
             await member.add_roles(role)
 
     @staticmethod
     async def remove_role(guild, member, role_id):
         role = get(guild.roles, id=role_id)
         if role is not None and role in member.roles:
-            for r in member.roles:
-                if r.id == role.id:
-                    return await member.remove_roles(role)
+            await member.remove_roles(role)
+
+    @staticmethod
+    async def trigger_role(guild, member, role_id):
+        role = get(guild.roles, id=role_id)
+        if role is not None:
+            if role in member.roles:
+                await member.remove_roles(role)
+            else:
+                await member.add_roles(role)
 
     async def member_role_manage(self, member, lvl):
         data = await self.lvlsys_get(member.guild.id)
@@ -1348,8 +1354,8 @@ class DiscordBot:
                                                 color=discord.Color.red()))
 
                     if len(args) >= 5:
-                        if args[3] == 'add-role':
-                            action_type = 'add-role'
+                        if args[3] == 'add-role' or args[3] == 'trigger-role':
+                            action_type = args[3]
                             try:
                                 action = int(args[4])
                                 role = get(ctx.message.guild.roles, id=action)
@@ -1363,7 +1369,7 @@ class DiscordBot:
                                                         color=discord.Color.red()))
 
                         elif args[3] == 'dm':
-                            action_type = 'dm'
+                            action_type = args[3]
                             action = ' '.join(args[4:])
 
                         else:
@@ -1387,6 +1393,8 @@ class DiscordBot:
                     embed=discord.Embed(title='Help "mreact add"',
                                         description='"mreact add {msg_id} {reaction_emoji} to just add a emoji"\n'
                                                     '"mreact add {msg_id} {reaction_emoji} add-role {role_id}" '
+                                                    'to setup adding a role on a reaction\n'
+                                                    '"mreact add {msg_id} {reaction_emoji} trigger-role {role_id}" '
                                                     'to setup adding a role on a reaction\n'
                                                     '"mreact add {msg_id} {reaction_emoji} dm {dm_content}" '
                                                     'to setup sending a dm on a reaction\n',
@@ -1447,7 +1455,7 @@ class DiscordBot:
                 embed=discord.Embed(title='Help',
                                     description='"mreact get" to show all message reactions\n'
                                                 '"mreact add" to show more information how to setup msg reactions\n'
-                                                '"reaction remove {msg_id} {reaction_emoji}" '
+                                                '"mreact remove {msg_id} {reaction_emoji}" '
                                                 'to remove a message reaction\n',
                                     color=discord.Color.gold()))
 
