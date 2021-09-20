@@ -364,6 +364,10 @@ class DiscordBot:
                 return 'None'
             return date.strftime("%d.%m.%Y %H:%M")
 
+        embed.add_field(name='Created Account',
+                        value='{}'.format(_format_date(member.created_at)),
+                        inline=False)
+
         embed.add_field(name='Joined At',
                         value='{}'.format(_format_date(member.joined_at)),
                         inline=False)
