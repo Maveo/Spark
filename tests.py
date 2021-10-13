@@ -14,6 +14,17 @@ class RoleDummy:
             color = ColorDummy()
         self.color = color
 
+    def __repr__(self):
+        return 'RoleDummy({}, {})'.format(self.id, self.name)
+
+
+class RolesDummy(list):
+    def add_role(self, role):
+        self.append(role)
+
+    def remove_role(self, role):
+        self.remove(role)
+
 
 class ChannelDummy:
     def __init__(self, uid=0):
@@ -64,7 +75,7 @@ class MemberDummy:
         self.nick = nick
         self.display_name = display_name
         self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
-        self.roles = {}
+        self.roles = RolesDummy()
         self.top_role = RoleDummy(0)
         if guild is None:
             guild = GuildDummy()
@@ -81,11 +92,10 @@ class MemberDummy:
         self.messages.append((args, kwargs))
 
     async def add_roles(self, role):
-        self.roles[role.id] = True
+        self.roles.add_role(role)
 
     async def remove_roles(self, role):
-        if role.id in self.roles:
-            del self.roles[role.id]
+        self.roles.remove_role(role)
 
     def avatar_url_as(self, *args, **kwargs):
         return self.avatar_url
@@ -264,16 +274,17 @@ def main():
             await self.bot.lvlsys_set(0, 0, 0)
             await self.bot.lvlsys_set(0, 1, 2)
             await self.bot.lvlsys_set(0, 2, 5)
+            wanted_role = RoleDummy(1)
             g = GuildDummy(roles=[
                 RoleDummy(0),
-                RoleDummy(1),
+                wanted_role,
                 RoleDummy(2)
             ])
             m = MemberDummy(0, guild=g)
             await self.bot.member_joined_vc(m, 0)
             await self.bot.update_user(m, {'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
             await self.bot.member_left_vc(m, 0)
-            return m.roles == {1: True}
+            return len(m.roles) == 1 and m.roles[0] == wanted_role
 
         # test ranking
         async def test_14_ranking(self):
@@ -550,8 +561,8 @@ def main():
             await self.bot.events.on_message(msg)
             return c.messages == [(('pong',), {})]
 
-        # test message reactions
-        async def test_33_message_reaction(self):
+        # test message reaction add
+        async def test_33_message_reaction_add(self):
             r = RoleDummy(0)
             g = GuildDummy(roles=[r])
             m = MemberDummy(guild=g)
@@ -559,8 +570,22 @@ def main():
             emoji = '😁'
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'add-role', r.id)
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'dm', 'test')
-            await self.bot.msg_reaction_event(m, msg.id, emoji)
-            return m.roles == {0: True} and m.messages == [(('test',), {})]
+            await self.bot.msg_reaction_add_event(m, msg.id, emoji)
+            return len(m.roles) == 1 and m.roles[0] == r and m.messages == [(('test',), {})]
+
+        # test message reaction remove
+        async def test_34_message_reaction_remove(self):
+            r = RoleDummy(0)
+            g = GuildDummy(roles=[r])
+            m = MemberDummy(guild=g)
+            msg = MessageDummy()
+            emoji = '😁'
+            await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'trigger-role', r.id)
+            await self.bot.msg_reaction_add_event(m, msg.id, emoji)
+            if not (len(m.roles) == 1 and m.roles[0] == r):
+                return False
+            await self.bot.msg_reaction_remove_event(m, msg.id, emoji)
+            return len(m.roles) == 0
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):

@@ -422,15 +422,21 @@ class DiscordBot:
                     (guild_id, msg_id, reaction,))
         return cur.fetchall()
 
-    async def msg_reaction_event(self, member, msg_id, emoji):
+    async def msg_reaction_add_event(self, member, msg_id, emoji):
         actions = await self.get_msg_reactions_by_reaction(member.guild.id, msg_id, str(emoji))
         for action in actions:
             if action['actiontype'] == 'add-role':
                 await self.give_role(member.guild, member, int(action['action']))
-            if action['actiontype'] == 'trigger-role':
-                await self.trigger_role(member.guild, member, int(action['action']))
+            elif action['actiontype'] == 'trigger-role':
+                await self.give_role(member.guild, member, int(action['action']))
             elif action['actiontype'] == 'dm':
                 await member.send(action['action'])
+
+    async def msg_reaction_remove_event(self, member, msg_id, emoji):
+        actions = await self.get_msg_reactions_by_reaction(member.guild.id, msg_id, str(emoji))
+        for action in actions:
+            if action['actiontype'] == 'trigger-role':
+                await self.remove_role(member.guild, member, int(action['action']))
 
     async def set_reaction(self, guild_id, trigger, reaction):
         cur = self.db_conn.cursor()
@@ -1837,7 +1843,12 @@ class DiscordBot:
         @commands.Cog.listener()
         async def on_raw_reaction_add(self, payload):
             if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
-                await self.parent.msg_reaction_event(payload.member, payload.message_id, payload.emoji)
+                await self.parent.msg_reaction_add_event(payload.member, payload.message_id, payload.emoji)
+
+        @commands.Cog.listener()
+        async def on_raw_reaction_remove(self, payload):
+            if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
+                await self.parent.msg_reaction_remove_event(payload.member, payload.message_id, payload.emoji)
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
