@@ -1842,14 +1842,16 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_raw_reaction_add(self, payload):
-            member = self.parent.bot.get_user(payload.user_id)
-            if payload.guild_id is not None and member is not None and member.bot is False:
+            guild = self.parent.bot.get_guild(payload.guild_id)
+            member = get(guild.members, id=payload.user_id)
+            if member is not None and member.guild is not None and member.bot is False:
                 await self.parent.msg_reaction_add_event(member, payload.message_id, payload.emoji)
 
         @commands.Cog.listener()
         async def on_raw_reaction_remove(self, payload):
-            member = self.parent.bot.get_user(payload.user_id)
-            if payload.guild_id is not None and member is not None and member.bot is False:
+            guild = self.parent.bot.get_guild(payload.guild_id)
+            member = get(guild.members, id=payload.user_id)
+            if member is not None and member.guild is not None and member.bot is False:
                 await self.parent.msg_reaction_remove_event(member, payload.message_id, payload.emoji)
 
         @commands.Cog.listener()
