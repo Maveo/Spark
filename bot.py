@@ -755,7 +755,7 @@ class DiscordBot:
                 guild = self.bot.get_guild(user['gid'])
                 member = get(guild.members, id=int(user['uid']))
                 if member.voice is None or member.voice.channel is None:
-                    user['joined'] = 0
+                    user['joined'] = -1
                 else:
                     xp_earned = self.xp_for((ctime - user['joined'])
                                             * await self.get_setting(guild.id, 'VOICE_XP_PER_MINUTE') / 60,
