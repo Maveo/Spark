@@ -201,17 +201,37 @@ class DiscordBot:
 
         self.image_creator = image_creator
 
+    async def startup_routine(self, ctime):
+        while not self.bot.is_ready():
+            await asyncio.sleep(1)
+
+        users = []
+
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                if member.voice is not None and member.voice.channel is not None:
+                    users.append({'uid': member.id, 'gid': guild.id, 'joined': ctime})
+
+        cur = self.db_conn.cursor()
+
+        for user in users:
+            cur.execute('UPDATE users SET joined = ? WHERE uid = ? AND gid = ?',
+                        (user['joined'], user['uid'], user['gid'],))
+
+        self.db_conn.commit()
+
+        self.lprint('Bot is ready')
+
+        if self.update_voice_xp_interval > 0:
+            while True:
+                await asyncio.sleep(self.update_voice_xp_interval)
+                await self.update_all_voice_users(time.time())
+
     def set_image_creator(self, image_creator):
         self.image_creator = image_creator
 
     def run(self, token):
-        async def _update_vc_xp():
-            if self.update_voice_xp_interval > 0:
-                while True:
-                    await asyncio.sleep(self.update_voice_xp_interval)
-                    await self.update_all_voice_users(time.time())
-
-        self.bot.loop.create_task(_update_vc_xp())
+        self.bot.loop.create_task(self.startup_routine(time.time()))
         self.bot.run(token)
 
     def lprint(self, *args):
@@ -1794,10 +1814,6 @@ class DiscordBot:
                 pass
             else:
                 self.parent.lprint(error)
-
-        @commands.Cog.listener()
-        async def on_ready(self):
-            self.parent.lprint('Bot is ready')
 
         @commands.Cog.listener()
         async def on_member_join(self, member):
