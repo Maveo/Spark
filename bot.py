@@ -281,11 +281,13 @@ class DiscordBot:
 
     @staticmethod
     async def search_text_channel(ctx, search):
+        if search[:2] == '<#' and search[-1] == '>':
+            search = search[2:-1]
         if search.isnumeric():
-            channel = get(ctx.author.guild.channels, name=int(search), type=discord.ChannelType.text)
+            channel = get(ctx.guild.text_channels, id=int(search))
             if channel is not None:
                 return channel
-        channel = get(ctx.author.guild.channels, name=search, type=discord.ChannelType.text)
+        channel = get(ctx.guild.text_channels, name=search)
         if channel is not None:
             return channel
         return None
@@ -1207,24 +1209,16 @@ class DiscordBot:
                                                           description='Message was send successfully',
                                                           color=discord.Color.green()))
             else:
-                try:
-                    channel = get(ctx.guild.text_channels, id=int(args[0]))
-                    if channel is not None:
-                        await channel.send(' '.join(args[1:]))
-                        return await ctx.send(embed=discord.Embed(title='',
-                                                                  description='Message was send successfully',
-                                                                  color=discord.Color.green()))
-                except ValueError:
-                    pass
-                channel = get(ctx.guild.text_channels, name=args[0])
-                if channel is not None:
-                    await channel.send(' '.join(args[1:]))
-                    return await ctx.send(embed=discord.Embed(title='',
-                                                              description='Message was send successfully',
-                                                              color=discord.Color.green()))
-                return await ctx.send(embed=discord.Embed(title='Error',
-                                                          description='Channel "{}" was not found!'.format(args[0]),
-                                                          color=discord.Color.red()))
+                channel = await self.parent.search_text_channel(ctx, args[0])
+                if channel is None:
+                    return await ctx.send(embed=discord.Embed(title='Error',
+                                                              description='Channel "{}" was not found!'.format(args[0]),
+                                                              color=discord.Color.red()))
+
+                await channel.send(' '.join(args[1:]))
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Message was send successfully',
+                                                          color=discord.Color.green()))
 
         @commands.command(name='setlvl',
                           aliases=['setlevel', 'sl'],
