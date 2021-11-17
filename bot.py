@@ -1202,17 +1202,26 @@ class DiscordBot:
                                                                       'into a specific channel',
                                                           color=discord.Color.gold()))
             elif len(args) == 1:
-                return await ctx.author.guild.system_channel.send(args[0])
+                await ctx.author.guild.system_channel.send(args[0])
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Message was send successfully',
+                                                          color=discord.Color.green()))
             else:
                 try:
                     channel = get(ctx.guild.text_channels, id=int(args[0]))
                     if channel is not None:
-                        return await channel.send(' '.join(args[1:]))
+                        await channel.send(' '.join(args[1:]))
+                        return await ctx.send(embed=discord.Embed(title='',
+                                                                  description='Message was send successfully',
+                                                                  color=discord.Color.green()))
                 except ValueError:
                     pass
                 channel = get(ctx.guild.text_channels, name=args[0])
                 if channel is not None:
-                    return await channel.send(' '.join(args[1:]))
+                    await channel.send(' '.join(args[1:]))
+                    return await ctx.send(embed=discord.Embed(title='',
+                                                              description='Message was send successfully',
+                                                              color=discord.Color.green()))
                 return await ctx.send(embed=discord.Embed(title='Error',
                                                           description='Channel "{}" was not found!'.format(args[0]),
                                                           color=discord.Color.red()))
