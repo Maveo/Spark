@@ -1722,28 +1722,6 @@ class DiscordBot:
             if voice_client is not None:
                 await voice_client.disconnect()
 
-        @commands.command(name='wheelspin',
-                          aliases=[],
-                          description='Spin the wheel!',
-                          help=' - Dreh am Rad')
-        async def _wheelspin(self, ctx, *args):
-            await ctx.trigger_typing()
-
-            async def _spin_wheel(sobj):
-                gif_img_buf, last_img_buf = await self.parent.image_creator.create(
-                    (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(sobj))
-
-                message = await ctx.send(file=discord.File(filename="spin.gif", fp=gif_img_buf))
-                await asyncio.sleep(10)
-                await message.delete()
-                await ctx.send(file=discord.File(filename="spin_result.png", fp=last_img_buf))
-
-            if len(args) == 0:
-                return await _spin_wheel({'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)})
-
-            choices = list(tools.only_emojis(''.join(args)))
-            return await _spin_wheel({'choices': choices, 'result': random.randint(0, len(choices))})
-
         @commands.command(name='dice',
                           aliases=[],
                           description='Roll a dice to your Witcher!',
