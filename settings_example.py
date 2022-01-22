@@ -7,8 +7,10 @@ GLOBAL_SETTINGS = {
     'APPLICATION_ID': '',
     'APPLICATION_SECRET': '',
     'ACTIVATE_WEBSERVER': True,
-    'OAUTH2_REDIRECT_URI': '',
-    'WEBSERVER_PORT': 3000,
+    'OAUTH2_REDIRECT_URI': 'http://localhost:4004/login',
+    'WEBSERVER_PORT': 4004,
+    'WEBSERVER_STATIC_PATH': 'static',
+    'WEBSERVER_DEBUG': False,
     'TOKEN': '',
     'COMMAND_PREFIX': '>',
     'DESCRIPTION': 'This is a KGS501 Productions bot!',
@@ -26,7 +28,6 @@ GLOBAL_SETTINGS = {
         # DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
     ]
 }
-
 
 profile_image = ImageStackResolveString('''ImageStack([
     RectangleLayer(
@@ -469,55 +470,6 @@ welcome_image = ImageStackResolveString('''ImageStack([
 ])''')
 
 
-def wheel_spin_image(x):
-    offset = 360 / len(x['choices'])
-    rotation = 1440.0 + (x['result'] * offset) + offset * 0.5
-    spin_func = lambda z: (3 * (z ** 2) - 2 * (z ** 3)) * rotation
-    choices = [EmojiLayer(emoji=emoji, resize=(27, 27)) for emoji in x['choices']]
-    t = AnimatedImageStack(
-        animated=RotationLayer(
-            rotate=ImageStack([
-                ColorLayer(
-                    pos=(0, 0),
-                    resize=(300, 300),
-                    color=SingleColor(
-                        (128, 128, 128)
-                    ),
-                ),
-                PieLayer(
-                    align_x='center',
-                    align_y='center',
-                    pos=(150, 150),
-                    radius=140,
-                    color=LinearGradientColor(
-                        color1=(0, 255, 0),
-                        color2=(0, 0, 255)
-                    ),
-                    line_width=3,
-                    border_width=10,
-                    choices=choices
-                )
-            ]),
-            rotation_func=spin_func,
-            bg_color=(128, 128, 128),
-        ),
-        static_fg=ImageStack([
-            EmptyLayer(
-                resize=(300, 300)
-            ),
-            ColorLayer(
-                pos=(145, 0),
-                resize=(10, 35),
-                color=(255, 255, 255)
-            )
-        ]),
-        fps=30,
-        seconds=7,
-    )
-    t._init()
-    return t
-
-
 DEFAULT_GUILD_SETTINGS = {
     'NEW_USER_LEVEL': 1.0,
     'NEW_USER_XP_MULTIPLIER': 1.0,
@@ -574,5 +526,4 @@ DEFAULT_GUILD_SETTINGS = {
     'RANK_UP_IMAGE': rank_up_image,
     'RANKING_IMAGE': ranking_image,
     'WELCOME_IMAGE': welcome_image,
-    'WHEEL_SPIN_IMAGE': wheel_spin_image,
 }

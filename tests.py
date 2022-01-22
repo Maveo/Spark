@@ -241,6 +241,7 @@ def main():
             await self.bot.member_joined_vc(m, g.id)
             await self.bot.member_left_vc(m, 60 * 1 * 62)
             user = await self.bot.get_user(m)
+            print(dir(self.bot.bot.loop))
             return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(
                 g.system_channel.messages) == 1
 

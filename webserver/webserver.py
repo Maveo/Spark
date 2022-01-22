@@ -1,10 +1,45 @@
 import os
 import threading
 import asyncio
-from flask import Flask, session, redirect, request, url_for, render_template, jsonify
-from imagestack import VisitorHtml, ImageStackResolve, ImageStack, ListLayer, LengthVariable
-from requests_oauthlib import OAuth2Session
+import werkzeug
+from flask.json import JSONEncoder
+from gevent.pywsgi import WSGIServer
+from flask import Flask, jsonify, request, send_from_directory
+from discord import Member, Guild
 import logging
+import requests
+from enums import ENUMS
+
+
+class JSONDiscordCustom(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Member):
+            return {
+                'id': str(o.id),
+                'nick': str(o.display_name),
+                'name': str(o.name),
+                'avatar_url': str(o.avatar_url),
+                'top_role': str(o.top_role.name),
+            }
+        if isinstance(o, Guild):
+            return {
+                'id': str(o.id),
+                'name': str(o.name),
+                'icon_url': str(o.icon_url),
+            }
+        return JSONEncoder.default(self, o)
+
+
+class UnauthorizedException(werkzeug.exceptions.HTTPException):
+    code = 401
+
+
+class UnknownException(werkzeug.exceptions.HTTPException):
+    code = 400
+
+
+class WrongInputException(werkzeug.exceptions.HTTPException):
+    code = 400
 
 
 class Page:
@@ -17,125 +52,130 @@ class Page:
 
 
 class WebServer(threading.Thread):
-    async def is_signed_in(self):
-        return session.get('oauth2_token') is not None
-
     async def get_member_id(self):
-        if session.get('member_id') is None:
-            discord = self.make_session(token=session.get('oauth2_token'))
+        if 'Authorization' not in request.headers:
+            raise UnauthorizedException()
+        r = requests.get('https://discord.com/api/users/@me', headers={
+            'Authorization': request.headers['Authorization']
+        })
+        if r.status_code != 200:
+            raise UnauthorizedException('member request not successful')
+        json = r.json()
+        if 'id' not in json:
+            raise UnauthorizedException('id not in member response')
+        return int(json['id'])
 
-            while True:
-                user_response = discord.get(self.API_BASE_URL + '/users/@me')
-                if user_response.status_code == 200:
-                    break
-                response_json = user_response.json()
-                if 'retry_after' in response_json:
-                    await asyncio.sleep(int(response_json['retry_after']/1000))
-                else:
-                    raise Exception('could not find id in response')
-
-            session['member_id'] = int(user_response.json()['id'])
-
-        return session.get('member_id')
-
-    async def entry(self):
-        return render_template('login.html')
-
-    async def login(self):
-        if await self.is_signed_in():
-            return redirect(url_for('/home'))
-        scope = request.args.get(
-            'scope',
-            'identify'
-        )
-        discord = self.make_session(scope=scope.split(' '))
-        authorization_url, state = discord.authorization_url(self.AUTHORIZATION_BASE_URL)
-        session['oauth2_state'] = state
-        return redirect(authorization_url)
-
-    async def logout(self):
-        session.clear()
-        return redirect(url_for('/'))
-
-    async def oauth2(self):
-        if request.values.get('error'):
-            return request.values['error']
-        discord = self.make_session(state=session.get('oauth2_state'))
-        token = discord.fetch_token(
-            token_url=self.TOKEN_URL,
-            client_id=self.OAUTH2_CLIENT_ID,
-            client_secret=self.OAUTH2_CLIENT_SECRET,
-            authorization_response=request.url
-        )
-        session['oauth2_token'] = token
-
-        return redirect(url_for('/home'))
-
-    async def home(self):
-        if not await self.is_signed_in():
-            return redirect(url_for('/'))
-
-        guilds = [guild for guild in self.dbot.bot.guilds
-                  if guild.get_member(await self.get_member_id()) is not None]
-        return render_template('home.html', guilds=guilds)
-
-    async def guild(self, guild_id, **kwargs):
-        if not await self.is_signed_in():
-            return redirect(url_for('/'))
-
+    async def get_member_guild(self):
+        if 'guild_id' not in request.args:
+            raise WrongInputException('guild_id not provided')
         try:
-            guild_id = int(guild_id)
-        except ValueError:
-            return render_template('guild-not-in.html')
+            guild_id = int(request.args['guild_id'])
+        except ValueError or TypeError:
+            raise WrongInputException('guild_id wrong format')
+        uid = await self.get_member_id()
         guilds = list(filter(lambda x: x.id == guild_id, self.dbot.bot.guilds))
         if len(guilds) != 1:
-            return render_template('guild-not-in.html')
+            raise WrongInputException('guild not found')
         guild = guilds[0]
-        member = guild.get_member(await self.get_member_id())
+        member = guild.get_member(uid)
         if member is None:
-            return render_template('guild-not-in.html')
+            raise WrongInputException('member not found')
+        return guild, member
 
-        if 'path' in kwargs and kwargs['path'] == 'settings':
-            if not member.guild_permissions.administrator:
-                return render_template('guild-no-permissions.html')
+    async def get_auth_url(self):
+        return jsonify({
+            'auth_url':
+                'https://discord.com/api/oauth2/authorize?client_id={}&redirect_uri={}&response_type={}&scope={}'
+                    .format(
+                    self.OAUTH2_CLIENT_ID,
+                    self.OAUTH2_REDIRECT_URI,
+                    'code',
+                    'identify'
+                )
+        }), 200
 
-            if request.method == 'POST':
-                res = await self.dbot.set_setting(guild.id, request.form['key'], request.form['value'])
-                if not res:
-                    return jsonify('Value could not be set'), 400
-                setting = await self.dbot.get_setting(guild.id, request.form['key'])
-                return jsonify(str(setting)), 200
-            settings = await self.dbot.get_settings(guild.id)
-            return render_template('guild-settings.html',
-                                   guild=guild,
-                                   settings=settings)
-        ranked_users = await self.dbot.get_ranking(guild)
-        user_infos = await self.dbot.get_advanced_user_infos(guild, ranked_users)
+    async def create_session(self):
+        json = request.get_json()
+        if json is None or 'code' not in json:
+            raise WrongInputException('code not provided')
+        r = requests.post('https://discord.com/api/oauth2/token', data={
+            'client_id': self.OAUTH2_CLIENT_ID,
+            'client_secret': self.OAUTH2_CLIENT_SECRET,
+            'code': json['code'],
+            'grant_type': 'authorization_code',
+            'redirect_uri': self.OAUTH2_REDIRECT_URI,
+            'scope': 'identify'
+        })
+        if r.status_code != 200:
+            raise UnauthorizedException('error while authorizing with discord')
+        json = r.json()
+        if 'access_token' not in json or 'token_type' not in json:
+            raise UnauthorizedException('error while authorizing with discord')
+        return jsonify({'session_token': '{} {}'.format(json['token_type'], json['access_token'])}), 200
 
-        profile_template = await self.dbot.get_setting(guild.id, 'PROFILE_IMAGE')
-        users_html = []
-        v = None
-        for user in user_infos:
-            user_image = profile_template(user)
-            v = VisitorHtml(self.dbot.image_creator)
-            layers_html = []
-            for layer in user_image.layers:
-                layers_html.append(layer.accept(v))
-            users_html.append('<div style="display:flex;" data-tilt data-tilt-scale="1.05" data-tilt-max="5">'
-                              '<div style="position:relative;width:{}px;height:{}px;margin-bottom:20px;">'
-                              '{}'
-                              '</div>'
-                              '</div>'
-                              .format(v.max_size[0], v.max_size[1], ''.join(layers_html)))
-        style = None
-        if v is not None:
-            style = v.style_html()
-        ranking_html = '<style>{}</style><div style="position:relative;">{}</div>'.format(style, ''.join(users_html))
-        # im = (await self.dbot.get_setting(guild.id, 'RANKING_IMAGE'))(user_infos)
-        #
-        # ranking_html = self.dbot.image_creator.create_html(im)
+    async def get_guild(self):
+        guild, member = await self.get_member_guild()
+        return jsonify(guild), 200
 
-        return render_template('guild-leaderboard.html', guild=guild, ranking_html=ranking_html)
+    async def get_guilds(self):
+        uid = await self.get_member_id()
+        return jsonify({'guilds': [
+            guild
+            for guild in self.dbot.bot.guilds
+            if guild.get_member(uid) is not None
+        ]}), 200
+
+    async def user_profile(self):
+        guild, member = await self.get_member_guild()
+        return jsonify(await self.dbot.get_user_info(member)), 200
+
+    async def get_promo_code(self):
+        guild, member = await self.get_member_guild()
+        return jsonify({'promo_code': await self.dbot.create_promo_code(member)}), 200
+
+    async def redeem_promo_code(self):
+        guild, member = await self.get_member_guild()
+        if not await self.dbot.can_redeem_promo_code(member):
+            raise WrongInputException('promo code usage forbidden')
+        json = request.get_json()
+        if json is None or 'promo_code' not in json:
+            raise WrongInputException('promo_code not provided')
+        promo = await self.dbot.get_promo_code(member, json['promo_code'])
+        if promo is None:
+            raise WrongInputException('invalid promo code')
+        res = await self.dbot.use_promo_code(member, promo)
+        if not res:
+            raise WrongInputException('promo code already used')
+        return jsonify({'msg': 'success'}), 200
+
+    async def get_ranking(self):
+        guild, member = await self.get_member_guild()
+        return jsonify(await self.dbot.get_advanced_user_infos(guild, await self.dbot.get_ranking(guild))), 200
+
+    async def boost_user(self):
+        guild, member = await self.get_member_guild()
+        json = request.get_json()
+        if json is None or 'username' not in json:
+            raise WrongInputException('username not provided')
+        boost_member = await self.dbot.search_member(guild, json['username'])
+        if boost_member is None:
+            raise WrongInputException('user not found')
+
+        res = await self.dbot.set_boost_user(member, boost_member)
+        if res == ENUMS.BOOST_SUCCESS:
+            return jsonify({'msg': 'success'}), 200
+        elif res == ENUMS.BOOSTING_YOURSELF_FORBIDDEN:
+            raise WrongInputException('boosting yourself forbidden')
+        raise WrongInputException('boost has not expired yet')
+
+    async def get_settings(self):
+        guild, member = await self.get_member_guild()
+        # settings = await self.dbot.get_settings(guild.id)
+        # res = {}
+        # for key, item in settings.items():
+        #     print(key, type(item))
+        # print(settings)
+        return jsonify(''), 500
 
     def __init__(self,
                  name='Webserver',
@@ -145,8 +185,10 @@ class WebServer(threading.Thread):
                  oauth2_client_id=None,
                  oauth2_client_secret=None,
                  oauth2_redirect_uri=None,
+                 static_path=None,
                  debug=False,
-                 logging_level=logging.WARNING
+                 logging_level=logging.WARNING,
+                 api_base='/fap'
                  ):
         super().__init__()
 
@@ -162,30 +204,57 @@ class WebServer(threading.Thread):
         self.OAUTH2_CLIENT_SECRET = oauth2_client_secret
         self.OAUTH2_REDIRECT_URI = oauth2_redirect_uri
 
-        if 'http://' in self.OAUTH2_REDIRECT_URI:
-            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
-
         self.API_BASE_URL = 'https://discordapp.com/api'
         self.AUTHORIZATION_BASE_URL = self.API_BASE_URL + '/oauth2/authorize'
         self.TOKEN_URL = self.API_BASE_URL + '/oauth2/token'
 
+        self.root_path = os.path.dirname(os.path.abspath(__file__))
+        self.static_path = os.path.join(self.root_path, static_path)
         self.app = Flask(
             name,
-            root_path=os.path.dirname(os.path.abspath(__file__)),
-            template_folder='templates',
-            static_folder='static',
+            root_path=self.root_path,
         )
         self.app.debug = debug
-        self.app.config['SECRET_KEY'] = self.OAUTH2_CLIENT_SECRET
+        self.app.json_encoder = JSONDiscordCustom
+
+        @self.app.errorhandler(werkzeug.exceptions.HTTPException)
+        def handle_exception(e):
+            return jsonify({
+                'code': e.code,
+                'name': e.name,
+                'description': e.description,
+            }), e.code
+
+        if debug:
+            @self.app.after_request
+            def after_request_func(response):
+                header = response.headers
+                header['Access-Control-Allow-Origin'] = '*'
+                header['Access-Control-Allow-Headers'] = '*'
+                header['Access-Control-Allow-Methods'] = '*'
+                return response
+
+        async def send_root():
+            return send_from_directory(self.static_path, 'index.html')
+
+        async def static_file(path=''):
+            if os.path.exists(os.path.join(self.static_path, path)):
+                return send_from_directory(self.static_path, path)
+            return await send_root()
 
         self.pages = [
-            Page(path='/', view_func=self.entry),
-            Page(path='/login', view_func=self.login),
-            Page(path='/logout', view_func=self.logout),
-            Page(path='/oauth2', view_func=self.oauth2),
-            Page(path='/home', view_func=self.home),
-            Page(path='/guild/<string:guild_id>/', view_func=self.guild),
-            Page(path='/guild/<string:guild_id>/<path:path>', view_func=self.guild, methods=['GET', 'POST']),
+            Page(path=api_base + '/get-auth', view_func=self.get_auth_url),
+            Page(path=api_base + '/create-session', view_func=self.create_session, methods=['POST']),
+            Page(path=api_base + '/guild', view_func=self.get_guild),
+            Page(path=api_base + '/guilds', view_func=self.get_guilds),
+            Page(path=api_base + '/profile', view_func=self.user_profile),
+            Page(path=api_base + '/promo', view_func=self.get_promo_code),
+            Page(path=api_base + '/boost', view_func=self.boost_user, methods=['POST']),
+            Page(path=api_base + '/redeem', view_func=self.redeem_promo_code, methods=['POST']),
+            Page(path=api_base + '/ranking', view_func=self.get_ranking),
+            Page(path=api_base + '/settings', view_func=self.get_settings),
+            Page(path='/<path:path>', view_func=static_file),
+            Page(path='/', view_func=send_root),
         ]
 
         def _wrapper(func):
@@ -194,6 +263,7 @@ class WebServer(threading.Thread):
                 task = loop.create_task(func(*args, **kwargs))
                 res = loop.run_until_complete(task)
                 return res
+
             return _call
 
         for page in self.pages:
@@ -202,26 +272,12 @@ class WebServer(threading.Thread):
                                   view_func=_wrapper(page.view_func),
                                   methods=page.methods)
 
-    @staticmethod
-    def token_updater(token):
-        session['oauth2_token'] = token
-
-    def make_session(self, token=None, state=None, scope=None):
-        return OAuth2Session(
-            client_id=self.OAUTH2_CLIENT_ID,
-            token=token,
-            state=state,
-            scope=scope,
-            redirect_uri=self.OAUTH2_REDIRECT_URI,
-            auto_refresh_kwargs={
-                'client_id': self.OAUTH2_CLIENT_ID,
-                'client_secret': self.OAUTH2_CLIENT_SECRET,
-            },
-            auto_refresh_url=self.TOKEN_URL,
-            token_updater=self.token_updater)
-
     def run(self):
-        self.app.run(host=self.HOST, port=self.PORT)
+        http_server = WSGIServer((self.HOST, self.PORT), self.app)
+        print('starting webserver on {}:{}'.format(self.HOST, self.PORT))
+        if self.app.debug:
+            print('WARNING app is running in debug mode')
+        http_server.serve_forever()
 
 
 def main():
@@ -231,10 +287,10 @@ def main():
         oauth2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
         oauth2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
         oauth2_redirect_uri=GLOBAL_SETTINGS['OAUTH2_REDIRECT_URI'],
-        debug=True
+        static_path=GLOBAL_SETTINGS['WEBSERVER_STATIC_PATH'],
+        debug=GLOBAL_SETTINGS['WEBSERVER_DEBUG']
     )
     a.run()
-    # a.start()
 
 
 if __name__ == '__main__':
