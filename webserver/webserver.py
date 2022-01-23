@@ -4,7 +4,7 @@ import asyncio
 import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, redirect
 from discord import Member, Guild
 import logging
 import requests
@@ -237,8 +237,14 @@ class WebServer(threading.Thread):
         async def send_root():
             return send_from_directory(self.static_path, 'index.html')
 
-        async def static_file(path=''):
-            if os.path.exists(os.path.join(self.static_path, path)):
+        async def static_file(path):
+            p = os.path.join(self.static_path, path)
+            if os.path.isdir(p):
+                if p[-1] != '/':
+                    return redirect(path + '/')
+                if os.path.isfile(p + 'index.html'):
+                    return send_from_directory(self.static_path, path + 'index.html')
+            elif os.path.exists(p):
                 return send_from_directory(self.static_path, path)
             return await send_root()
 
