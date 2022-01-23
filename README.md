@@ -64,7 +64,7 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 - `>coinflip` Toss a coin to your Witcher!
 - `>random` Generate a random number
 - `>dice` Rolls a six-sided dice
-- `>help` A short list of avaliable commands
+- `>help` A short list of available commands
 - `>leaderboard` Shows the Top 10 of the Server
 - `>profile` Shows your profile-card | "profile {username}" Show another user
 - `>boost` Users can give other users a temporary xp-multiplier (can be adjusted in settings)
