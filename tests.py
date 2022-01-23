@@ -123,6 +123,14 @@ def main():
 
     EPS = 0.00000001
 
+    async def wait_for_tasks():
+        pending = asyncio.all_tasks()
+        for task in pending:
+            try:
+                await task
+            except RuntimeError:
+                pass
+
     def show_image(img):
         if SHOW_IMAGES:
             try:
@@ -241,7 +249,7 @@ def main():
             await self.bot.member_joined_vc(m, g.id)
             await self.bot.member_left_vc(m, 60 * 1 * 62)
             user = await self.bot.get_user(m)
-            print(dir(self.bot.bot.loop))
+            await wait_for_tasks()
             return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(
                 g.system_channel.messages) == 1
 
@@ -374,6 +382,7 @@ def main():
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
+            await wait_for_tasks()
             return False not in map(lambda x: float_match(x['lvl'], 4.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
 
         # test update all voice users

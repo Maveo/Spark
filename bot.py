@@ -214,7 +214,10 @@ class DiscordBot:
 
     @staticmethod
     def get_lvl(lvl):
-        return int(lvl)
+        if lvl < 0 and lvl % 1 != 0:
+            return int(lvl) - 1
+        else:
+            return int(lvl)
 
     @staticmethod
     def max_xp_for(lvl):
@@ -225,7 +228,7 @@ class DiscordBot:
         if lvl <= 0:
             return int(100 * (lvl - 1))
         lvl_int = int(lvl)
-        return (lvl_int * 5 + 90) * (lvl_int - 1) + DiscordBot.lvl_get_xp(lvl)
+        return (lvl_int * 5 + 90) * (lvl_int - 1) + lvl_int
 
     @staticmethod
     def xp_for(xp, boost):
