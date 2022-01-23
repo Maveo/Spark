@@ -88,6 +88,9 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **APPLICATION_SECRET**
 
   This is the Oauth2-Application-Secret for your Discord Developer Application
+- **ACTIVATE_WEBSERVER**
+
+  Enable/disable Webserver
 - **OAUTH2_REDIRECT_URI**
 
   This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2)
@@ -95,6 +98,12 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **WEBSERVER_PORT**
 
   This is the Port for the Webserver
+- **WEBSERVER_STATIC_PATH**
+
+  The path the webserver serves static
+- **WEBSERVER_DEBUG**
+
+  Enable/disable debugging of the Webserver
 - **TOKEN** 
 
   This is the Token of your Discord Bot
