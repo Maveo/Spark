@@ -32,6 +32,7 @@ class DiscordBot:
             default_guild_settings = {}
 
         self.default_guild_settings = default_guild_settings
+        self.setting_categories = list(dict.fromkeys([cat for v in default_guild_settings.values() for cat in v.categories]))
 
         intents = discord.Intents.default()
         intents.members = True
@@ -716,18 +717,19 @@ class DiscordBot:
         guild_setting = cur.fetchone()
         if guild_setting is not None:
             try:
-                default_type = type(self.default_guild_settings[key])
+                default_type = type(self.default_guild_settings[key].value)
                 return tools.simple_eval(default_type, guild_setting['svalue'])
             except:
                 pass
 
-        return self.default_guild_settings[key]
+        return self.default_guild_settings[key].value
 
     async def get_settings(self, guild_id):
-        settings = {}
-        for key in self.default_guild_settings.keys():
-            settings[key] = await self.get_setting(guild_id, key)
-        return settings
+        return {k: await self.get_setting(guild_id, k) for k in self.default_guild_settings.keys()}
+
+    async def get_settings_dicts(self, guild_id):
+        return {k: v.new_value_dict(await self.get_setting(guild_id, k))
+                for k, v in self.default_guild_settings.items()}
 
     async def remove_setting(self, guild_id, key):
         cur = self.db_conn.cursor()
@@ -739,7 +741,7 @@ class DiscordBot:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
 
         try:
-            default_type = type(self.default_guild_settings[key])
+            default_type = type(self.default_guild_settings[key].value)
             tools.simple_eval(default_type, value)
         except:
             return False
@@ -1831,13 +1833,19 @@ class DiscordBot:
             if isinstance(error, commands.NoPrivateMessage):
                 await ctx.send('This command does not work via Private Message')
             elif isinstance(error, commands.CommandNotFound):
-                await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')),
-                    color=discord.Color.red()))
+                responses = await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')
+                if len(responses) == 0:
+                    r = 'Command not found'
+                else:
+                    r = random.choice(responses)
+                await ctx.send(embed=discord.Embed(description=r, color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')),
-                    color=discord.Color.red()))
+                responses = await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')
+                if len(responses) == 0:
+                    r = 'Missing permission'
+                else:
+                    r = random.choice(responses)
+                await ctx.send(embed=discord.Embed(description=r, color=discord.Color.red()))
             elif isinstance(error, commands.CheckFailure):
                 pass
             else:

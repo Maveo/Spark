@@ -9,6 +9,7 @@ from discord import Member, Guild
 import logging
 import requests
 from enums import ENUMS
+from imagestack import ImageStackResolveString
 
 
 class JSONDiscordCustom(JSONEncoder):
@@ -27,6 +28,8 @@ class JSONDiscordCustom(JSONEncoder):
                 'name': str(o.name),
                 'icon_url': str(o.icon_url),
             }
+        if isinstance(o, ImageStackResolveString):
+            return str(o)
         return JSONEncoder.default(self, o)
 
 
@@ -170,12 +173,14 @@ class WebServer(threading.Thread):
 
     async def get_settings(self):
         guild, member = await self.get_member_guild()
-        # settings = await self.dbot.get_settings(guild.id)
-        # res = {}
-        # for key, item in settings.items():
-        #     print(key, type(item))
-        # print(settings)
-        return jsonify(''), 500
+
+        if not member.guild_permissions.administrator:
+            raise UnauthorizedException('not authorized for settings')
+
+        return jsonify({
+            'categories': self.dbot.setting_categories,
+            'settings': await self.dbot.get_settings_dicts(guild.id)
+        }), 200
 
     def __init__(self,
                  name='Webserver',
