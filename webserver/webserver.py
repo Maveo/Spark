@@ -4,12 +4,15 @@ import asyncio
 import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
-from flask import Flask, jsonify, request, send_from_directory, redirect
+from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
 from discord import Member, Guild
 import logging
 import requests
 from enums import ENUMS
 from imagestack import ImageStackResolveString
+import json as jsonm
+from helpers import tools
+from helpers.dummys import RoleDummy
 
 
 class JSONDiscordCustom(JSONEncoder):
@@ -219,6 +222,138 @@ class WebServer(threading.Thread):
             'value': await self.dbot.get_setting(guild.id, json['key'])
         }), 200
 
+    async def welcome_image(self):
+        guild, member = await self.get_member_guild()
+
+        json = request.get_json()
+        if json is None or 'preview' not in json:
+            img = await self.dbot.member_create_welcome_image(member)
+            return send_file(
+                img.fp,
+                attachment_filename=img.filename,
+                mimetype='image/png'
+            )
+
+        value = jsonm.dumps(json['preview'])
+        try:
+            default_type = type(self.dbot.default_guild_settings['WELCOME_IMAGE'].value)
+            preview = tools.simple_eval(default_type, jsonm.loads(value))
+        except:
+            raise WrongInputException('setting preview not correct')
+
+        img = await self.dbot.member_create_welcome_image_by_template(member, preview)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
+    async def profile_image(self):
+        guild, member = await self.get_member_guild()
+
+        json = request.get_json()
+        if json is None or 'preview' not in json:
+            img = await self.dbot.member_create_profile_image(member)
+            return send_file(
+                img.fp,
+                attachment_filename=img.filename,
+                mimetype='image/png'
+            )
+
+        value = jsonm.dumps(json['preview'])
+        try:
+            default_type = type(self.dbot.default_guild_settings['PROFILE_IMAGE'].value)
+            preview = tools.simple_eval(default_type, jsonm.loads(value))
+        except:
+            raise WrongInputException('setting preview not correct')
+
+        img = await self.dbot.member_create_profile_image_by_template(member, preview)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
+    async def ranking_image(self):
+        guild, member = await self.get_member_guild()
+
+        json = request.get_json()
+        if json is None or 'preview' not in json:
+            img = await self.dbot.create_leaderboard_image(member)
+            return send_file(
+                img.fp,
+                attachment_filename=img.filename,
+                mimetype='image/png'
+            )
+
+        value = jsonm.dumps(json['preview'])
+        try:
+            default_type = type(self.dbot.default_guild_settings['RANKING_IMAGE'].value)
+            preview = tools.simple_eval(default_type, jsonm.loads(value))
+        except:
+            raise WrongInputException('setting preview not correct')
+
+        img = await self.dbot.create_leaderboard_image_by_template(member, preview)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
+    async def level_up_image(self):
+        guild, member = await self.get_member_guild()
+
+        json = request.get_json()
+        if json is None or 'preview' not in json:
+            img = await self.dbot.member_create_level_up_image(member, 42, 69)
+            return send_file(
+                img.fp,
+                attachment_filename=img.filename,
+                mimetype='image/png'
+            )
+
+        value = jsonm.dumps(json['preview'])
+        try:
+            default_type = type(self.dbot.default_guild_settings['LEVEL_UP_IMAGE'].value)
+            preview = tools.simple_eval(default_type, jsonm.loads(value))
+        except:
+            raise WrongInputException('setting preview not correct')
+
+        img = await self.dbot.member_create_level_up_image_by_template(member, 42, 69, preview)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
+    async def rank_up_image(self):
+        guild, member = await self.get_member_guild()
+
+        role = RoleDummy()
+
+        json = request.get_json()
+        if json is None or 'preview' not in json:
+            img = await self.dbot.member_create_rank_up_image(member, 42, 69, role, role)
+            return send_file(
+                img.fp,
+                attachment_filename=img.filename,
+                mimetype='image/png'
+            )
+
+        value = jsonm.dumps(json['preview'])
+        try:
+            default_type = type(self.dbot.default_guild_settings['RANK_UP_IMAGE'].value)
+            preview = tools.simple_eval(default_type, jsonm.loads(value))
+        except:
+            raise WrongInputException('setting preview not correct')
+
+        img = await self.dbot.member_create_rank_up_image_by_template(member, 42, 69, role, role, preview)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -303,6 +438,11 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/settings', view_func=self.get_settings),
             Page(path=api_base + '/reset-setting', view_func=self.reset_setting, methods=['POST']),
             Page(path=api_base + '/set-setting', view_func=self.set_setting, methods=['POST']),
+            Page(path=api_base + '/welcome-image', view_func=self.welcome_image, methods=['POST']),
+            Page(path=api_base + '/profile-image', view_func=self.profile_image, methods=['POST']),
+            Page(path=api_base + '/ranking-image', view_func=self.ranking_image, methods=['POST']),
+            Page(path=api_base + '/level-up-image', view_func=self.level_up_image, methods=['POST']),
+            Page(path=api_base + '/rank-up-image', view_func=self.rank_up_image, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]

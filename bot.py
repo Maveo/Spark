@@ -837,7 +837,7 @@ class DiscordBot:
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
 
-    async def member_create_profile_image(self, member):
+    async def member_create_profile_image_by_template(self, member, template):
         await self.check_member(member)
 
         #
@@ -863,21 +863,27 @@ class DiscordBot:
                     'xp_multiplier': data_xp_multiplier,
                     'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
-    async def member_create_welcome_image(self, member):
+    async def member_create_profile_image(self, member):
+        return await self.member_create_profile_image_by_template(
+            member, await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))
+
+    async def member_create_welcome_image_by_template(self, member, template):
         name = member.display_name
         data_obj = {'member': member,
                     'name': name,
                     'avatar_url': str(member.avatar_url_as(format="png")),
                     'guild_icon_url': str(member.guild.icon_url_as(format="png"))}
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="welcome.png", fp=img_buf)
 
-    async def member_create_lvl_image(self, member, old_lvl, new_lvl):
+    async def member_create_welcome_image(self, member):
+        return await self.member_create_welcome_image_by_template(
+            member, await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))
+
+    async def member_create_level_up_image_by_template(self, member, old_lvl, new_lvl, template):
         name = member.display_name
 
         data_obj = {'member': member,
@@ -886,11 +892,14 @@ class DiscordBot:
                     'color': member.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'LEVEL_UP_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
-    async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
+    async def member_create_level_up_image(self, member, old_lvl, new_lvl):
+        return await self.member_create_level_up_image_by_template(
+            member, old_lvl, new_lvl, await self.get_setting(member.guild.id, 'LEVEL_UP_IMAGE'))
+
+    async def member_create_rank_up_image_by_template(self, member, old_lvl, new_lvl, old_role, new_role, template):
         name = member.display_name
 
         data_obj = {'member': member,
@@ -902,9 +911,12 @@ class DiscordBot:
                     'new_color': new_role.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
+
+    async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
+        return await self.member_create_rank_up_image_by_template(
+            member, old_lvl, new_lvl, old_role, new_role, await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))
 
     async def get_advanced_user_infos(self, guild, ranked_users):
         user_infos = []
@@ -928,12 +940,19 @@ class DiscordBot:
                 })
         return user_infos
 
-    async def create_ranking_image(self, member, ranked_users):
+    async def create_ranking_image_by_template(self, member, ranked_users, template):
         data_obj = await self.get_advanced_user_infos(member.guild, ranked_users)
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'RANKING_IMAGE'))(data_obj), max_size=(-1, 8000))
+        img_buf = await self.image_creator.create(template(data_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
+
+    async def create_ranking_image(self, member, ranked_users):
+        return await self.create_ranking_image_by_template(
+            member, ranked_users, await self.get_setting(member.guild.id, 'RANKING_IMAGE'))
+
+    async def create_leaderboard_image_by_template(self, member, template):
+        ranking = await self.get_ranking(member.guild)
+        return await self.create_ranking_image_by_template(member, ranking[:10], template)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
@@ -950,9 +969,9 @@ class DiscordBot:
                                                                 member.top_role)))
                 return
             self.bot.loop.create_task(member.guild.system_channel.send(
-                file=await self.member_create_lvl_image(member,
-                                                        old_level,
-                                                        lvl)))
+                file=await self.member_create_level_up_image(member,
+                                                             old_level,
+                                                             lvl)))
 
     async def member_set_lvl(self, member, lvl, old_level=None):
         if not member.bot:

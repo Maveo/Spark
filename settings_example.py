@@ -513,7 +513,8 @@ DEFAULT_GUILD_SETTINGS = {
     'SEND_WELCOME_IMAGE': Setting(
         value=True,
         description='Enables/disables the welcome image sent by the bot via DM when a new user joins',
-        itype='bool'
+        itype='bool',
+        categories=['Image']
     ),
     'PROMO_CHANNEL_ID': Setting(
         value='',
@@ -539,13 +540,13 @@ DEFAULT_GUILD_SETTINGS = {
         description='Time period after which the promo xp-boost expires (in days | you can use floats to define more '
                     'accurate time periods, e.g 6.5 will set a 6 days and 12 hours expiration length)',
         itype='float',
-        categories=['Promo']
+        categories=['Promo', 'Boost']
     ),
     'PROMO_BOOST_ADD_XP_MULTIPLIER': Setting(
         value=2.0,
         description='Configures the xp-multiplier awarded to the user who created and distributed their promo code',
         itype='float',
-        categories=['Promo']
+        categories=['Promo', 'Boost']
     ),
     'PROMO_USER_SET_LEVEL': Setting(
         value=2.0,
@@ -609,30 +610,35 @@ DEFAULT_GUILD_SETTINGS = {
         value=profile_image,
         description='Template to create the profile image upon',
         itype='text',
-        categories=['Image']
+        categories=['Image'],
+        preview_call='profile-image'
     ),
     'LEVEL_UP_IMAGE': Setting(
         value=level_up_image,
         description='Template to create a level up image upon',
         itype='text',
-        categories=['Image']
+        categories=['Image'],
+        preview_call='level-up-image'
     ),
     'RANK_UP_IMAGE': Setting(
         value=rank_up_image,
         description='Template to create a rank up image upon',
         itype='text',
-        categories=['Image']
+        categories=['Image'],
+        preview_call='rank-up-image'
     ),
     'RANKING_IMAGE': Setting(
         value=ranking_image,
         description='Template to create a ranking image upon',
         itype='text',
-        categories=['Image']
+        categories=['Image'],
+        preview_call='ranking-image'
     ),
     'WELCOME_IMAGE': Setting(
         value=welcome_image,
         description='Template to create a welcome image upon',
         itype='text',
-        categories=['Image']
+        categories=['Image'],
+        preview_call='welcome-image'
     ),
 }
