@@ -608,26 +608,31 @@ DEFAULT_GUILD_SETTINGS = {
     'PROFILE_IMAGE': Setting(
         value=profile_image,
         description='Template to create the profile image upon',
-        itype='text'
+        itype='text',
+        categories=['Image']
     ),
     'LEVEL_UP_IMAGE': Setting(
         value=level_up_image,
         description='Template to create a level up image upon',
-        itype='text'
+        itype='text',
+        categories=['Image']
     ),
     'RANK_UP_IMAGE': Setting(
         value=rank_up_image,
         description='Template to create a rank up image upon',
-        itype='text'
+        itype='text',
+        categories=['Image']
     ),
     'RANKING_IMAGE': Setting(
         value=ranking_image,
         description='Template to create a ranking image upon',
-        itype='text'
+        itype='text',
+        categories=['Image']
     ),
     'WELCOME_IMAGE': Setting(
         value=welcome_image,
         description='Template to create a welcome image upon',
-        itype='text'
+        itype='text',
+        categories=['Image']
     ),
 }

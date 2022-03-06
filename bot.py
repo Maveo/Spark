@@ -9,6 +9,7 @@ import sqlite3
 import asyncio
 import types
 import os
+import json
 import time
 import random
 import string
@@ -718,7 +719,7 @@ class DiscordBot:
         if guild_setting is not None:
             try:
                 default_type = type(self.default_guild_settings[key].value)
-                return tools.simple_eval(default_type, guild_setting['svalue'])
+                return tools.simple_eval(default_type, json.loads(guild_setting['svalue']))
             except:
                 pass
 
@@ -740,9 +741,10 @@ class DiscordBot:
         if key not in self.default_guild_settings:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
 
+        value = json.dumps(value)
         try:
             default_type = type(self.default_guild_settings[key].value)
-            tools.simple_eval(default_type, value)
+            tools.simple_eval(default_type, json.loads(value))
         except:
             return False
 

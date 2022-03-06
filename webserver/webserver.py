@@ -182,6 +182,43 @@ class WebServer(threading.Thread):
             'settings': await self.dbot.get_settings_dicts(guild.id)
         }), 200
 
+    async def reset_setting(self):
+        guild, member = await self.get_member_guild()
+
+        if not member.guild_permissions.administrator:
+            raise UnauthorizedException('not authorized for settings')
+
+        json = request.get_json()
+        if json is None or 'key' not in json:
+            raise WrongInputException('setting key not provided')
+        if json['key'] not in self.dbot.default_guild_settings:
+            raise WrongInputException('setting key not correct')
+        await self.dbot.remove_setting(guild.id, json['key'])
+
+        return jsonify({
+            'msg': 'success',
+            'value': await self.dbot.get_setting(guild.id, json['key'])
+        }), 200
+
+    async def set_setting(self):
+        guild, member = await self.get_member_guild()
+
+        if not member.guild_permissions.administrator:
+            raise UnauthorizedException('not authorized for settings')
+
+        json = request.get_json()
+        if json is None or 'key' not in json or 'value' not in json:
+            raise WrongInputException('setting key or value not provided')
+        if json['key'] not in self.dbot.default_guild_settings:
+            raise WrongInputException('setting key not correct')
+        if not await self.dbot.set_setting(guild.id, json['key'], json['value']):
+            raise WrongInputException('setting value not correct')
+
+        return jsonify({
+            'msg': 'success',
+            'value': await self.dbot.get_setting(guild.id, json['key'])
+        }), 200
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -264,6 +301,8 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/redeem', view_func=self.redeem_promo_code, methods=['POST']),
             Page(path=api_base + '/ranking', view_func=self.get_ranking),
             Page(path=api_base + '/settings', view_func=self.get_settings),
+            Page(path=api_base + '/reset-setting', view_func=self.reset_setting, methods=['POST']),
+            Page(path=api_base + '/set-setting', view_func=self.set_setting, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]
