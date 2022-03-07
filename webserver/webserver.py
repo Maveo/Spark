@@ -1,11 +1,12 @@
 import os
 import threading
 import asyncio
+from datetime import datetime
 import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
-from discord import Member, ClientUser, Guild, Invite, TextChannel
+from discord import Member, ClientUser, User, Guild, Invite, TextChannel, Message
 import logging
 import requests
 from enums import ENUMS
@@ -17,6 +18,8 @@ from helpers.dummys import RoleDummy, MemberDummy
 
 class JSONDiscordCustom(JSONEncoder):
     def default(self, o):
+        if isinstance(o, datetime):
+            return datetime.timestamp(o)*1000
         if isinstance(o, Member) or isinstance(o, MemberDummy):
             return {
                 'id': str(o.id),
@@ -25,7 +28,7 @@ class JSONDiscordCustom(JSONEncoder):
                 'avatar_url': str(o.avatar_url),
                 'top_role': str(o.top_role.name),
             }
-        if isinstance(o, ClientUser):
+        if isinstance(o, ClientUser) or isinstance(o, User):
             return {
                 'id': str(o.id),
                 'nick': str(o.display_name),
@@ -54,6 +57,13 @@ class JSONDiscordCustom(JSONEncoder):
             return {
                 'id': str(o.id),
                 'name': str(o.name),
+            }
+        if isinstance(o, Message):
+            return {
+                'id': str(o.id),
+                'author': o.author,
+                'content': str(o.clean_content),
+                'created_at': o.created_at,
             }
         if isinstance(o, ImageStackResolveString):
             return str(o)
@@ -441,6 +451,29 @@ class WebServer(threading.Thread):
             'msg': 'success',
         }), 200
 
+    async def get_messages(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        params = request.args
+        if params is None or 'channel_id' not in params:
+            raise WrongInputException('channel_id not provided')
+
+        channel = await self.dbot.search_text_channel(guild, params['channel_id'])
+        if channel is None:
+            raise WrongInputException('channel not found')
+
+        limit = 100
+        if 'limit' in params and str(params['limit']).isnumeric():
+            limit = int(params['limit'])
+
+        return jsonify({
+            'messages': asyncio.run_coroutine_threadsafe(
+                channel.history(limit=limit).flatten(), self.dbot.bot.loop).result()
+        }), 200
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -541,6 +574,7 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/invite-link', view_func=self.invite_link, methods=['POST']),
             Page(path=api_base + '/text-channels', view_func=self.text_channels),
             Page(path=api_base + '/send-message', view_func=self.send_msg_channel, methods=['POST']),
+            Page(path=api_base + '/messages', view_func=self.get_messages),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]
