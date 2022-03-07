@@ -6,6 +6,8 @@ import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
+import secrets
+import jwt
 from discord import Member, ClientUser, User, Guild, Invite, TextChannel, Message
 import logging
 import requests
@@ -95,8 +97,12 @@ class WebServer(threading.Thread):
     async def get_member_id(self):
         if 'Authorization' not in request.headers:
             raise UnauthorizedException()
+        try:
+            token = jwt.decode(request.headers['Authorization'], self.webserver_secret, algorithms="HS256")
+        except:
+            raise UnauthorizedException('session token not found')
         r = requests.get('https://discord.com/api/users/@me', headers={
-            'Authorization': request.headers['Authorization']
+            'Authorization': token['session_token']
         })
         if r.status_code != 200:
             raise UnauthorizedException('member request not successful')
@@ -153,7 +159,13 @@ class WebServer(threading.Thread):
         json = r.json()
         if 'access_token' not in json or 'token_type' not in json:
             raise UnauthorizedException('error while authorizing with discord')
-        return jsonify({'session_token': '{} {}'.format(json['token_type'], json['access_token'])}), 200
+        jwtoken = {
+            'session_token': '{} {}'.format(json['token_type'], json['access_token'])
+        }
+        if 'expires_in' in json:
+            jwtoken['exp'] = datetime.timestamp(datetime.now()) + json['expires_in']
+        encoded_jwt = jwt.encode(jwtoken, self.webserver_secret, algorithm="HS256")
+        return jsonify({'session_token': encoded_jwt}), 200
 
     async def get_guild(self):
         guild, member = await self.get_member_guild()
@@ -482,6 +494,7 @@ class WebServer(threading.Thread):
                  oauth2_client_id=None,
                  oauth2_client_secret=None,
                  oauth2_redirect_uri=None,
+                 webserver_secret=None,
                  static_path=None,
                  debug=False,
                  logging_level=logging.WARNING,
@@ -504,6 +517,10 @@ class WebServer(threading.Thread):
         self.API_BASE_URL = 'https://discordapp.com/api'
         self.AUTHORIZATION_BASE_URL = self.API_BASE_URL + '/oauth2/authorize'
         self.TOKEN_URL = self.API_BASE_URL + '/oauth2/token'
+
+        if webserver_secret is None:
+            webserver_secret = secrets.token_urlsafe(16)
+        self.webserver_secret = webserver_secret
 
         self.root_path = os.path.dirname(os.path.abspath(__file__))
         self.static_path = os.path.join(self.root_path, static_path)

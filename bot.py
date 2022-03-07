@@ -1,3 +1,5 @@
+import secrets
+
 import discord
 from discord.ext import commands
 from discord.utils import get
@@ -12,7 +14,7 @@ import os
 import json
 import time
 import random
-import string
+import secrets
 
 from enums import ENUMS
 
@@ -526,10 +528,7 @@ class DiscordBot:
                     (member.id, member.guild.id, time.time(),))
 
         for i in range(5):
-            promo_code = ''.join([
-                random.choice(string.ascii_letters)
-                for _ in range(int(await self.get_setting(member.guild.id, 'PROMO_CODE_LENGTH')))
-            ])
+            promo_code = secrets.token_urlsafe(int(await self.get_setting(member.guild.id, 'PROMO_CODE_LENGTH')))
             try:
                 cur.execute('INSERT INTO promos(uid, gid, code, expires)'
                             'VALUES(?, ?, ?, ?);',
@@ -1987,6 +1986,7 @@ def main():
             oauth2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
             oauth2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
             oauth2_redirect_uri=GLOBAL_SETTINGS['OAUTH2_REDIRECT_URI'],
+            webserver_secret=GLOBAL_SETTINGS['WEBSERVER_SECRET'],
             discord_bot=b,
             static_path=GLOBAL_SETTINGS['WEBSERVER_STATIC_PATH'],
             port=GLOBAL_SETTINGS['WEBSERVER_PORT'],

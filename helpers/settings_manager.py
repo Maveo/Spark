@@ -1,8 +1,12 @@
 class GlobalSettingsValidator:
     @staticmethod
     def validate(settings):
+        if 'WEBSERVER_SECRET' not in settings:
+            settings['WEBSERVER_SECRET'] = None
+
         if 'SUPER_ADMINS' not in settings:
-            settings['SUPER_ADMINS'] = []
+            settings['SUPER_ADMINS'] = None
+
         return settings
 
 
