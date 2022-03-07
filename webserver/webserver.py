@@ -394,13 +394,20 @@ class WebServer(threading.Thread):
         self.app.debug = debug
         self.app.json_encoder = JSONDiscordCustom
 
-        @self.app.errorhandler(werkzeug.exceptions.HTTPException)
+        @self.app.errorhandler(Exception)
         def handle_exception(e):
+            if isinstance(e, werkzeug.exceptions.HTTPException):
+                return jsonify({
+                    'code': e.code,
+                    'name': e.name,
+                    'description': e.description,
+                }), e.code
+
             return jsonify({
-                'code': e.code,
-                'name': e.name,
-                'description': e.description,
-            }), e.code
+                'code': 400,
+                'name': type(e).__name__,
+                'description': str(e),
+            }), 400
 
         if debug:
             @self.app.after_request
