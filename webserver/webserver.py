@@ -5,19 +5,19 @@ import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
-from discord import Member, Guild
+from discord import Member, ClientUser, Guild, Invite, TextChannel
 import logging
 import requests
 from enums import ENUMS
 from imagestack import ImageStackResolveString
 import json as jsonm
 from helpers import tools
-from helpers.dummys import RoleDummy
+from helpers.dummys import RoleDummy, MemberDummy
 
 
 class JSONDiscordCustom(JSONEncoder):
     def default(self, o):
-        if isinstance(o, Member):
+        if isinstance(o, Member) or isinstance(o, MemberDummy):
             return {
                 'id': str(o.id),
                 'nick': str(o.display_name),
@@ -25,11 +25,35 @@ class JSONDiscordCustom(JSONEncoder):
                 'avatar_url': str(o.avatar_url),
                 'top_role': str(o.top_role.name),
             }
+        if isinstance(o, ClientUser):
+            return {
+                'id': str(o.id),
+                'nick': str(o.display_name),
+                'name': str(o.name),
+                'avatar_url': str(o.avatar_url),
+            }
         if isinstance(o, Guild):
             return {
                 'id': str(o.id),
                 'name': str(o.name),
                 'icon_url': str(o.icon_url),
+            }
+        if isinstance(o, Invite):
+            return {
+                'channel': o.channel,
+                'code': o.code,
+                'inviter': o.inviter,
+                'max_age': o.max_age,
+                'max_uses': o.max_uses,
+                'revoked': o.revoked,
+                'temporary': o.temporary,
+                'url': o.url,
+                'uses': o.uses,
+            }
+        if isinstance(o, TextChannel):
+            return {
+                'id': str(o.id),
+                'name': str(o.name),
             }
         if isinstance(o, ImageStackResolveString):
             return str(o)
@@ -85,7 +109,9 @@ class WebServer(threading.Thread):
         guild = guilds[0]
         member = guild.get_member(uid)
         if member is None:
-            raise WrongInputException('member not found')
+            if not self.dbot.is_super_admin(uid):
+                raise WrongInputException('member not found')
+            member = MemberDummy(uid=uid)
         return guild, member
 
     async def get_auth_url(self):
@@ -128,7 +154,7 @@ class WebServer(threading.Thread):
         return jsonify({'guilds': [
             guild
             for guild in self.dbot.bot.guilds
-            if guild.get_member(uid) is not None
+            if self.dbot.is_super_admin(uid) or guild.get_member(uid) is not None
         ]}), 200
 
     async def user_profile(self):
@@ -177,7 +203,7 @@ class WebServer(threading.Thread):
     async def get_settings(self):
         guild, member = await self.get_member_guild()
 
-        if not member.guild_permissions.administrator:
+        if not self.dbot.is_admin(member):
             raise UnauthorizedException('not authorized for settings')
 
         return jsonify({
@@ -188,7 +214,7 @@ class WebServer(threading.Thread):
     async def reset_setting(self):
         guild, member = await self.get_member_guild()
 
-        if not member.guild_permissions.administrator:
+        if not self.dbot.is_admin(member):
             raise UnauthorizedException('not authorized for settings')
 
         json = request.get_json()
@@ -206,7 +232,7 @@ class WebServer(threading.Thread):
     async def set_setting(self):
         guild, member = await self.get_member_guild()
 
-        if not member.guild_permissions.administrator:
+        if not self.dbot.is_admin(member):
             raise UnauthorizedException('not authorized for settings')
 
         json = request.get_json()
@@ -354,6 +380,67 @@ class WebServer(threading.Thread):
             mimetype='image/png'
         )
 
+    async def get_invite_links(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        return jsonify({
+            'invite_links': asyncio.run_coroutine_threadsafe(guild.invites(), self.dbot.bot.loop).result()
+        }), 200
+
+    async def invite_link(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        json = request.get_json()
+        if json is None:
+            json = {}
+
+        channel = None
+        if 'search_channel' in json:
+            channel = await self.dbot.search_text_channel(guild, json['search_channel'])
+            del json['search_channel']
+        if channel is None:
+            channel = guild.system_channel
+        return jsonify({
+            'invite_link': asyncio.run_coroutine_threadsafe(
+                channel.create_invite(**json), self.dbot.bot.loop).result()
+        }), 200
+
+    async def text_channels(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        return jsonify({
+            'text_channels': guild.text_channels
+        }), 200
+
+    async def send_msg_channel(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        json = request.get_json()
+        if json is None or 'channel_id' not in json or 'message' not in json:
+            raise WrongInputException('channel_id or message not provided')
+
+        channel = await self.dbot.search_text_channel(guild, json['channel_id'])
+        if channel is None:
+            raise WrongInputException('channel not found')
+
+        asyncio.run_coroutine_threadsafe(channel.send(str(json['message'])), self.dbot.bot.loop).result()
+
+        return jsonify({
+            'msg': 'success',
+        }), 200
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -450,6 +537,10 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/ranking-image', view_func=self.ranking_image, methods=['POST']),
             Page(path=api_base + '/level-up-image', view_func=self.level_up_image, methods=['POST']),
             Page(path=api_base + '/rank-up-image', view_func=self.rank_up_image, methods=['POST']),
+            Page(path=api_base + '/invite-links', view_func=self.get_invite_links),
+            Page(path=api_base + '/invite-link', view_func=self.invite_link, methods=['POST']),
+            Page(path=api_base + '/text-channels', view_func=self.text_channels),
+            Page(path=api_base + '/send-message', view_func=self.send_msg_channel, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]

@@ -1,3 +1,7 @@
+from datetime import date
+from discord import PublicUserFlags
+
+
 class ColorDummy:
     def __init__(self, rgb=(0, 255, 0)):
         self.rgb = rgb
@@ -66,6 +70,11 @@ class MemberDummy:
         self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
         self.roles = {}
         self.top_role = RoleDummy(0)
+        self.discriminator = uid
+        self.public_flags = PublicUserFlags()
+        self.created_at = date.today()
+        self.joined_at = date.today()
+        self.premium_since = None
         if guild is None:
             guild = GuildDummy()
         self.guild = guild

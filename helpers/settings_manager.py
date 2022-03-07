@@ -1,3 +1,11 @@
+class GlobalSettingsValidator:
+    @staticmethod
+    def validate(settings):
+        if 'SUPER_ADMINS' not in settings:
+            settings['SUPER_ADMINS'] = []
+        return settings
+
+
 class Setting:
     def __init__(self, value, description='No description', itype=None, categories=None, preview_call=None):
         self.value = value

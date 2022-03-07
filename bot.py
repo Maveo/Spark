@@ -26,7 +26,8 @@ class DiscordBot:
                  default_guild_settings=None,
                  image_creator=None,
                  print_logging=False,
-                 use_slash_commands=False
+                 use_slash_commands=False,
+                 super_admins=None
                  ):
 
         if default_guild_settings is None:
@@ -34,6 +35,10 @@ class DiscordBot:
 
         self.default_guild_settings = default_guild_settings
         self.setting_categories = list(dict.fromkeys([cat for v in default_guild_settings.values() for cat in v.categories]))
+
+        if super_admins is None:
+            super_admins = []
+        self.super_admins = super_admins
 
         intents = discord.Intents.default()
         intents.members = True
@@ -146,7 +151,7 @@ class DiscordBot:
         self.bot.add_cog(self.commands)
 
         if use_slash_commands:
-            from discord_slash import cog_ext, SlashCommand, SlashContext
+            from discord_slash import SlashCommand, SlashContext
             from discord_slash.utils.manage_commands import create_option
 
             self.slash = SlashCommand(self.bot, sync_commands=True)
@@ -246,6 +251,7 @@ class DiscordBot:
 
     @staticmethod
     async def search_member(guild, search):
+        search = str(search)
         if search[:2] == '<@' and search[-1] == '>':
             search = search[2:-1]
             if search[0] == '!':
@@ -263,12 +269,13 @@ class DiscordBot:
         return None
 
     @staticmethod
-    async def search_text_channel(ctx, search):
+    async def search_text_channel(guild, search):
+        search = str(search)
         if search.isnumeric():
-            channel = get(ctx.author.guild.channels, name=int(search), type=discord.ChannelType.text)
+            channel = get(guild.channels, id=int(search), type=discord.ChannelType.text)
             if channel is not None:
                 return channel
-        channel = get(ctx.author.guild.channels, name=search, type=discord.ChannelType.text)
+        channel = get(guild.channels, name=search, type=discord.ChannelType.text)
         if channel is not None:
             return channel
         return None
@@ -288,6 +295,12 @@ class DiscordBot:
         xp_adds += cur.fetchone()['count'] * await self.get_setting(guild_id, 'PROMO_BOOST_ADD_XP_MULTIPLIER')
 
         return xp_adds
+
+    def is_super_admin(self, member_id):
+        return str(member_id) in self.super_admins
+
+    def is_admin(self, member):
+        return self.is_super_admin(member.id) or member.guild_permissions.administrator
 
     async def get_user_info(self, member):
         await self.check_member(member)
@@ -324,7 +337,7 @@ class DiscordBot:
                 promo_name = promoted_by_user.display_name
 
         return {
-            'admin': member.guild_permissions.administrator,
+            'admin': self.is_admin(member),
             'member': member,
             'id': str(data['uid']),
             'nick': str(member.display_name),
@@ -1225,10 +1238,11 @@ class DiscordBot:
                           aliases=[],
                           description='show the ranking',
                           help=' - Zeigt alle Profilkarten des Servers')
-        @commands.has_permissions(administrator=True)
         async def _ranking(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             lb = await self.parent.get_ranking(ctx.message.guild)
             for user in lb:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
@@ -1242,10 +1256,11 @@ class DiscordBot:
                           aliases=['s'],
                           description='send through the bot',
                           help=' - Sprich durch den Bot')
-        @commands.has_permissions(administrator=True)
         async def _send(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"send {msg}" to send into the system channel\n'
@@ -1255,13 +1270,7 @@ class DiscordBot:
             elif len(args) == 1:
                 return await ctx.author.guild.system_channel.send(args[0])
             else:
-                try:
-                    channel = get(ctx.guild.text_channels, id=int(args[0]))
-                    if channel is not None:
-                        return await channel.send(' '.join(args[1:]))
-                except ValueError:
-                    pass
-                channel = get(ctx.guild.text_channels, name=args[0])
+                channel = await self.parent.search_text_channel(ctx.guild, args[0])
                 if channel is not None:
                     return await channel.send(' '.join(args[1:]))
                 return await ctx.send(embed=discord.Embed(title='Error',
@@ -1272,10 +1281,11 @@ class DiscordBot:
                           aliases=['setlevel', 'sl'],
                           description='set level command',
                           help=' - Bestimme das Level eines Users')
-        @commands.has_permissions(administrator=True)
         async def _setlvl(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"setlvl {level}" to set your level\n'
@@ -1311,11 +1321,11 @@ class DiscordBot:
                           aliases=['setting'],
                           description='settings commands',
                           help=' - Alles ein-zu-stellen')
-        @commands.has_permissions(administrator=True)
         async def _settings(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 pass
             elif args[0] in ['reset'] and len(args) >= 2:
@@ -1404,10 +1414,11 @@ class DiscordBot:
                           aliases=[],
                           description='message reaction commands',
                           help=' - Lasse den Bot auf Message Reactions reagieren')
-        @commands.has_permissions(administrator=True)
         async def _msg_reaction(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
 
             if len(args) == 0:
                 pass
@@ -1544,11 +1555,11 @@ class DiscordBot:
                           aliases=['reactions'],
                           description='reaction commands',
                           help=' - Lasse den Bot auf Nachrichten reagieren')
-        @commands.has_permissions(administrator=True)
         async def _reaction(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             if len(args) == 0:
@@ -1590,11 +1601,11 @@ class DiscordBot:
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description='level system commands',
                           help=' - Alles über das Levelsystem')
-        @commands.has_permissions(administrator=True)
         async def _lvlsys(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             embed = discord.Embed(title='Help',
@@ -1698,11 +1709,11 @@ class DiscordBot:
                           aliases=[],
                           description='Clear messages in a text channel!',
                           help=' - Löscht Nachrichten in einem Text-Channel!')
-        @commands.has_permissions(administrator=True)
         async def _clear(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             if len(args) == 0:
@@ -1715,7 +1726,7 @@ class DiscordBot:
                                                                   description='Successfully deleted messages!',
                                                                   color=discord.Color.green()))
                     search = ' '.join(args[1:])
-                    channel = await self.parent.search_text_channel(ctx, search)
+                    channel = await self.parent.search_text_channel(ctx.author.guild, search)
                     if channel is None:
                         return await ctx.send(embed=discord.Embed(title='',
                                                                   description='Channel "{}" was '
@@ -1943,6 +1954,7 @@ class DiscordBot:
 
 def main():
     from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
+    from helpers.settings_manager import GlobalSettingsValidator
 
     from webserver.webserver import WebServer
 
@@ -1950,13 +1962,16 @@ def main():
         os.mkdir('dbs')
     con = sqlite3.connect('dbs/bot.db', check_same_thread=False)
 
+    global_settings = GlobalSettingsValidator.validate(GLOBAL_SETTINGS)
+
     b = DiscordBot(con,
                    default_guild_settings=DEFAULT_GUILD_SETTINGS,
-                   update_voice_xp_interval=GLOBAL_SETTINGS['UPDATE_VOICE_XP_INTERVAL'],
-                   command_prefix=GLOBAL_SETTINGS['COMMAND_PREFIX'],
-                   description=GLOBAL_SETTINGS['DESCRIPTION'],
-                   print_logging=GLOBAL_SETTINGS['PRINT_LOGGING'],
-                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
+                   update_voice_xp_interval=global_settings['UPDATE_VOICE_XP_INTERVAL'],
+                   command_prefix=global_settings['COMMAND_PREFIX'],
+                   description=global_settings['DESCRIPTION'],
+                   print_logging=global_settings['PRINT_LOGGING'],
+                   use_slash_commands=global_settings['USE_SLASH_COMMANDS'],
+                   super_admins=global_settings['SUPER_ADMINS']
                    )
 
     image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
