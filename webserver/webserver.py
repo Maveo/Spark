@@ -8,7 +8,7 @@ from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
 import secrets
 import jwt
-from discord import Member, ClientUser, User, Guild, Invite, TextChannel, Message
+from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message
 import logging
 import requests
 from enums import ENUMS
@@ -55,7 +55,7 @@ class JSONDiscordCustom(JSONEncoder):
                 'url': o.url,
                 'uses': o.uses,
             }
-        if isinstance(o, TextChannel):
+        if isinstance(o, TextChannel) or isinstance(o, VoiceChannel):
             return {
                 'id': str(o.id),
                 'name': str(o.name),
