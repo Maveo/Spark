@@ -22,6 +22,7 @@ from enums import ENUMS
 class DiscordBot:
     def __init__(self,
                  db_conn,
+                 current_dir='',
                  update_voice_xp_interval=-1,
                  command_prefix='>',
                  description='',
@@ -49,6 +50,8 @@ class DiscordBot:
         self.print_logging = print_logging
 
         self.update_voice_xp_interval = update_voice_xp_interval
+
+        self.current_dir = current_dir
 
         self.db_conn = db_conn
 
@@ -340,6 +343,7 @@ class DiscordBot:
 
         return {
             'admin': self.is_admin(member),
+            'super_admin': self.is_super_admin(member.id),
             'member': member,
             'id': str(data['uid']),
             'nick': str(member.display_name),
@@ -1756,7 +1760,8 @@ class DiscordBot:
 
             prev_author = ctx.message.author
 
-            message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
+            message = await ctx.send(file=discord.File(
+                os.path.join(self.parent.current_dir, 'images', '{}.gif'.format(res))))
 
             voice_client = None
             if hasattr(prev_author, 'guild'):
@@ -1765,17 +1770,18 @@ class DiscordBot:
                         try:
                             voice_channel = prev_author.voice.channel
                             voice_client = await voice_channel.connect()
-                            audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
+                            audio_source = discord.FFmpegPCMAudio(
+                                os.path.join(self.parent.current_dir, 'audio', 'tossacoin.mp3'))
                             voice_client.play(audio_source)
-                        except discord.ClientException:
-                            self.parent.lprint('Bot is alreardy connect to a voice channel')
+                        except discord.ClientException as e:
+                            self.parent.lprint(e)
                         except RuntimeError as e:
                             self.parent.lprint(e)
 
             await asyncio.sleep(13)
 
             await message.delete()
-            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(res))))
+            await ctx.send(file=discord.File(os.path.join(self.parent.current_dir, 'images', '{}.png'.format(res))))
 
             if voice_client is not None:
                 await voice_client.disconnect()
@@ -1807,7 +1813,8 @@ class DiscordBot:
                           description='Roll a dice to your Witcher!',
                           help=' - Würfelt eine Zahl zwischen 1-6')
         async def _dice(self, ctx, *args):
-            await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(random.randint(1, 6)))))
+            await ctx.send(file=discord.File(
+                os.path.join(self.parent.current_dir, 'images', '{}.gif'.format(random.randint(1, 6)))))
 
         @commands.command(name='random',
                           aliases=[],
@@ -1957,13 +1964,18 @@ def main():
 
     from webserver.webserver import WebServer
 
-    if not os.path.exists('dbs'):
-        os.mkdir('dbs')
-    con = sqlite3.connect('dbs/bot.db', check_same_thread=False)
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+
+    dbs_dir = os.path.join(current_dir, 'dbs')
+
+    if not os.path.exists(dbs_dir):
+        os.mkdir(dbs_dir)
+    con = sqlite3.connect(os.path.join(dbs_dir, 'bot.db'), check_same_thread=False)
 
     global_settings = GlobalSettingsValidator.validate(GLOBAL_SETTINGS)
 
     b = DiscordBot(con,
+                   current_dir=current_dir,
                    default_guild_settings=DEFAULT_GUILD_SETTINGS,
                    update_voice_xp_interval=global_settings['UPDATE_VOICE_XP_INTERVAL'],
                    command_prefix=global_settings['COMMAND_PREFIX'],
