@@ -1,3 +1,5 @@
+from io import BytesIO
+from pydub import AudioSegment
 import os
 import threading
 import asyncio
@@ -9,7 +11,7 @@ from flask import Flask, jsonify, request, send_from_directory, redirect, send_f
 import secrets
 import jwt
 from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message,\
-    ActivityType, Activity, CustomActivity, Status
+    ActivityType, Activity, PCMAudio, FFmpegPCMAudio, Status
 import logging
 import requests
 from enums import ENUMS
@@ -444,6 +446,16 @@ class WebServer(threading.Thread):
             'text_channels': guild.text_channels
         }), 200
 
+    async def voice_channels(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        return jsonify({
+            'voice_channels': guild.voice_channels
+        }), 200
+
     async def send_msg_channel(self):
         guild, member = await self.get_member_guild()
 
@@ -524,6 +536,33 @@ class WebServer(threading.Thread):
             self.dbot.bot.change_presence(
                 activity=Activity(type=json['activity_type'], name=json['activity_name']), status=json['status_type']),
             self.dbot.bot.loop).result()
+
+        return jsonify({
+            'msg': 'success',
+        }), 200
+
+    async def send_voice_audio(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        if 'audio_file' not in request.files or 'voice_channel' not in request.form:
+            raise WrongInputException('audio_file or voice_channel not provided')
+
+        stream = BytesIO()
+        sound = AudioSegment.from_file(request.files['audio_file'])
+        sound.export(stream, format='wav')
+        await self.dbot.play_audio(
+            PCMAudio(stream),
+            await self.dbot.search_voice_channel(guild, request.form['voice_channel'])
+        )
+
+        # request.files['audio_file'].save('__temp.mp3')
+        # await self.dbot.play_audio(
+        #     FFmpegPCMAudio('__temp.mp3'),
+        #     await self.dbot.search_voice_channel(guild, request.form['voice_channel'])
+        # )
 
         return jsonify({
             'msg': 'success',
@@ -633,10 +672,12 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/invite-links', view_func=self.get_invite_links),
             Page(path=api_base + '/invite-link', view_func=self.invite_link, methods=['POST']),
             Page(path=api_base + '/text-channels', view_func=self.text_channels),
+            Page(path=api_base + '/voice-channels', view_func=self.voice_channels),
             Page(path=api_base + '/send-message', view_func=self.send_msg_channel, methods=['POST']),
             Page(path=api_base + '/messages', view_func=self.get_messages),
             Page(path=api_base + '/nickname', view_func=self.set_nickname, methods=['POST']),
             Page(path=api_base + '/presence', view_func=self.set_presence, methods=['POST']),
+            Page(path=api_base + '/audio', view_func=self.send_voice_audio, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]

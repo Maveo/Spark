@@ -274,16 +274,24 @@ class DiscordBot:
         return None
 
     @staticmethod
-    async def search_text_channel(guild, search):
+    async def search_channel(guild, search, channel_type):
         search = str(search)
         if search.isnumeric():
-            channel = get(guild.channels, id=int(search), type=discord.ChannelType.text)
+            channel = get(guild.channels, id=int(search), type=channel_type)
             if channel is not None:
                 return channel
-        channel = get(guild.channels, name=search, type=discord.ChannelType.text)
+        channel = get(guild.channels, name=search, type=channel_type)
         if channel is not None:
             return channel
         return None
+
+    @staticmethod
+    async def search_text_channel(guild, search):
+        return await DiscordBot.search_channel(guild, search, discord.ChannelType.text)
+
+    @staticmethod
+    async def search_voice_channel(guild, search):
+        return await DiscordBot.search_channel(guild, search, discord.ChannelType.voice)
 
     async def xp_multiplier_adds(self, member_id, guild_id):
         xp_adds = 0
@@ -1131,6 +1139,23 @@ class DiscordBot:
                                   color=discord.Color.green())
         return embed
 
+    async def play_audio(self, audio_source, voice_channel):
+        async def _play_audio():
+            voice_client = None
+            try:
+                voice_client = await voice_channel.connect()
+                voice_client.play(audio_source)
+
+                while voice_client.is_playing():
+                    await asyncio.sleep(1)
+
+            except Exception as e:
+                self.lprint(e)
+            if voice_client is not None and not voice_client.is_playing():
+                await voice_client.disconnect()
+
+        self.bot.loop.create_task(_play_audio())
+
     class Commands(commands.Cog):
         def __init__(self, parent):
             self.parent = parent
@@ -1763,28 +1788,19 @@ class DiscordBot:
             message = await ctx.send(file=discord.File(
                 os.path.join(self.parent.current_dir, 'images', '{}.gif'.format(res))))
 
-            voice_client = None
             if hasattr(prev_author, 'guild'):
                 if random.random() < await self.parent.get_setting(prev_author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
                     if prev_author.voice is not None and prev_author.voice.channel is not None:
-                        try:
-                            voice_channel = prev_author.voice.channel
-                            voice_client = await voice_channel.connect()
-                            audio_source = discord.FFmpegPCMAudio(
-                                os.path.join(self.parent.current_dir, 'audio', 'tossacoin.mp3'))
-                            voice_client.play(audio_source)
-                        except discord.ClientException as e:
-                            self.parent.lprint(e)
-                        except RuntimeError as e:
-                            self.parent.lprint(e)
+
+                        await self.parent.play_audio(
+                            discord.FFmpegPCMAudio(os.path.join(self.parent.current_dir, 'audio', 'tossacoin.mp3')),
+                            prev_author.voice.channel
+                        )
 
             await asyncio.sleep(13)
 
             await message.delete()
             await ctx.send(file=discord.File(os.path.join(self.parent.current_dir, 'images', '{}.png'.format(res))))
-
-            if voice_client is not None:
-                await voice_client.disconnect()
 
         @commands.command(name='wheelspin',
                           aliases=[],
