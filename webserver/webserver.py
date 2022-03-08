@@ -8,7 +8,8 @@ from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
 import secrets
 import jwt
-from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message
+from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message,\
+    ActivityType, Activity, CustomActivity, Status
 import logging
 import requests
 from enums import ENUMS
@@ -502,6 +503,32 @@ class WebServer(threading.Thread):
             'msg': 'success',
         }), 200
 
+    async def set_presence(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_super_admin(member.id):
+            raise UnauthorizedException('not authorized')
+
+        json = request.get_json()
+        if json is None:
+            json = {}
+
+        if 'activity_name' not in json:
+            json['activity_name'] = None
+        if 'activity_type' not in json or json['activity_type'] is None:
+            json['activity_type'] = ActivityType.custom
+        if 'status_type' not in json or json['status_type'] is None:
+            json['status_type'] = Status.online
+
+        asyncio.run_coroutine_threadsafe(
+            self.dbot.bot.change_presence(
+                activity=Activity(type=json['activity_type'], name=json['activity_name']), status=json['status_type']),
+            self.dbot.bot.loop).result()
+
+        return jsonify({
+            'msg': 'success',
+        }), 200
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -609,6 +636,7 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/send-message', view_func=self.send_msg_channel, methods=['POST']),
             Page(path=api_base + '/messages', view_func=self.get_messages),
             Page(path=api_base + '/nickname', view_func=self.set_nickname, methods=['POST']),
+            Page(path=api_base + '/presence', view_func=self.set_presence, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]
