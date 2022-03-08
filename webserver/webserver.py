@@ -486,6 +486,22 @@ class WebServer(threading.Thread):
                 channel.history(limit=limit).flatten(), self.dbot.bot.loop).result()
         }), 200
 
+    async def set_nickname(self):
+        guild, member = await self.get_member_guild()
+
+        if not self.dbot.is_admin(member):
+            raise UnauthorizedException('not authorized')
+
+        json = request.get_json()
+        if json is None or 'nickname' not in json:
+            raise WrongInputException('nickname not provided')
+
+        asyncio.run_coroutine_threadsafe(guild.me.edit(nick=json['nickname']), self.dbot.bot.loop).result()
+
+        return jsonify({
+            'msg': 'success',
+        }), 200
+
     def __init__(self,
                  name='Webserver',
                  host='0.0.0.0',
@@ -592,6 +608,7 @@ class WebServer(threading.Thread):
             Page(path=api_base + '/text-channels', view_func=self.text_channels),
             Page(path=api_base + '/send-message', view_func=self.send_msg_channel, methods=['POST']),
             Page(path=api_base + '/messages', view_func=self.get_messages),
+            Page(path=api_base + '/nickname', view_func=self.set_nickname, methods=['POST']),
             Page(path='/<path:path>', view_func=static_file),
             Page(path='/', view_func=send_root),
         ]
