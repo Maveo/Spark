@@ -8,10 +8,8 @@ import werkzeug
 from flask.json import JSONEncoder
 from gevent.pywsgi import WSGIServer
 from flask import Flask, jsonify, request, send_from_directory, redirect, send_file
-import secrets
-import jwt
 from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message,\
-    ActivityType, Activity, PCMAudio, FFmpegPCMAudio, Status
+    ActivityType, Activity, PCMAudio, Status
 import logging
 import requests
 from enums import ENUMS
@@ -19,6 +17,8 @@ from imagestack import ImageStackResolveString
 import json as jsonm
 from helpers import tools
 from helpers.dummys import RoleDummy, MemberDummy
+import base64
+from cryptography.fernet import Fernet
 
 
 class JSONDiscordCustom(JSONEncoder):
@@ -97,15 +97,21 @@ class Page:
 
 
 class WebServer(threading.Thread):
+    def encrypt(self, s):
+        return self.crypter.encrypt(s.encode()).decode()
+
+    def decrypt(self, s):
+        return self.crypter.decrypt(s.encode()).decode()
+
     async def get_member_id(self):
         if 'Authorization' not in request.headers:
             raise UnauthorizedException()
         try:
-            token = jwt.decode(request.headers['Authorization'], self.webserver_secret, algorithms="HS256")
+            token = self.decrypt(request.headers['Authorization'])
         except:
             raise UnauthorizedException('session token not found')
         r = requests.get('https://discord.com/api/users/@me', headers={
-            'Authorization': token['session_token']
+            'Authorization': token
         })
         if r.status_code != 200:
             raise UnauthorizedException('member request not successful')
@@ -162,13 +168,8 @@ class WebServer(threading.Thread):
         json = r.json()
         if 'access_token' not in json or 'token_type' not in json:
             raise UnauthorizedException('error while authorizing with discord')
-        jwtoken = {
-            'session_token': '{} {}'.format(json['token_type'], json['access_token'])
-        }
-        if 'expires_in' in json:
-            jwtoken['exp'] = datetime.timestamp(datetime.now()) + json['expires_in']
-        encoded_jwt = jwt.encode(jwtoken, self.webserver_secret, algorithm="HS256")
-        return jsonify({'session_token': encoded_jwt}), 200
+        encrypted = self.encrypt('{} {}'.format(json['token_type'], json['access_token']))
+        return jsonify({'session_token': encrypted}), 200
 
     async def get_guild(self):
         guild, member = await self.get_member_guild()
@@ -601,8 +602,12 @@ class WebServer(threading.Thread):
         self.TOKEN_URL = self.API_BASE_URL + '/oauth2/token'
 
         if webserver_secret is None:
-            webserver_secret = secrets.token_urlsafe(16)
-        self.webserver_secret = webserver_secret
+            webserver_secret = Fernet.generate_key()
+        else:
+            webserver_secret = webserver_secret[:32]
+            webserver_secret = webserver_secret + ('0' * max(0, 32 - len(webserver_secret)))
+            webserver_secret = base64.urlsafe_b64encode(webserver_secret.encode())
+        self.crypter = Fernet(webserver_secret)
 
         self.root_path = os.path.dirname(os.path.abspath(__file__))
         self.static_path = os.path.join(self.root_path, static_path)
