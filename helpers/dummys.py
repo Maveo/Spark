@@ -90,11 +90,11 @@ class MemberDummy:
         self.messages.append((args, kwargs))
 
     async def add_roles(self, role):
-        self.roles[role.id] = True
+        self.roles[role] = True
 
     async def remove_roles(self, role):
-        if role.id in self.roles:
-            del self.roles[role.id]
+        if role in self.roles:
+            del self.roles[role]
 
     def avatar_url_as(self, *args, **kwargs):
         return self.avatar_url
