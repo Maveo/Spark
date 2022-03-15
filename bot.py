@@ -1,3 +1,5 @@
+import secrets
+
 import discord
 from discord.ext import commands
 from discord.utils import get
@@ -9,35 +11,37 @@ import sqlite3
 import asyncio
 import types
 import os
+import json
 import time
 import random
-import string
+import secrets
 
-from webserver.webserver import WebServer
-
-
-class ENUMS:
-    BOOST_SUCCESS = 0
-    BOOSTING_YOURSELF_FORBIDDEN = 1
-    BOOST_NOT_EXPIRED = 2
+from enums import ENUMS
 
 
 class DiscordBot:
     def __init__(self,
                  db_conn,
+                 current_dir='',
                  update_voice_xp_interval=-1,
                  command_prefix='>',
                  description='',
                  default_guild_settings=None,
                  image_creator=None,
                  print_logging=False,
-                 use_slash_commands=False
+                 use_slash_commands=False,
+                 super_admins=None
                  ):
 
         if default_guild_settings is None:
             default_guild_settings = {}
 
         self.default_guild_settings = default_guild_settings
+        self.setting_categories = list(dict.fromkeys([cat for v in default_guild_settings.values() for cat in v.categories]))
+
+        if super_admins is None:
+            super_admins = []
+        self.super_admins = super_admins
 
         intents = discord.Intents.default()
         intents.members = True
@@ -46,6 +50,8 @@ class DiscordBot:
         self.print_logging = print_logging
 
         self.update_voice_xp_interval = update_voice_xp_interval
+
+        self.current_dir = current_dir
 
         self.db_conn = db_conn
 
@@ -150,7 +156,7 @@ class DiscordBot:
         self.bot.add_cog(self.commands)
 
         if use_slash_commands:
-            from discord_slash import cog_ext, SlashCommand, SlashContext
+            from discord_slash import SlashCommand, SlashContext
             from discord_slash.utils.manage_commands import create_option
 
             self.slash = SlashCommand(self.bot, sync_commands=True)
@@ -240,7 +246,7 @@ class DiscordBot:
 
     @staticmethod
     def get_lvl(lvl):
-        if lvl < 0:
+        if lvl < 0 and lvl % 1 != 0:
             return int(lvl) - 1
         else:
             return int(lvl)
@@ -248,6 +254,13 @@ class DiscordBot:
     @staticmethod
     def max_xp_for(lvl):
         return int(max(100, DiscordBot.get_lvl(lvl) * 10 + 90))
+
+    @staticmethod
+    def total_xp(lvl):
+        if lvl <= 0:
+            return int(100 * (lvl - 1))
+        lvl_int = int(lvl)
+        return (lvl_int * 5 + 90) * (lvl_int - 1) + lvl_int
 
     @staticmethod
     def xp_for(xp, boost):
@@ -262,19 +275,20 @@ class DiscordBot:
         return int((abs(lvl) % 1) * DiscordBot.max_xp_for(lvl))
 
     @staticmethod
-    async def search_member(ctx, search):
+    async def search_member(guild, search):
+        search = str(search)
         if search[:2] == '<@' and search[-1] == '>':
             search = search[2:-1]
             if search[0] == '!':
                 search = search[1:]
         if search.isnumeric():
-            member = get(ctx.message.guild.members, id=int(search))
+            member = get(guild.members, id=int(search))
             if member is not None and not member.bot:
                 return member
-        member = get(ctx.message.guild.members, nick=search)
+        member = get(guild.members, nick=search)
         if member is not None and not member.bot:
             return member
-        member = get(ctx.message.guild.members, name=search)
+        member = get(guild.members, name=search)
         if member is not None and not member.bot:
             return member
         return None
@@ -292,6 +306,14 @@ class DiscordBot:
             return channel
         return None
 
+    @staticmethod
+    async def search_text_channel(guild, search):
+        return await DiscordBot.search_channel(guild, search, discord.ChannelType.text)
+
+    @staticmethod
+    async def search_voice_channel(guild, search):
+        return await DiscordBot.search_channel(guild, search, discord.ChannelType.voice)
+
     async def xp_multiplier_adds(self, member_id, guild_id):
         xp_adds = 0
         cur = self.db_conn.cursor()
@@ -308,77 +330,127 @@ class DiscordBot:
 
         return xp_adds
 
-    async def info_get_embed(self, member):
+    def is_super_admin(self, member_id):
+        return str(member_id) in self.super_admins
+
+    def is_admin(self, member):
+        return self.is_super_admin(member.id) or member.guild_permissions.administrator
+
+    async def get_user_info(self, member):
         await self.check_member(member)
-        embed = discord.Embed(title=member.display_name,
-                              description='',
-                              color=discord.Color.green())
-        embed.set_thumbnail(url=member.avatar_url)
         data = await self.get_user(member)
 
-        embed.add_field(name='ID', value='{}'.format(data['uid']), inline=False)
-        embed.add_field(name='Level', value='{:.2f}'.format(data['lvl']), inline=False)
+        def _format_date(date):
+            if date is None:
+                return 'None'
+            return date.strftime("%d.%m.%Y %H:%M")
+
+        hype_squad = 'No Hype'
+        if member.public_flags.hypesquad_bravery:
+            hype_squad = 'Brave'
+        elif member.public_flags.hypesquad_brilliance:
+            hype_squad = 'Brilliant'
+        elif member.public_flags.hypesquad_balance:
+            hype_squad = 'Balanced'
+
         base_xp_mult = data['xp_multiplier']
-        embed.add_field(name='Base XP Multiplier', value='{:.2f}'.format(base_xp_mult), inline=False)
         xp_mult = base_xp_mult + await self.xp_multiplier_adds(member.id, member.guild.id)
-        embed.add_field(name='Current XP Multiplier', value='{:.2f}'.format(xp_mult), inline=False)
 
-        if data['joined'] < 0:
-            embed.add_field(name='Last XP Update',
-                            value='None',
-                            inline=False)
-        else:
-            embed.add_field(name='Last XP Update',
-                            value='{}s ago'.format(int(time.time() - data['joined'])),
-                            inline=False)
-
-        embed.add_field(name='Blacklisted', value='{}'.format(bool(data['blacklist'])), inline=False)
+        last_xp_update = 'None'
+        if data['joined'] >= 0:
+            last_xp_update = '{}s ago'.format(int(time.time() - data['joined']))
 
         boost_data = await self.boost_get_infos(member)
 
-        if boost_data['boosting'] is None:
+        promo = await self.get_promoted_by(member)
+        promo_name = 'None'
+        if promo is not None:
+            promo_name = 'A USER WHO LEFT'
+            promoted_by_user = get(member.guild.members, id=promo['pid'])
+            if promoted_by_user is not None:
+                promo_name = promoted_by_user.display_name
+
+        return {
+            'admin': self.is_admin(member),
+            'super_admin': self.is_super_admin(member.id),
+            'member': member,
+            'id': str(data['uid']),
+            'nick': str(member.display_name),
+            'name': str(member.name),
+            'avatar_url': str(member.avatar_url),
+            'top_role': str(member.top_role.name),
+            'tag': str(member.discriminator),
+            'created_account': _format_date(member.created_at),
+            'joined_at': _format_date(member.joined_at),
+            'boosting_since': _format_date(member.premium_since),
+            'hype_squad': hype_squad,
+
+            'total_xp': self.total_xp(data['lvl']),
+            'text_msg_xp': random.random() * 10,
+            'voice_xp': random.random() * 10,
+            'boost_xp': random.random() * 10,
+            'lvl': self.get_lvl(data['lvl']),
+            'lvl_float': data['lvl'],
+            'base_xp_multiplier': base_xp_mult,
+            'xp_multiplier': xp_mult,
+            'last_xp_update': last_xp_update,
+            'blacklisted': bool(data['blacklist']),
+
+            'boosting': boost_data['boosting'] is not None,
+            'boosting_name': boost_data['boosting_name'],
+            'boosting_remaining_days': boost_data['boosting_remaining_days'],
+            'boosting_remaining_hours': boost_data['boosting_remaining_hours'],
+            'boosts': boost_data['boosts_raw_data'],
+            'boosts_str': boost_data['boosts'],
+            'can_redeem_promo_code': await self.can_redeem_promo_code(member),
+            'promo_user_set_level': await self.get_setting(member.guild.id, 'PROMO_USER_SET_LEVEL'),
+            'promo_boosts': boost_data['promo_boosts_raw_data'],
+            'promo_boosts_str': boost_data['promo_boosts'],
+            'promo_name': promo_name,
+
+            'boost_xp_multiplier': await self.get_setting(member.guild.id, 'BOOST_ADD_XP_MULTIPLIER'),
+            'promo_boost_xp_multiplier': await self.get_setting(member.guild.id, 'PROMO_BOOST_ADD_XP_MULTIPLIER'),
+            'promo_code_expires_hours': await self.get_setting(member.guild.id, 'PROMO_CODE_EXPIRES_HOURS')
+        }
+
+    async def info_get_embed(self, member):
+        info = await self.get_user_info(member)
+        embed = discord.Embed(title=info['nick'],
+                              description='',
+                              color=discord.Color.green())
+        embed.set_thumbnail(url=info['avatar_url'])
+
+        embed.add_field(name='ID', value=info['id'], inline=False)
+        embed.add_field(name='Level', value='{:.2f}'.format(info['lvl_float']), inline=False)
+        embed.add_field(name='Base XP Multiplier', value='{:.2f}'.format(info['base_xp_multiplier']), inline=False)
+        embed.add_field(name='Current XP Multiplier', value='{:.2f}'.format(info['xp_multiplier']), inline=False)
+
+        embed.add_field(name='Last XP Update', value=info['last_xp_update'], inline=False)
+
+        embed.add_field(name='Blacklisted', value='{}'.format(info['blacklisted']), inline=False)
+
+        if not info['boosting']:
             embed.add_field(name='Boosting',
                             value='None',
                             inline=False)
         else:
             embed.add_field(name='Boosting',
                             value='*{}*, expires in **{}** days **{}** hours'
-                            .format(boost_data['boosting_name'],
-                                    boost_data['boosting_remaining_days'],
-                                    boost_data['boosting_remaining_hours']),
+                            .format(info['boosting_name'],
+                                    info['boosting_remaining_days'],
+                                    info['boosting_remaining_hours']),
                             inline=False)
-
-        def _get_value(arr):
-            if len(arr) > 0:
-                return '\n'.join(arr)
-            return 'Empty'
 
         embed.add_field(name='Boosts',
-                        value=_get_value(boost_data['boosts']),
+                        value='None' if len(info['boosts_str']) == 0 else '\n'.join(info['boosts_str']),
                         inline=False)
 
-        cur = self.db_conn.cursor()
-        cur.execute('SELECT * FROM promo_boosts WHERE gid=? AND uid=?',
-                    (member.guild.id,
-                     member.id
-                     ))
-        promo = cur.fetchone()
-
-        if promo is None:
-            embed.add_field(name='Promoted By',
-                            value='None',
-                            inline=False)
-        else:
-            promoted_by_name = 'A USER WHO LEFT'
-            promoted_by_user = get(member.guild.members, id=promo['pid'])
-            if promoted_by_user is not None:
-                promoted_by_name = promoted_by_user.display_name
-            embed.add_field(name='Promoted By',
-                            value='*{}*'.format(promoted_by_name),
-                            inline=False)
+        embed.add_field(name='Promoted By',
+                        value='*{}*'.format(info['promo_name']),
+                        inline=False)
 
         embed.add_field(name='Promo Boosts',
-                        value=_get_value(boost_data['promo_boosts']),
+                        value='None' if len(info['promo_boosts_str']) == 0 else '\n'.join(info['promo_boosts_str']),
                         inline=False)
 
         def _format_date(date):
@@ -394,22 +466,11 @@ class DiscordBot:
                         value='{}'.format(_format_date(member.joined_at)),
                         inline=False)
 
-        embed.add_field(name='Boosting Server since',
-                        value='{}'.format(_format_date(member.premium_since)),
-                        inline=False)
+        embed.add_field(name='Joined At', value=info['joined_at'], inline=False)
 
-        hype_squad = None
-        if member.public_flags.hypesquad_bravery:
-            hype_squad = 'Brave'
-        elif member.public_flags.hypesquad_brilliance:
-            hype_squad = 'Brilliant'
-        elif member.public_flags.hypesquad_balance:
-            hype_squad = 'Balanced'
+        embed.add_field(name='Boosting Server since', value=info['boosting_since'], inline=False)
 
-        if hype_squad is not None:
-            embed.add_field(name='Hype',
-                            value=hype_squad,
-                            inline=False)
+        embed.add_field(name='Hype', value=info['hype_squad'], inline=False)
 
         return embed
 
@@ -517,10 +578,7 @@ class DiscordBot:
                     (member.id, member.guild.id, time.time(),))
 
         for i in range(5):
-            promo_code = ''.join([
-                random.choice(string.ascii_letters)
-                for _ in range(int(await self.get_setting(member.guild.id, 'PROMO_CODE_LENGTH')))
-            ])
+            promo_code = secrets.token_urlsafe(int(await self.get_setting(member.guild.id, 'PROMO_CODE_LENGTH')))
             try:
                 cur.execute('INSERT INTO promos(uid, gid, code, expires)'
                             'VALUES(?, ?, ?, ?);',
@@ -535,6 +593,25 @@ class DiscordBot:
             except sqlite3.IntegrityError:
                 pass
         return None
+
+    async def can_redeem_promo_code(self, member):
+        if await self.get_promoted_by(member) is not None:
+            return False
+        channel_id = await self.get_setting(member.guild.id, 'PROMO_CHANNEL_ID')
+        if channel_id == '':
+            return False
+        channel = get(member.guild.channels, id=int(channel_id))
+        if channel is None:
+            return False
+        return channel.permissions_for(member).send_messages
+
+    async def get_promoted_by(self, member):
+        cur = self.db_conn.cursor()
+        cur.execute('SELECT * FROM promo_boosts WHERE gid=? AND uid=?',
+                    (member.guild.id,
+                     member.id
+                     ))
+        return cur.fetchone()
 
     async def get_promo_boosted_by(self, member, ctime):
         cur = self.db_conn.cursor()
@@ -589,11 +666,16 @@ class DiscordBot:
 
         boosting = await self.get_boost_user(member, current_time)
 
-        data = {'boosting': boosting}
+        data = {
+            'boosting': boosting,
+            'boosting_name': None,
+            'boosting_remaining_days': None,
+            'boosting_remaining_hours': None
+        }
 
         id_names = {}
 
-        def _get_name(uid):
+        def _get_member(uid):
             uid = int(uid)
             if uid in id_names:
                 return id_names[uid]
@@ -601,8 +683,8 @@ class DiscordBot:
             name = 'A USER WHO LEFT'
             if m is not None:
                 name = m.display_name
-            id_names[uid] = name
-            return name
+            id_names[uid] = name, str(m.top_role.name)
+            return name, str(m.top_role.name)
 
         def _get_days_hours(expires):
             br = (expires - current_time) / (24 * 60 * 60)
@@ -611,9 +693,9 @@ class DiscordBot:
             return brd, brh
 
         if boosting is not None:
-            member_name = _get_name(boosting['boostedid'])
+            member_name, member_role = _get_member(boosting['boostedid'])
 
-            data['boosting_name'] = member_name
+            data['boosting_name'] = member_role[0] + member_name
 
             boost_remaining_days, boost_remaining_hours = _get_days_hours(boosting['expires'])
 
@@ -622,15 +704,22 @@ class DiscordBot:
 
         def _boost_to_str(boost):
             brd, brh = _get_days_hours(boost['expires'])
-            return 'By *{}* expires in **{}** days **{}** hours'.format(_get_name(boost['uid']), brd, brh)
+            return 'By *{}* expires in **{}** days **{}** hours'.format(_get_member(boost['uid'])[0], brd, brh)
+
+        def _boost_to_data(boost):
+            brd, brh = _get_days_hours(boost['expires'])
+            name, role = _get_member(boost['uid'])
+            return {'name': role[0] + name, 'remaining_days': brd, 'remaining_hours': brh}
 
         boosted_by = await self.get_boosted_by(member, current_time)
 
         data['boosts'] = list(map(_boost_to_str, boosted_by))
+        data['boosts_raw_data'] = list(map(_boost_to_data, boosted_by))
 
         promo_boosted_by = await self.get_promo_boosted_by(member, current_time)
 
         data['promo_boosts'] = list(map(_boost_to_str, promo_boosted_by))
+        data['promo_boosts_raw_data'] = list(map(_boost_to_data, promo_boosted_by))
 
         return data
 
@@ -691,18 +780,19 @@ class DiscordBot:
         guild_setting = cur.fetchone()
         if guild_setting is not None:
             try:
-                default_type = type(self.default_guild_settings[key])
-                return tools.simple_eval(default_type, guild_setting['svalue'])
+                default_type = type(self.default_guild_settings[key].value)
+                return tools.simple_eval(default_type, json.loads(guild_setting['svalue']))
             except:
                 pass
 
-        return self.default_guild_settings[key]
+        return self.default_guild_settings[key].value
 
     async def get_settings(self, guild_id):
-        settings = {}
-        for key in self.default_guild_settings.keys():
-            settings[key] = await self.get_setting(guild_id, key)
-        return settings
+        return {k: await self.get_setting(guild_id, k) for k in self.default_guild_settings.keys()}
+
+    async def get_settings_dicts(self, guild_id):
+        return {k: v.new_value_dict(await self.get_setting(guild_id, k))
+                for k, v in self.default_guild_settings.items()}
 
     async def remove_setting(self, guild_id, key):
         cur = self.db_conn.cursor()
@@ -713,9 +803,10 @@ class DiscordBot:
         if key not in self.default_guild_settings:
             raise KeyError('Key "{}" not found in default guild settings!'.format(key))
 
+        value = json.dumps(value)
         try:
-            default_type = type(self.default_guild_settings[key])
-            tools.simple_eval(default_type, value)
+            default_type = type(self.default_guild_settings[key].value)
+            tools.simple_eval(default_type, json.loads(value))
         except:
             return False
 
@@ -808,7 +899,7 @@ class DiscordBot:
     async def get_ranking_rank(self, member):
         return list(map(lambda x: x['uid'], await self.get_ranking(member.guild))).index(member.id) + 1
 
-    async def member_create_profile_image(self, member):
+    async def member_create_profile_image_by_template(self, member, template):
         await self.check_member(member)
 
         #
@@ -834,21 +925,27 @@ class DiscordBot:
                     'xp_multiplier': data_xp_multiplier,
                     'avatar_url': str(member.avatar_url_as(format="png"))}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
 
-    async def member_create_welcome_image(self, member):
+    async def member_create_profile_image(self, member):
+        return await self.member_create_profile_image_by_template(
+            member, await self.get_setting(member.guild.id, 'PROFILE_IMAGE'))
+
+    async def member_create_welcome_image_by_template(self, member, template):
         name = member.display_name
         data_obj = {'member': member,
                     'name': name,
                     'avatar_url': str(member.avatar_url_as(format="png")),
                     'guild_icon_url': str(member.guild.icon_url_as(format="png"))}
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="welcome.png", fp=img_buf)
 
-    async def member_create_lvl_image(self, member, old_lvl, new_lvl):
+    async def member_create_welcome_image(self, member):
+        return await self.member_create_welcome_image_by_template(
+            member, await self.get_setting(member.guild.id, 'WELCOME_IMAGE'))
+
+    async def member_create_level_up_image_by_template(self, member, old_lvl, new_lvl, template):
         name = member.display_name
 
         data_obj = {'member': member,
@@ -857,11 +954,14 @@ class DiscordBot:
                     'color': member.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'LEVEL_UP_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
-    async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
+    async def member_create_level_up_image(self, member, old_lvl, new_lvl):
+        return await self.member_create_level_up_image_by_template(
+            member, old_lvl, new_lvl, await self.get_setting(member.guild.id, 'LEVEL_UP_IMAGE'))
+
+    async def member_create_rank_up_image_by_template(self, member, old_lvl, new_lvl, old_role, new_role, template):
         name = member.display_name
 
         data_obj = {'member': member,
@@ -873,9 +973,12 @@ class DiscordBot:
                     'new_color': new_role.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))(data_obj))
+        img_buf = await self.image_creator.create(template(data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
+
+    async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
+        return await self.member_create_rank_up_image_by_template(
+            member, old_lvl, new_lvl, old_role, new_role, await self.get_setting(member.guild.id, 'RANK_UP_IMAGE'))
 
     async def get_advanced_user_infos(self, guild, ranked_users):
         user_infos = []
@@ -899,12 +1002,19 @@ class DiscordBot:
                 })
         return user_infos
 
-    async def create_ranking_image(self, member, ranked_users):
+    async def create_ranking_image_by_template(self, member, ranked_users, template):
         data_obj = await self.get_advanced_user_infos(member.guild, ranked_users)
 
-        img_buf = await self.image_creator.create(
-            (await self.get_setting(member.guild.id, 'RANKING_IMAGE'))(data_obj), max_size=(-1, 8000))
+        img_buf = await self.image_creator.create(template(data_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
+
+    async def create_ranking_image(self, member, ranked_users):
+        return await self.create_ranking_image_by_template(
+            member, ranked_users, await self.get_setting(member.guild.id, 'RANKING_IMAGE'))
+
+    async def create_leaderboard_image_by_template(self, member, template):
+        ranking = await self.get_ranking(member.guild)
+        return await self.create_ranking_image_by_template(member, ranking[:10], template)
 
     async def create_leaderboard_image(self, member):
         ranking = await self.get_ranking(member.guild)
@@ -913,16 +1023,17 @@ class DiscordBot:
     async def check_send_rank_level_image(self, member, lvl, old_level, old_role):
         if old_level is not None and self.get_lvl(old_level) < self.get_lvl(lvl):
             if old_role != member.top_role:
-                return await member.guild.system_channel.send(
+                self.bot.loop.create_task(member.guild.system_channel.send(
                     file=await self.member_create_rank_up_image(member,
                                                                 old_level,
                                                                 lvl,
                                                                 old_role,
-                                                                member.top_role))
-            await member.guild.system_channel.send(
-                file=await self.member_create_lvl_image(member,
-                                                        old_level,
-                                                        lvl))
+                                                                member.top_role)))
+                return
+            self.bot.loop.create_task(member.guild.system_channel.send(
+                file=await self.member_create_level_up_image(member,
+                                                             old_level,
+                                                             lvl)))
 
     async def member_set_lvl(self, member, lvl, old_level=None):
         if not member.bot:
@@ -1066,6 +1177,23 @@ class DiscordBot:
                                   color=discord.Color.green())
         return embed
 
+    async def play_audio(self, audio_source, voice_channel):
+        async def _play_audio():
+            voice_client = None
+            try:
+                voice_client = await voice_channel.connect()
+                voice_client.play(audio_source)
+
+                while voice_client.is_playing():
+                    await asyncio.sleep(1)
+
+            except Exception as e:
+                self.lprint(e)
+            if voice_client is not None and not voice_client.is_playing():
+                await voice_client.disconnect()
+
+        self.bot.loop.create_task(_play_audio())
+
     class Commands(commands.Cog):
         def __init__(self, parent):
             self.parent = parent
@@ -1090,7 +1218,7 @@ class DiscordBot:
             if len(args) == 0:
                 return await ctx.send(file=await self.parent.member_create_profile_image(ctx.message.author))
             else:
-                member = await self.parent.search_member(ctx, ' '.join(args))
+                member = await self.parent.search_member(ctx.message.guild, ' '.join(args))
                 if member is not None:
                     return await ctx.send(file=await self.parent.member_create_profile_image(member))
 
@@ -1142,7 +1270,7 @@ class DiscordBot:
 
                 return await ctx.send(embed=embed)
 
-            member = await self.parent.search_member(ctx, ' '.join(args))
+            member = await self.parent.search_member(ctx.message.guild, ' '.join(args))
             if member is None:
                 return await ctx.send(embed=discord.Embed(title='',
                                                           description='No matching user was found',
@@ -1176,10 +1304,11 @@ class DiscordBot:
                           aliases=[],
                           description='show the ranking',
                           help=' - Zeigt alle Profilkarten des Servers')
-        @commands.has_permissions(administrator=True)
         async def _ranking(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             lb = await self.parent.get_ranking(ctx.message.guild)
             for user in lb:
                 member = get(ctx.message.guild.members, id=int(user['uid']))
@@ -1193,10 +1322,11 @@ class DiscordBot:
                           aliases=['s'],
                           description='send through the bot',
                           help=' - Sprich durch den Bot')
-        @commands.has_permissions(administrator=True)
         async def _send(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"send {msg}" to send into the system channel\n'
@@ -1224,10 +1354,11 @@ class DiscordBot:
                           aliases=['setlevel', 'sl'],
                           description='set level command',
                           help=' - Bestimme das Level eines Users')
-        @commands.has_permissions(administrator=True)
         async def _setlvl(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 return await ctx.send(embed=discord.Embed(title='Help',
                                                           description='"setlvl {level}" to set your level\n'
@@ -1251,7 +1382,7 @@ class DiscordBot:
             if len(args) == 1:
                 return await __setlvl(ctx.message.author)
             else:
-                member = await self.parent.search_member(ctx, ' '.join(args[1:]))
+                member = await self.parent.search_member(ctx.message.guild, ' '.join(args[1:]))
                 if member is not None:
                     return await __setlvl(member)
 
@@ -1263,11 +1394,11 @@ class DiscordBot:
                           aliases=['setting'],
                           description='settings commands',
                           help=' - Alles ein-zu-stellen')
-        @commands.has_permissions(administrator=True)
         async def _settings(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             if len(args) == 0:
                 pass
             elif args[0] in ['reset'] and len(args) >= 2:
@@ -1344,7 +1475,7 @@ class DiscordBot:
             if len(args) == 0:
                 return await ctx.send(embed=await self.parent.info_get_embed(ctx.message.author))
             search = ' '.join(args)
-            member = await self.parent.search_member(ctx, search)
+            member = await self.parent.search_member(ctx.message.guild, search)
             if member is not None:
                 return await ctx.send(embed=await self.parent.info_get_embed(member))
             return await ctx.send(embed=discord.Embed(title='',
@@ -1356,10 +1487,11 @@ class DiscordBot:
                           aliases=[],
                           description='message reaction commands',
                           help=' - Lasse den Bot auf Message Reactions reagieren')
-        @commands.has_permissions(administrator=True)
         async def _msg_reaction(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
 
             if len(args) == 0:
                 pass
@@ -1496,11 +1628,11 @@ class DiscordBot:
                           aliases=['reactions'],
                           description='reaction commands',
                           help=' - Lasse den Bot auf Nachrichten reagieren')
-        @commands.has_permissions(administrator=True)
         async def _reaction(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             if len(args) == 0:
@@ -1542,11 +1674,11 @@ class DiscordBot:
                           aliases=['levelsystem', 'lvlsystem', 'levelsys', 'ls'],
                           description='level system commands',
                           help=' - Alles über das Levelsystem')
-        @commands.has_permissions(administrator=True)
         async def _lvlsys(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             embed = discord.Embed(title='Help',
@@ -1608,7 +1740,7 @@ class DiscordBot:
                 elif len(args) == 2:
                     return await __multiplier(ctx.message.author)
                 else:
-                    member = await self.parent.search_member(ctx, ' '.join(args[2:]))
+                    member = await self.parent.search_member(ctx.message.guild, ' '.join(args[2:]))
                     if member is not None:
                         return await __multiplier(member)
 
@@ -1636,7 +1768,7 @@ class DiscordBot:
                 if len(args) == 1:
                     return await __blacklist(ctx.message.author)
                 else:
-                    member = await self.parent.search_member(ctx, ' '.join(args[1:]))
+                    member = await self.parent.search_member(ctx.message.guild, ' '.join(args[1:]))
                     if member is not None:
                         return await __blacklist(member)
 
@@ -1650,11 +1782,11 @@ class DiscordBot:
                           aliases=[],
                           description='Clear messages in a text channel!',
                           help=' - Löscht Nachrichten in einem Text-Channel!')
-        @commands.has_permissions(administrator=True)
         async def _clear(self, ctx, *args):
             if ctx.guild is None:
                 raise commands.NoPrivateMessage()
-
+            if not self.parent.is_admin(ctx.author):
+                raise commands.MissingPermissions('administrator')
             await ctx.trigger_typing()
 
             if len(args) == 0:
@@ -1667,7 +1799,7 @@ class DiscordBot:
                                                                   description='Successfully deleted messages!',
                                                                   color=discord.Color.green()))
                     search = ' '.join(args[1:])
-                    channel = await self.parent.search_text_channel(ctx, search)
+                    channel = await self.parent.search_text_channel(ctx.author.guild, search)
                     if channel is None:
                         return await ctx.send(embed=discord.Embed(title='',
                                                                   description='Channel "{}" was '
@@ -1698,36 +1830,30 @@ class DiscordBot:
 
             prev_author = ctx.message.author
 
-            message = await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(res))))
+            message = await ctx.send(file=discord.File(
+                os.path.join(self.parent.current_dir, 'images', '{}.gif'.format(res))))
 
-            voice_client = None
             if hasattr(prev_author, 'guild'):
                 if random.random() < await self.parent.get_setting(prev_author.guild.id, 'COIN_FLIP_AUDIO_CHANCE'):
                     if prev_author.voice is not None and prev_author.voice.channel is not None:
-                        try:
-                            voice_channel = prev_author.voice.channel
-                            voice_client = await voice_channel.connect()
-                            audio_source = discord.FFmpegPCMAudio(os.path.join('audio', 'tossacoin.mp3'))
-                            voice_client.play(audio_source)
-                        except discord.ClientException:
-                            self.parent.lprint('Bot is alreardy connect to a voice channel')
-                        except RuntimeError as e:
-                            self.parent.lprint(e)
+
+                        await self.parent.play_audio(
+                            discord.FFmpegPCMAudio(os.path.join(self.parent.current_dir, 'audio', 'tossacoin.mp3')),
+                            prev_author.voice.channel
+                        )
 
             await asyncio.sleep(13)
 
             await message.delete()
-            await ctx.send(file=discord.File(os.path.join('images', '{}.png'.format(res))))
-
-            if voice_client is not None:
-                await voice_client.disconnect()
+            await ctx.send(file=discord.File(os.path.join(self.parent.current_dir, 'images', '{}.png'.format(res))))
 
         @commands.command(name='dice',
                           aliases=[],
                           description='Roll a dice to your Witcher!',
                           help=' - Würfelt eine Zahl zwischen 1-6')
         async def _dice(self, ctx, *args):
-            await ctx.send(file=discord.File(os.path.join('images', '{}.gif'.format(random.randint(1, 6)))))
+            await ctx.send(file=discord.File(
+                os.path.join(self.parent.current_dir, 'images', '{}.gif'.format(random.randint(1, 6)))))
 
         @commands.command(name='random',
                           aliases=[],
@@ -1784,13 +1910,19 @@ class DiscordBot:
             if isinstance(error, commands.NoPrivateMessage):
                 await ctx.send('This command does not work via Private Message')
             elif isinstance(error, commands.CommandNotFound):
-                await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')),
-                    color=discord.Color.red()))
+                responses = await self.parent.get_setting(guild_id, 'COMMAND_NOT_FOUND_RESPONSES')
+                if len(responses) == 0:
+                    r = 'Command not found'
+                else:
+                    r = random.choice(responses)
+                await ctx.send(embed=discord.Embed(description=r, color=discord.Color.red()))
             elif isinstance(error, commands.MissingPermissions):
-                await ctx.send(embed=discord.Embed(description=random.choice(
-                    await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')),
-                    color=discord.Color.red()))
+                responses = await self.parent.get_setting(guild_id, 'MISSING_PERMISSIONS_RESPONSES')
+                if len(responses) == 0:
+                    r = 'Missing permission'
+                else:
+                    r = random.choice(responses)
+                await ctx.send(embed=discord.Embed(description=r, color=discord.Color.red()))
             elif isinstance(error, commands.CheckFailure):
                 pass
             else:
@@ -1872,18 +2004,29 @@ class DiscordBot:
 
 def main():
     from settings import GLOBAL_SETTINGS, DEFAULT_GUILD_SETTINGS
+    from helpers.settings_manager import GlobalSettingsValidator
 
-    if not os.path.exists('dbs'):
-        os.mkdir('dbs')
-    con = sqlite3.connect('dbs/bot.db', check_same_thread=False)
+    from webserver.webserver import WebServer
+
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+
+    dbs_dir = os.path.join(current_dir, 'dbs')
+
+    if not os.path.exists(dbs_dir):
+        os.mkdir(dbs_dir)
+    con = sqlite3.connect(os.path.join(dbs_dir, 'bot.db'), check_same_thread=False)
+
+    global_settings = GlobalSettingsValidator.validate(GLOBAL_SETTINGS)
 
     b = DiscordBot(con,
+                   current_dir=current_dir,
                    default_guild_settings=DEFAULT_GUILD_SETTINGS,
-                   update_voice_xp_interval=GLOBAL_SETTINGS['UPDATE_VOICE_XP_INTERVAL'],
-                   command_prefix=GLOBAL_SETTINGS['COMMAND_PREFIX'],
-                   description=GLOBAL_SETTINGS['DESCRIPTION'],
-                   print_logging=GLOBAL_SETTINGS['PRINT_LOGGING'],
-                   use_slash_commands=GLOBAL_SETTINGS['USE_SLASH_COMMANDS'],
+                   update_voice_xp_interval=global_settings['UPDATE_VOICE_XP_INTERVAL'],
+                   command_prefix=global_settings['COMMAND_PREFIX'],
+                   description=global_settings['DESCRIPTION'],
+                   print_logging=global_settings['PRINT_LOGGING'],
+                   use_slash_commands=global_settings['USE_SLASH_COMMANDS'],
+                   super_admins=global_settings['SUPER_ADMINS']
                    )
 
     image_creator = imagestack.ImageCreator(fonts=GLOBAL_SETTINGS['FONTS'],
@@ -1899,8 +2042,11 @@ def main():
             oauth2_client_id=GLOBAL_SETTINGS['APPLICATION_ID'],
             oauth2_client_secret=GLOBAL_SETTINGS['APPLICATION_SECRET'],
             oauth2_redirect_uri=GLOBAL_SETTINGS['OAUTH2_REDIRECT_URI'],
+            webserver_secret=GLOBAL_SETTINGS['WEBSERVER_SECRET'],
             discord_bot=b,
+            static_path=GLOBAL_SETTINGS['WEBSERVER_STATIC_PATH'],
             port=GLOBAL_SETTINGS['WEBSERVER_PORT'],
+            debug=GLOBAL_SETTINGS['WEBSERVER_DEBUG']
         )
         web.start()
 

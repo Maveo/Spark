@@ -1,119 +1,4 @@
-class ColorDummy:
-    def __init__(self, rgb=(0, 255, 0)):
-        self.rgb = rgb
-
-    def to_rgb(self):
-        return self.rgb
-
-
-class RoleDummy:
-    def __init__(self, uid=0, name='✅DummyRole', color=None):
-        self.id = uid
-        self.name = name
-        if color is None:
-            color = ColorDummy()
-        self.color = color
-
-    def __repr__(self):
-        return 'RoleDummy({}, {})'.format(self.id, self.name)
-
-
-class RolesDummy(list):
-    def add_role(self, role):
-        self.append(role)
-
-    def remove_role(self, role):
-        self.remove(role)
-
-
-class ChannelDummy:
-    def __init__(self, uid=0):
-        self.id = uid
-        self.messages = []
-
-    async def send(self, *args, **kwargs):
-        self.messages.append((args, kwargs))
-
-
-class GuildDummy:
-    def __init__(self, uid=0, roles=None, system_channel=None):
-        self.id = uid
-        self.roles = roles
-        self.members = []
-        if self.roles is None:
-            self.roles = []
-        if system_channel is None:
-            system_channel = ChannelDummy()
-        self.system_channel = system_channel
-        self.icon_url = 'https://cdn.discordapp.com/icons/188893186435973121/a_71ba803956e5189b9dab7d5d2d6b331f.png'
-
-    def member_join(self, member):
-        self.members.append(member)
-
-    def icon_url_as(self, *args, **kwargs):
-        return self.icon_url
-
-
-class VoiceDummy:
-    def __init__(self, channel=None):
-        if channel is None:
-            channel = ChannelDummy()
-        self.channel = channel
-
-
-class MemberDummy:
-    def __init__(self,
-                 uid=0,
-                 name='Dummy',
-                 nick='Dummy',
-                 display_name='Dummy',
-                 guild=None,
-                 bot=False,
-                 voice=None):
-        self.id = uid
-        self.name = name
-        self.nick = nick
-        self.display_name = display_name
-        self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
-        self.roles = RolesDummy()
-        self.top_role = RoleDummy(0)
-        if guild is None:
-            guild = GuildDummy()
-        self.guild = guild
-        self.guild.member_join(self)
-        if voice is None:
-            voice = VoiceDummy()
-        self.voice = voice
-        self.bot = bot
-        self.color = ColorDummy()
-        self.messages = []
-
-    async def send(self, *args, **kwargs):
-        self.messages.append((args, kwargs))
-
-    async def add_roles(self, role):
-        self.roles.add_role(role)
-
-    async def remove_roles(self, role):
-        self.roles.remove_role(role)
-
-    def avatar_url_as(self, *args, **kwargs):
-        return self.avatar_url
-
-
-class MessageDummy:
-    def __init__(self, uid=0, content='', author=None, guild=None, channel=None):
-        self.id = uid
-        self.content = content
-        if author is None:
-            author = MemberDummy()
-        self.author = author
-        if guild is None:
-            guild = GuildDummy()
-        self.guild = guild
-        if channel is None:
-            channel = ChannelDummy()
-        self.channel = channel
+from helpers.dummys import *
 
 
 def main():
@@ -132,6 +17,14 @@ def main():
     PRINT_TRACEBACK = False
 
     EPS = 0.00000001
+
+    async def wait_for_tasks():
+        pending = asyncio.all_tasks()
+        for task in pending:
+            try:
+                await task
+            except RuntimeError:
+                pass
 
     def show_image(img):
         if SHOW_IMAGES:
@@ -162,8 +55,8 @@ def main():
         async def test_2_user_joined(self):
             m = MemberDummy()
 
-            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
-            self.bot.default_guild_settings['MESSAGE_XP'] = 0
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'].value = False
+            self.bot.default_guild_settings['MESSAGE_XP'].value = 0
 
             await self.bot.events.on_member_join(m)
             msg = MessageDummy(author=m)
@@ -175,7 +68,7 @@ def main():
         async def test_3_user_left(self):
             m = MemberDummy()
 
-            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'].value = False
 
             await self.bot.events.on_member_join(m)
             await self.bot.events.on_member_remove(m)
@@ -188,7 +81,7 @@ def main():
             m = MemberDummy(guild=g)
             msg = MessageDummy(author=m)
 
-            self.bot.default_guild_settings['MESSAGE_XP'] = 10
+            self.bot.default_guild_settings['MESSAGE_XP'].value = 10
 
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
@@ -224,7 +117,7 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
 
-            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'].value = 60
 
             await self.bot.member_joined_vc(m, 0)
             await self.bot.member_left_vc(m, 60 * 1 * 1)
@@ -246,11 +139,12 @@ def main():
             g = GuildDummy()
             m = MemberDummy(guild=g)
 
-            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'].value = 60
 
             await self.bot.member_joined_vc(m, g.id)
             await self.bot.member_left_vc(m, 60 * 1 * 62)
             user = await self.bot.get_user(m)
+            await wait_for_tasks()
             return user['uid'] == 0 and int(user['lvl']) == 38 and self.bot.lvl_get_xp(user['lvl']) == 94 and len(
                 g.system_channel.messages) == 1
 
@@ -284,7 +178,7 @@ def main():
             await self.bot.member_joined_vc(m, 0)
             await self.bot.update_user(m, {'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
             await self.bot.member_left_vc(m, 0)
-            return len(m.roles) == 1 and m.roles[0] == wanted_role
+            return wanted_role in m.roles
 
         # test ranking
         async def test_14_ranking(self):
@@ -362,7 +256,7 @@ def main():
 
             msg = MessageDummy(author=m)
 
-            self.bot.default_guild_settings['MESSAGE_XP'] = 1
+            self.bot.default_guild_settings['MESSAGE_XP'].value = 1
 
             await self.bot.events.on_message(msg)
             user = await self.bot.get_user(m)
@@ -376,7 +270,7 @@ def main():
             mbs = [MemberDummy(x, guild=g) for x in range(5)]
             [await self.bot.member_joined_vc(x, 0) for x in mbs]
 
-            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'].value = 60
 
             t = 60 * 1 * 6
 
@@ -384,6 +278,7 @@ def main():
 
             await self.bot.update_all_voice_users(t)
             users = [await self.bot.get_user(x) for x in mbs]
+            await wait_for_tasks()
             return False not in map(lambda x: float_match(x['lvl'], 4.6) and x['joined'] == t, users) and len(g.system_channel.messages) == 5
 
         # test update all voice users
@@ -392,7 +287,7 @@ def main():
             [await self.bot.member_joined_vc(x, 0) for x in mbs]
             [await self.bot.member_set_blacklist(x, True) for x in mbs]
 
-            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'] = 60
+            self.bot.default_guild_settings['VOICE_XP_PER_MINUTE'].value = 60
 
             t = 60 * 1 * 1
 
@@ -415,7 +310,7 @@ def main():
             m0 = MemberDummy(guild=g0)
             m1 = MemberDummy(guild=g1)
 
-            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'] = False
+            self.bot.default_guild_settings['SEND_WELCOME_IMAGE'].value = False
 
             await self.bot.events.on_member_join(m0)
             await self.bot.events.on_member_join(m1)
@@ -431,7 +326,7 @@ def main():
             m0 = MemberDummy(0, guild=g)
             m1 = MemberDummy(1, guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = 60
 
             await self.bot.set_boost_user(m0, m1)
             user_boost = await self.bot.get_boost_user(m0, time.time())
@@ -443,7 +338,7 @@ def main():
             g = GuildDummy()
             m0 = MemberDummy(0, guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = 60
 
             boost_result = await self.bot.set_boost_user(m0, m0)
             user_boost = await self.bot.get_boost_user(m0, time.time())
@@ -456,7 +351,7 @@ def main():
             m1 = MemberDummy(1, guild=g)
             m2 = MemberDummy(2, guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = 60
 
             await self.bot.set_boost_user(m0, m1)
 
@@ -473,8 +368,8 @@ def main():
             m1 = MemberDummy(1, guild=g)
             m2 = MemberDummy(2, guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 60
-            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = 60
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'].value = 5
 
             await self.bot.set_boost_user(m1, m0)
             await self.bot.set_boost_user(m2, m0)
@@ -488,8 +383,8 @@ def main():
             m1 = MemberDummy(1, guild=g)
             m2 = MemberDummy(2, guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = -1
-            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = -1
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'].value = 5
 
             await self.bot.set_boost_user(m1, m0)
             await self.bot.set_boost_user(m2, m0)
@@ -502,7 +397,7 @@ def main():
             m0 = MemberDummy(0, guild=g)
             m1 = MemberDummy(1, guild=g)
 
-            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = 60
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'].value = 60
 
             promo_code = await self.bot.create_promo_code(m0)
 
@@ -516,7 +411,7 @@ def main():
             m0 = MemberDummy(0, guild=g)
             m1 = MemberDummy(1, guild=g)
 
-            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = -1
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'].value = -1
 
             promo_code = await self.bot.create_promo_code(m0)
 
@@ -531,10 +426,10 @@ def main():
             m1 = MemberDummy(1, guild=g)
             m2 = MemberDummy(2, guild=g)
 
-            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'] = 5
-            self.bot.default_guild_settings['PROMO_BOOST_EXPIRES_DAYS'] = 60.0
-            self.bot.default_guild_settings['PROMO_BOOST_ADD_XP_MULTIPLIER'] = 99.0
-            self.bot.default_guild_settings['PROMO_USER_SET_LEVEL'] = 99.0
+            self.bot.default_guild_settings['PROMO_CODE_EXPIRES_HOURS'].value = 5
+            self.bot.default_guild_settings['PROMO_BOOST_EXPIRES_DAYS'].value = 60.0
+            self.bot.default_guild_settings['PROMO_BOOST_ADD_XP_MULTIPLIER'].value = 99.0
+            self.bot.default_guild_settings['PROMO_USER_SET_LEVEL'].value = 99.0
 
             promo_code = await self.bot.create_promo_code(m0)
 
@@ -571,7 +466,7 @@ def main():
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'add-role', r.id)
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'dm', 'test')
             await self.bot.msg_reaction_add_event(m, msg.id, emoji)
-            return len(m.roles) == 1 and m.roles[0] == r and m.messages == [(('test',), {})]
+            return r in m.roles and m.messages == [(('test',), {})]
 
         # test message reaction remove
         async def test_34_message_reaction_remove(self):
@@ -582,7 +477,7 @@ def main():
             emoji = '😁'
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'trigger-role', r.id)
             await self.bot.msg_reaction_add_event(m, msg.id, emoji)
-            if not (len(m.roles) == 1 and m.roles[0] == r):
+            if r not in m.roles:
                 return False
             await self.bot.msg_reaction_remove_event(m, msg.id, emoji)
             return len(m.roles) == 0
@@ -606,8 +501,8 @@ def main():
             m0 = MemberDummy(0, display_name='User0', guild=g)
             m1 = MemberDummy(1, display_name='User1', guild=g)
 
-            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'] = 7.0
-            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'] = 5
+            self.bot.default_guild_settings['BOOST_EXPIRES_DAYS'].value = 7.0
+            self.bot.default_guild_settings['BOOST_ADD_XP_MULTIPLIER'].value = 5
 
             await self.bot.set_boost_user(m0, m1)
             embed = await self.bot.boost_get_embed(m1)
@@ -630,7 +525,7 @@ def main():
         async def test_902_level_up_image(self):
             m = MemberDummy()
 
-            image_buffer = (await self.bot.member_create_lvl_image(m, 1, 2)).fp.getbuffer()
+            image_buffer = (await self.bot.member_create_level_up_image(m, 1, 2)).fp.getbuffer()
             image = cv2.imdecode(np.frombuffer(image_buffer, np.uint8), -1)
 
             show_image(image)

@@ -31,6 +31,4 @@ def only_emojis(text):
 def simple_eval(wanted_type, value):
     if wanted_type is bool:
         return str(value).lower() in ['1', 'true']
-    if wanted_type is list:
-        return json.loads(value)
     return wanted_type(value)
