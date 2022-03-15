@@ -1,5 +1,5 @@
 # - Spark -
-[![Build Status](https://www.travis-ci.com/skillor/Spark.svg?branch=master)](https://www.travis-ci.com/skillor/Spark)
+[![Build Status](https://app.travis-ci.com/Maveo/Spark.svg?branch=master)](https://app.travis-ci.com/Maveo/Spark)
 
 
  ### A Discord Bot
@@ -64,7 +64,7 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 - `>coinflip` Toss a coin to your Witcher!
 - `>random` Generate a random number
 - `>dice` Rolls a six-sided dice
-- `>help` A short list of avaliable commands
+- `>help` A short list of available commands
 - `>leaderboard` Shows the Top 10 of the Server
 - `>profile` Shows your profile-card | "profile {username}" Show another user
 - `>boost` Users can give other users a temporary xp-multiplier (can be adjusted in settings)
@@ -88,6 +88,9 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **APPLICATION_SECRET**
 
   This is the Oauth2-Application-Secret for your Discord Developer Application
+- **ACTIVATE_WEBSERVER**
+
+  Enable/disable Webserver
 - **OAUTH2_REDIRECT_URI**
 
   This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2)
@@ -95,6 +98,12 @@ These Settings are applied globally and **cannot be changed without restarting**
 - **WEBSERVER_PORT**
 
   This is the Port for the Webserver
+- **WEBSERVER_STATIC_PATH**
+
+  The path the webserver serves static
+- **WEBSERVER_DEBUG**
+
+  Enable/disable debugging of the Webserver
 - **TOKEN** 
 
   This is the Token of your Discord Bot

@@ -168,16 +168,17 @@ def main():
             await self.bot.lvlsys_set(0, 0, 0)
             await self.bot.lvlsys_set(0, 1, 2)
             await self.bot.lvlsys_set(0, 2, 5)
+            wanted_role = RoleDummy(1)
             g = GuildDummy(roles=[
                 RoleDummy(0),
-                RoleDummy(1),
+                wanted_role,
                 RoleDummy(2)
             ])
             m = MemberDummy(0, guild=g)
             await self.bot.member_joined_vc(m, 0)
             await self.bot.update_user(m, {'uid': 0, 'lvl': 3, 'xp': 0, 'xp_multiplier': 1})
             await self.bot.member_left_vc(m, 0)
-            return m.roles == {1: True}
+            return wanted_role in m.roles
 
         # test ranking
         async def test_14_ranking(self):
@@ -455,8 +456,8 @@ def main():
             await self.bot.events.on_message(msg)
             return c.messages == [(('pong',), {})]
 
-        # test message reactions
-        async def test_33_message_reaction(self):
+        # test message reaction add
+        async def test_33_message_reaction_add(self):
             r = RoleDummy(0)
             g = GuildDummy(roles=[r])
             m = MemberDummy(guild=g)
@@ -464,8 +465,22 @@ def main():
             emoji = '😁'
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'add-role', r.id)
             await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'dm', 'test')
-            await self.bot.msg_reaction_event(m, msg.id, emoji)
-            return m.roles == {0: True} and m.messages == [(('test',), {})]
+            await self.bot.msg_reaction_add_event(m, msg.id, emoji)
+            return r in m.roles and m.messages == [(('test',), {})]
+
+        # test message reaction remove
+        async def test_34_message_reaction_remove(self):
+            r = RoleDummy(0)
+            g = GuildDummy(roles=[r])
+            m = MemberDummy(guild=g)
+            msg = MessageDummy()
+            emoji = '😁'
+            await self.bot.add_msg_reaction(g.id, msg.id, emoji, 'trigger-role', r.id)
+            await self.bot.msg_reaction_add_event(m, msg.id, emoji)
+            if r not in m.roles:
+                return False
+            await self.bot.msg_reaction_remove_event(m, msg.id, emoji)
+            return len(m.roles) == 0
 
         # test lvlsys embed
         async def test_801_lvlsys_get_embed(self):

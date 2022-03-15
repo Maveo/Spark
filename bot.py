@@ -207,17 +207,37 @@ class DiscordBot:
 
         self.image_creator = image_creator
 
+    async def startup_routine(self, ctime):
+        while not self.bot.is_ready():
+            await asyncio.sleep(1)
+
+        users = []
+
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                if member.voice is not None and member.voice.channel is not None:
+                    users.append({'uid': member.id, 'gid': guild.id, 'joined': ctime})
+
+        cur = self.db_conn.cursor()
+
+        for user in users:
+            cur.execute('UPDATE users SET joined = ? WHERE uid = ? AND gid = ?',
+                        (user['joined'], user['uid'], user['gid'],))
+
+        self.db_conn.commit()
+
+        self.lprint('Bot is ready')
+
+        if self.update_voice_xp_interval > 0:
+            while True:
+                await asyncio.sleep(self.update_voice_xp_interval)
+                await self.update_all_voice_users(time.time())
+
     def set_image_creator(self, image_creator):
         self.image_creator = image_creator
 
     def run(self, token):
-        async def _update_vc_xp():
-            if self.update_voice_xp_interval > 0:
-                while True:
-                    await asyncio.sleep(self.update_voice_xp_interval)
-                    await self.update_all_voice_users(time.time())
-
-        self.bot.loop.create_task(_update_vc_xp())
+        self.bot.loop.create_task(self.startup_routine(time.time()))
         self.bot.run(token)
 
     def lprint(self, *args):
@@ -274,13 +294,14 @@ class DiscordBot:
         return None
 
     @staticmethod
-    async def search_channel(guild, search, channel_type):
-        search = str(search)
+    async def search_text_channel(ctx, search):
+        if search[:2] == '<#' and search[-1] == '>':
+            search = search[2:-1]
         if search.isnumeric():
-            channel = get(guild.channels, id=int(search), type=channel_type)
+            channel = get(ctx.guild.text_channels, id=int(search))
             if channel is not None:
                 return channel
-        channel = get(guild.channels, name=search, type=channel_type)
+        channel = get(ctx.guild.text_channels, name=search)
         if channel is not None:
             return channel
         return None
@@ -432,7 +453,18 @@ class DiscordBot:
                         value='None' if len(info['promo_boosts_str']) == 0 else '\n'.join(info['promo_boosts_str']),
                         inline=False)
 
-        embed.add_field(name='Created Account', value=info['created_account'], inline=False)
+        def _format_date(date):
+            if date is None:
+                return 'None'
+            return date.strftime("%d.%m.%Y %H:%M")
+
+        embed.add_field(name='Created Account',
+                        value='{}'.format(_format_date(member.created_at)),
+                        inline=False)
+
+        embed.add_field(name='Joined At',
+                        value='{}'.format(_format_date(member.joined_at)),
+                        inline=False)
 
         embed.add_field(name='Joined At', value=info['joined_at'], inline=False)
 
@@ -473,15 +505,21 @@ class DiscordBot:
                     (guild_id, msg_id, reaction,))
         return cur.fetchall()
 
-    async def msg_reaction_event(self, member, msg_id, emoji):
+    async def msg_reaction_add_event(self, member, msg_id, emoji):
         actions = await self.get_msg_reactions_by_reaction(member.guild.id, msg_id, str(emoji))
         for action in actions:
             if action['actiontype'] == 'add-role':
                 await self.give_role(member.guild, member, int(action['action']))
-            if action['actiontype'] == 'trigger-role':
-                await self.trigger_role(member.guild, member, int(action['action']))
+            elif action['actiontype'] == 'trigger-role':
+                await self.give_role(member.guild, member, int(action['action']))
             elif action['actiontype'] == 'dm':
                 await member.send(action['action'])
+
+    async def msg_reaction_remove_event(self, member, msg_id, emoji):
+        actions = await self.get_msg_reactions_by_reaction(member.guild.id, msg_id, str(emoji))
+        for action in actions:
+            if action['actiontype'] == 'trigger-role':
+                await self.remove_role(member.guild, member, int(action['action']))
 
     async def set_reaction(self, guild_id, trigger, reaction):
         cur = self.db_conn.cursor()
@@ -830,7 +868,7 @@ class DiscordBot:
                 guild = self.bot.get_guild(user['gid'])
                 member = get(guild.members, id=int(user['uid']))
                 if member.voice is None or member.voice.channel is None:
-                    user['joined'] = 0
+                    user['joined'] = -1
                 else:
                     xp_earned = self.xp_for((ctime - user['joined'])
                                             * await self.get_setting(guild.id, 'VOICE_XP_PER_MINUTE') / 60,
@@ -1296,14 +1334,21 @@ class DiscordBot:
                                                                       'into a specific channel',
                                                           color=discord.Color.gold()))
             elif len(args) == 1:
-                return await ctx.author.guild.system_channel.send(args[0])
+                await ctx.author.guild.system_channel.send(args[0])
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Message was send successfully',
+                                                          color=discord.Color.green()))
             else:
-                channel = await self.parent.search_text_channel(ctx.guild, args[0])
-                if channel is not None:
-                    return await channel.send(' '.join(args[1:]))
-                return await ctx.send(embed=discord.Embed(title='Error',
-                                                          description='Channel "{}" was not found!'.format(args[0]),
-                                                          color=discord.Color.red()))
+                channel = await self.parent.search_text_channel(ctx, args[0])
+                if channel is None:
+                    return await ctx.send(embed=discord.Embed(title='Error',
+                                                              description='Channel "{}" was not found!'.format(args[0]),
+                                                              color=discord.Color.red()))
+
+                await channel.send(' '.join(args[1:]))
+                return await ctx.send(embed=discord.Embed(title='',
+                                                          description='Message was send successfully',
+                                                          color=discord.Color.green()))
 
         @commands.command(name='setlvl',
                           aliases=['setlevel', 'sl'],
@@ -1802,28 +1847,6 @@ class DiscordBot:
             await message.delete()
             await ctx.send(file=discord.File(os.path.join(self.parent.current_dir, 'images', '{}.png'.format(res))))
 
-        @commands.command(name='wheelspin',
-                          aliases=[],
-                          description='Spin the wheel!',
-                          help=' - Dreh am Rad')
-        async def _wheelspin(self, ctx, *args):
-            await ctx.trigger_typing()
-
-            async def _spin_wheel(sobj):
-                gif_img_buf, last_img_buf = await self.parent.image_creator.create(
-                    (await self.parent.get_setting(ctx.author.guild.id, 'WHEEL_SPIN_IMAGE'))(sobj))
-
-                message = await ctx.send(file=discord.File(filename="spin.gif", fp=gif_img_buf))
-                await asyncio.sleep(10)
-                await message.delete()
-                await ctx.send(file=discord.File(filename="spin_result.png", fp=last_img_buf))
-
-            if len(args) == 0:
-                return await _spin_wheel({'choices': ['🥇' for _ in range(10)], 'result': random.randint(0, 10)})
-
-            choices = list(tools.only_emojis(''.join(args)))
-            return await _spin_wheel({'choices': choices, 'result': random.randint(0, len(choices))})
-
         @commands.command(name='dice',
                           aliases=[],
                           description='Roll a dice to your Witcher!',
@@ -1906,10 +1929,6 @@ class DiscordBot:
                 self.parent.lprint(error)
 
         @commands.Cog.listener()
-        async def on_ready(self):
-            self.parent.lprint('Bot is ready')
-
-        @commands.Cog.listener()
         async def on_member_join(self, member):
             if await self.parent.get_setting(member.guild.id, 'SEND_WELCOME_IMAGE'):
                 await member.send(file=await self.parent.member_create_welcome_image(member))
@@ -1952,8 +1971,17 @@ class DiscordBot:
 
         @commands.Cog.listener()
         async def on_raw_reaction_add(self, payload):
-            if payload.guild_id is not None and payload.member is not None and payload.member.bot is False:
-                await self.parent.msg_reaction_event(payload.member, payload.message_id, payload.emoji)
+            guild = self.parent.bot.get_guild(payload.guild_id)
+            member = get(guild.members, id=payload.user_id)
+            if member is not None and member.guild is not None and member.bot is False:
+                await self.parent.msg_reaction_add_event(member, payload.message_id, payload.emoji)
+
+        @commands.Cog.listener()
+        async def on_raw_reaction_remove(self, payload):
+            guild = self.parent.bot.get_guild(payload.guild_id)
+            member = get(guild.members, id=payload.user_id)
+            if member is not None and member.guild is not None and member.bot is False:
+                await self.parent.msg_reaction_remove_event(member, payload.message_id, payload.emoji)
 
         @commands.Cog.listener()
         async def on_voice_state_update(self, member, before, after):
