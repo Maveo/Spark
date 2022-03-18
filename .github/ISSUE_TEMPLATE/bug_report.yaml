@@ -1,0 +1,38 @@
+name: Problem report
+description: Create a report to help us improve
+labels: [problem]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **IMPORTANT:** Before submitting:
+        - Be sure to look for help regarding you problem in our [Wiki](https://github.com/Maveo/Spark/wiki)
+        - Check if the issue has not yet been [reported](https://github.com/Maveo/Spark/issues)
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To Reproduce:
+      placeholder: Step by step explanation on how to reproduce the bug. First do this, than this..
+    validations:
+      required: false
+  - type: textarea
+    id: expect_to_happen
+    attributes:
+      label: Expected behaviour
+      placeholder: I expected...
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If possible and helpful upload pictures, which provide more information 
+      placeholder: Paste Screenshots in here
+    validations:
+      required: false
