@@ -84,19 +84,33 @@ class EmojiReactionsModule(SparkModule):
 
                 self.activating_reactions[(m.channel.id, m.id)] = (ctx.author.id, ctx, message)
 
-            options = [discord.SelectOption(label=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_LABEL'),
-                                            emoji=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI'),
-                                            value=self.CUSTOM_EMOJI)] + [
-                          discord.SelectOption(label=str(emoji.name),
-                                               emoji=str(emoji),
-                                               value=str(emoji.id)) for emoji in ctx.guild.emojis
-                      ]
+            if len(ctx.guild.emojis) < 24:
+                options = [discord.SelectOption(label=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_LABEL'),
+                                                emoji=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI'),
+                                                value=self.CUSTOM_EMOJI)] + [
+                              discord.SelectOption(label=str(emoji.name),
+                                                   emoji=str(emoji),
+                                                   value=str(emoji.id)) for emoji in ctx.guild.emojis
+                          ]
 
-            view = discord.ui.View()
-            view.add_item(CustomDropdown(response, bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER'), options))
-            return await ctx.respond(embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_TITLE')),
-                                     view=view,
-                                     ephemeral=True)
+                view = discord.ui.View()
+                view.add_item(
+                    CustomDropdown(response, bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER'), options))
+
+                return await ctx.respond(
+                    embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_TITLE')),
+                    view=view,
+                    ephemeral=True)
+
+            else:
+                m = await ctx.send(embed=discord.Embed(
+                    description=self.bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_MESSAGE'),
+                    color=discord.Color.blue()))
+
+                await ctx.respond(embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_REACT_TO'),
+                                                      description=m.jump_url), ephemeral=True)
+
+                self.activating_reactions[(m.channel.id, m.id)] = (ctx.author.id, ctx, message)
 
         @bot.has_permissions(administrator=True)
         async def get_emoji_reactions(ctx: discord.commands.context.ApplicationContext):
@@ -317,7 +331,7 @@ class EmojiReactionsModule(SparkModule):
                 elif action.action_type == self.SEND_DM:
                     await payload.member.send(action.action)
             except Exception as e:
-                print(e)
+                self.bot.logger.error(e)
                 pass
 
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
