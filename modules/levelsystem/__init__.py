@@ -501,7 +501,6 @@ class LevelsystemModule(SparkModule):
     async def create_extended_profile(self, member: discord.Member):
         await self.check_level_user(member)
         user = self.bot.db.get_level_user(member.guild.id, member.id)
-        print(user)
         xp_origins = self.bot.db.get_xp_origin(member.guild.id, member.id)
         text_msg_xp = 0
         voice_xp = 0
