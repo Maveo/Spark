@@ -401,6 +401,13 @@ export default defineComponent({
                     const title = Swal.getTitle() as HTMLElement;
                     progressbar.style.width = '0';
 
+                    if (this.count_loading_settings() == 0) {
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'Settings imported'
+                        });
+                    }
+
                     let errorCount = 0;
                     
                     loadingSubject.subscribe({
