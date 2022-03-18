@@ -1,4 +1,5 @@
 import json
+import math
 from typing import *
 
 import discord
@@ -8,6 +9,7 @@ from discord.utils import get
 
 from helpers import tools
 from helpers.spark_module import SparkModule
+from helpers.view_helpers import ViewPaginator, CustomButton
 from .settings import SETTINGS
 
 
@@ -65,16 +67,7 @@ class EmojiReactionsModule(SparkModule):
         @bot.has_permissions(administrator=True)
         async def add_emoji_action(ctx: discord.commands.context.ApplicationContext,
                                    message: discord.Message):
-            async def response(dropdown1: CustomDropdown, interaction1: discord.Interaction):
-                if dropdown1.values[0] != self.CUSTOM_EMOJI:
-                    emoji = get(ctx.guild.emojis, id=int(dropdown1.values[0]))
-                    if not emoji:
-                        return await ctx.edit(embed=discord.Embed(
-                            description=self.bot.i18n.get('UNKNOWN_ERROR'),
-                            color=discord.Color.red()))
-                    await self.add_emoji_reaction_action(ctx.guild, ctx, message, emoji)
-                    return
-
+            async def custom_emoji_response(button: CustomButton, interaction1: discord.Interaction):
                 m = await ctx.send(embed=discord.Embed(
                     description=self.bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_MESSAGE'),
                     color=discord.Color.blue()))
@@ -84,33 +77,36 @@ class EmojiReactionsModule(SparkModule):
 
                 self.activating_reactions[(m.channel.id, m.id)] = (ctx.author.id, ctx, message)
 
-            if len(ctx.guild.emojis) < 24:
-                options = [discord.SelectOption(label=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_LABEL'),
-                                                emoji=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI'),
-                                                value=self.CUSTOM_EMOJI)] + [
-                              discord.SelectOption(label=str(emoji.name),
-                                                   emoji=str(emoji),
-                                                   value=str(emoji.id)) for emoji in ctx.guild.emojis
-                          ]
+            async def response(dropdown1: CustomDropdown, interaction1: discord.Interaction):
+                emoji = get(ctx.guild.emojis, id=int(dropdown1.values[0]))
+                if not emoji:
+                    return await ctx.edit(embed=discord.Embed(
+                        description=self.bot.i18n.get('UNKNOWN_ERROR'),
+                        color=discord.Color.red()))
+                await self.add_emoji_reaction_action(ctx.guild, ctx, message, emoji)
 
+            options = [
+                          discord.SelectOption(label=str(emoji.name),
+                                               emoji=str(emoji),
+                                               value=str(emoji.id)) for emoji in ctx.guild.emojis
+                      ]
+
+            pages = []
+            for i in range(math.ceil(len(options) / 25)):
                 view = discord.ui.View()
                 view.add_item(
-                    CustomDropdown(response, bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER'), options))
+                    CustomButton(custom_emoji_response,
+                                 label=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_LABEL'),
+                                 emoji=bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI')))
+                view.add_item(
+                    CustomDropdown(response,
+                                   bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER'),
+                                   options[i*25:(i+1)*25]))
+                pages.append(view)
 
-                return await ctx.respond(
-                    embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_TITLE')),
-                    view=view,
-                    ephemeral=True)
+            paginator = ViewPaginator(pages, hide_empty=True)
 
-            else:
-                m = await ctx.send(embed=discord.Embed(
-                    description=self.bot.i18n.get('EMOJI_REACTIONS_CUSTOM_EMOJI_MESSAGE'),
-                    color=discord.Color.blue()))
-
-                await ctx.respond(embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_REACT_TO'),
-                                                      description=m.jump_url), ephemeral=True)
-
-                self.activating_reactions[(m.channel.id, m.id)] = (ctx.author.id, ctx, message)
+            await ctx.respond(view=paginator.view(), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
         async def get_emoji_reactions(ctx: discord.commands.context.ApplicationContext):
@@ -271,13 +267,21 @@ class EmojiReactionsModule(SparkModule):
                         role_name = role.name
                     options.append(discord.SelectOption(label=role_name, emoji=role_emoji, value=str(role.id)))
 
-                view = discord.ui.View()
-                view.add_item(CustomDropdown(response2,
-                                             self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_ROLE_PLACEHOLDER'),
-                                             options))
+                pages = []
+                for i in range(math.ceil(len(options) / 25)):
+                    view = discord.ui.View()
+
+                    view.add_item(
+                        CustomDropdown(response2,
+                                       self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_ROLE_PLACEHOLDER'),
+                                       options[i * 25:(i + 1) * 25]))
+                    pages.append(view)
+
+                paginator = ViewPaginator(pages, hide_empty=True)
+
                 await ctx.edit(embed=discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_CHOOSE_ROLE_TITLE')
                                                    .format(str(emoji), self.bot.i18n.get(self.reaction_types[v]))),
-                               view=view)
+                               view=paginator.view())
 
             else:
                 await ctx.edit(
@@ -349,6 +353,6 @@ class EmojiReactionsModule(SparkModule):
         for action in actions:
             try:
                 if action.action_type == self.TRIGGER_ROLE:
-                    await tools.remove_role(payload.member.guild, payload.member, int(action.action))
-            except:
-                pass
+                    await tools.remove_role(member.guild, member, int(action.action))
+            except Exception as e:
+                self.bot.logger.warning('{} for user {} in {}'.format(e, member, member.guild))
