@@ -67,7 +67,7 @@ class MemberDummy:
         self.name = name
         self.nick = nick
         self.display_name = display_name
-        self.avatar_url = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
+        self.display_avatar = 'https://cdn.discordapp.com/emojis/722162010514653226.png?v=1'
         self.roles = {}
         self.top_role = RoleDummy(0)
         self.discriminator = uid
