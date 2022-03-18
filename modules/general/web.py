@@ -92,11 +92,9 @@ async def set_module(module: 'GeneralModule',
     if json is None or 'module' not in json or 'activate' not in json:
         raise WrongInputException('module or activate not provided')
     if json['activate']:
-        asyncio.run_coroutine_threadsafe(module.bot.module_manager.activate_module(guild.id, json['module']),
-                                         module.bot.bot.loop).result()
+        await module.bot.module_manager.activate_module(guild.id, json['module'], True)
     else:
-        asyncio.run_coroutine_threadsafe(module.bot.module_manager.deactivate_module(guild.id, json['module']),
-                                         module.bot.bot.loop).result()
+        await module.bot.module_manager.deactivate_module(guild.id, json['module'], True)
     return jsonify({'msg': 'success'}), 200
 
 

@@ -21,10 +21,3 @@ def has_permissions(**perms: bool):
         return wrapped
 
     return wrapper
-
-# def has_permissions(**perms):
-#     def decorator(func):
-#         def wrapper(module: 'SparkModule', *args, **kwargs):
-#             return module.bot.has_permissions(**perms)(func(module, *args, **kwargs))
-#         return wrapper
-#     return decorator

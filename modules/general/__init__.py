@@ -199,13 +199,13 @@ class GeneralModule(SparkModule):
         modules.subcommands.append(discord.SlashCommand(
             func=deactivate_module,
             name=self.bot.i18n.get('MODULE_DEACTIVATE_COMMAND'),
-            description=self.bot.i18n.get('MODULES_DEACTIVATE_DESCRIPTION'),
+            description=self.bot.i18n.get('MODULE_DEACTIVATE_DESCRIPTION'),
             parent=modules
         ))
         modules.subcommands.append(discord.SlashCommand(
             func=activate_module,
             name=self.bot.i18n.get('MODULE_ACTIVATE_COMMAND'),
-            description=self.bot.i18n.get('MODULES_ACTIVATE_DESCRIPTION'),
+            description=self.bot.i18n.get('MODULE_ACTIVATE_DESCRIPTION'),
             parent=modules
         ))
         modules.subcommands.append(discord.SlashCommand(

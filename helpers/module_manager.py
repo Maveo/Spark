@@ -77,7 +77,7 @@ class ModuleManager:
     def is_optional(self, module_key):
         return module_key in self.bot.module_manager.optional_modules
 
-    async def activate_module(self, guild_id, module_key):
+    async def activate_module(self, guild_id, module_key, sync_as_task=False):
         if not self.bot.module_manager.is_optional(module_key):
             raise WrongInputException('module "{}" not found!'.format(module_key))
 
@@ -90,9 +90,12 @@ class ModuleManager:
 
         self.bot.logger.info('guild {} activates module {}'.format(guild_id, module_key))
         self.bot.db.activate_module(guild_id, module_key)
-        await self.bot.sync_commands()
+        if sync_as_task:
+            self.bot.bot.loop.create_task(self.bot.sync_commands())
+        else:
+            await self.bot.sync_commands()
 
-    async def deactivate_module(self, guild_id, module_key):
+    async def deactivate_module(self, guild_id, module_key, sync_as_task=False):
         if not self.bot.module_manager.is_optional(module_key):
             raise WrongInputException('module "{}" not found!'.format(module_key))
 
@@ -105,7 +108,10 @@ class ModuleManager:
 
         self.bot.logger.info('guild {} deactivates module {}'.format(guild_id, module_key))
         self.bot.db.deactivate_module(guild_id, module_key)
-        await self.bot.sync_commands()
+        if sync_as_task:
+            self.bot.bot.loop.create_task(self.bot.sync_commands())
+        else:
+            await self.bot.sync_commands()
 
     def missing_dependencies(self, guild_id, module_key):
         dependencies = self.modules[module_key].dependencies

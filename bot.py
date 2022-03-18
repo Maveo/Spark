@@ -273,19 +273,22 @@ def main():
     if global_settings['ACTIVATE_WEBSERVER']:
         webserver_static_path = os.path.join(current_dir, global_settings['WEBSERVER_STATIC_PATH'])
         if not os.path.exists(webserver_static_path):
-            raise FileNotFoundError(
-                'Webserver static path ({}) not found'.format(webserver_static_path))
+            os.mkdir(webserver_static_path)
 
         build_frontend = False
+        skip_check = False
         install = False
 
         if '--install' in sys.argv[1:]:
             install = True
 
+        if '--skip-check' in sys.argv[1:]:
+            skip_check = True
+
         if not build_frontend and '--build' in sys.argv[1:]:
             build_frontend = True
 
-        if not build_frontend and len(os.listdir(webserver_static_path)) == 0:
+        if not skip_check and not build_frontend and len(os.listdir(webserver_static_path)) == 0:
             i = input('webserver path ({}) is empty. Do you want to build the frontend into that folder? [y/N] '
                       .format(webserver_static_path))
             if i.upper() == 'Y':
