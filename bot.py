@@ -101,6 +101,7 @@ class DiscordBot:
                                   guild_reactions=True,
                                   guild_messages=True,
                                   voice_states=True,
+                                  message_content=True,
                                   dm_messages=True,
                                   emojis=True,
                                   )
