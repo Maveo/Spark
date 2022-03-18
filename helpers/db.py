@@ -1,6 +1,7 @@
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
+from sqlalchemy.sql import func
 from typing import *
 
 
@@ -222,6 +223,13 @@ class Database:
         session = self.Session()
         session.merge(XPOrigin(guild_id=guild_id, user_id=user_id, amount=amount, origin=origin))
         session.commit()
+
+    def get_xp_origin(self, guild_id, user_id):
+        session = self.Session()
+        # stmt = db.select(XPOrigin).where(db.and_(XPOrigin.guild_id == guild_id, XPOrigin.user_id == user_id))
+        stmt = session.query(XPOrigin, func.sum(XPOrigin.amount).label("total")).filter(
+            db.and_(XPOrigin.guild_id == guild_id, XPOrigin.user_id == user_id)).group_by(XPOrigin.origin)
+        return stmt.all()
 
     def set_message_reaction(self, guild_id, trigger, reaction):
         session = self.Session()

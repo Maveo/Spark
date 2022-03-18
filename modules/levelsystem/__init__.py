@@ -17,6 +17,10 @@ class LevelsystemModule(SparkModule):
     settings = SETTINGS
     api_pages = API_PAGES
 
+    boost_origin_prefix = 'boost'
+    voice_origin = 'voice'
+    message_origin = 'message'
+
     async def lvlsys_get_embed(self, guild):
         embed = discord.Embed(title='',
                               description=self.bot.i18n.get('LEVELSYSTEM_EMPTY_ERROR'),
@@ -112,6 +116,33 @@ class LevelsystemModule(SparkModule):
                                                   .format(level),
                                                   color=discord.Color.green()))
 
+        @bot.has_permissions(administrator=True)
+        async def blacklist_user(ctx: discord.commands.context.ApplicationContext,
+                            member: discord.commands.Option(
+                                discord.Member,
+                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
+                            ),
+                            blacklist: discord.commands.Option(
+                                bool,
+                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
+                            )):
+
+            await self.check_level_user(member)
+            self.bot.db.update_level_user(member.guild.id, member.id, {
+                'blacklisted': blacklist,
+            })
+
+            if blacklist:
+                await ctx.respond(
+                    embed=discord.Embed(title='',
+                                        description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_SUCCESSFUL'),
+                                        color=discord.Color.green()))
+            else:
+                await ctx.respond(
+                    embed=discord.Embed(title='',
+                                        description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_REMOVE_SUCCESSFUL'),
+                                        color=discord.Color.green()))
+
         async def profile(ctx: discord.commands.context.ApplicationContext,
                           member: discord.commands.Option(
                               discord.Member,
@@ -167,6 +198,12 @@ class LevelsystemModule(SparkModule):
             description=self.bot.i18n.get('LEVELSYSTEM_SET_LEVEL_COMMAND_DESCRIPTION'),
             parent=levelsystem
         ))
+        levelsystem.subcommands.append(discord.SlashCommand(
+            func=blacklist_user,
+            name=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_COMMAND'),
+            description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_COMMAND_DESCRIPTION'),
+            parent=levelsystem
+        ))
         self.commands = [
             levelsystem,
             discord.SlashCommand(
@@ -191,13 +228,6 @@ class LevelsystemModule(SparkModule):
     @staticmethod
     def max_xp_for(lvl):
         return int(max(100, LevelsystemModule.get_lvl(lvl) * 10 + 90))
-
-    @staticmethod
-    def total_xp(lvl):
-        if lvl <= 0:
-            return int(100 * (lvl - 1))
-        lvl_int = int(lvl)
-        return (lvl_int * 5 + 90) * (lvl_int - 1) + lvl_int
 
     @staticmethod
     def lvl_xp_add(xp, lvl):
@@ -393,7 +423,8 @@ class LevelsystemModule(SparkModule):
         old_level = level_user.level
         level_user.level += self.lvl_xp_add(full_xp, level_user.level)
         self.bot.db.add_xp_origin(member.guild.id, member.id, base_xp, origin)
-        self.bot.db.add_xp_origin(member.guild.id, member.id, full_xp - base_xp, 'boost:{}'.format(origin))
+        self.bot.db.add_xp_origin(member.guild.id, member.id, full_xp - base_xp,
+                                  '{}:{}'.format(self.boost_origin_prefix, origin))
         await self.member_set_lvl(member, level_user.level, old_level)
 
     async def on_message_xp(self, message: discord.Message, member: discord.Member):
@@ -404,7 +435,7 @@ class LevelsystemModule(SparkModule):
         if level_user.blacklisted:
             return
         base_xp = self.bot.module_manager.settings.get(member.guild.id, 'MESSAGE_XP')
-        await self.give_xp(member, level_user, base_xp, 'message')
+        await self.give_xp(member, level_user, base_xp, self.message_origin)
 
     async def voice_xp(self, member, current_time, new_joined=None):
         if not await self.leveling_allowed(member):
@@ -421,7 +452,7 @@ class LevelsystemModule(SparkModule):
 
         base_xp = (current_time - level_user.last_joined) \
             * self.bot.module_manager.settings.get(member.guild.id, 'VOICE_XP_PER_MINUTE') / 60
-        await self.give_xp(member, level_user, base_xp, 'voice')
+        await self.give_xp(member, level_user, base_xp, self.voice_origin)
         self.bot.db.update_level_user(member.guild.id, member.id, {'last_joined': new_joined})
 
     async def member_joined_vc(self, member, current_time):
@@ -466,3 +497,28 @@ class LevelsystemModule(SparkModule):
                 return
 
             await self.voice_xp(member, current_time, last_joined)
+
+    async def create_extended_profile(self, member: discord.Member):
+        await self.check_level_user(member)
+        user = self.bot.db.get_level_user(member.guild.id, member.id)
+        print(user)
+        xp_origins = self.bot.db.get_xp_origin(member.guild.id, member.id)
+        text_msg_xp = 0
+        voice_xp = 0
+        boost_xp = 0
+        for origin in xp_origins:
+            if origin[0].origin == self.message_origin:
+                text_msg_xp += origin[1]
+            elif origin[0].origin == self.voice_origin:
+                voice_xp += origin[1]
+            elif origin[0].origin.startswith(self.boost_origin_prefix):
+                boost_xp += origin[1]
+
+        return {
+            'level': self.get_lvl(user.level),
+            'total_xp': text_msg_xp + voice_xp + boost_xp,
+            'blacklisted': user.blacklisted,
+            'text_msg_xp': text_msg_xp,
+            'voice_xp': voice_xp,
+            'boost_xp': boost_xp,
+        }

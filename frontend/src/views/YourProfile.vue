@@ -67,7 +67,7 @@
                         <h6 class="text-gray4">Gained XP Origin</h6>
                     </div>
                     <div>
-                        <h6 class="text-gray4">Total XP Gained: <span class="text-white">{{profile.total_xp}}</span></h6>
+                        <h6 class="text-gray4">Total XP Gained: <span class="text-white">{{profile.total_xp.toFixed(0)}}</span></h6>
                     </div>
                 </div>
                 <div class="progress" style="border-radius: 3rem; background-color: unset !important;">
@@ -161,7 +161,7 @@ export default defineComponent({
           boost_xp_percent: 0,
       };
   },
-  created() {
+  updated() {
       if (this.profile.total_xp != 0) {
           this.total_xp_with_origin = this.profile.text_msg_xp + this.profile.voice_xp + this.profile.boost_xp;
           this.unknown_xp_percent = (this.profile.total_xp - this.total_xp_with_origin) * 100 / this.profile.total_xp;
