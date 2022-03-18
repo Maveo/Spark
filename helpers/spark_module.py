@@ -1,4 +1,4 @@
-from typing import Type, TYPE_CHECKING
+from typing import *
 
 import discord
 
@@ -14,11 +14,11 @@ class SparkModule:
     title = None
     description = None
     optional = True
-    settings: dict[str, 'Setting'] = {}
-    api_pages: list['Page'] = []
-    commands: list[discord.ApplicationCommand] = []
-    dependencies: list['SparkModule'] = []
-    dependency_for: list['SparkModule'] = None
+    settings: Dict[str, 'Setting'] = {}
+    api_pages: List['Page'] = []
+    commands: List[discord.ApplicationCommand] = []
+    dependencies: List['SparkModule'] = []
+    dependency_for: List['SparkModule'] = None
 
     def __init__(self, bot: 'DiscordBot'):
         self.bot = bot

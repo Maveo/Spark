@@ -1,6 +1,5 @@
-import asyncio
 import json
-from typing import Callable, Coroutine
+from typing import *
 
 import discord
 import discord.commands
@@ -16,7 +15,7 @@ class CustomDropdown(discord.ui.Select):
     def __init__(self,
                  callback: Callable[['CustomDropdown', discord.Interaction], Coroutine],
                  placeholder: str,
-                 options: list[discord.SelectOption]):
+                 options: List[discord.SelectOption]):
         self.custom_callback = callback
 
         super().__init__(

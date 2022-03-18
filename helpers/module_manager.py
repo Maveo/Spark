@@ -13,7 +13,7 @@ from helpers.spark_module import SparkModule
 
 
 import itertools
-from typing import TYPE_CHECKING
+from typing import *
 
 from helpers.tools import underscore_to_camelcase
 from webserver import Page
@@ -25,8 +25,8 @@ if TYPE_CHECKING:
 class ModuleManager:
     def __init__(self, bot: 'DiscordBot'):
         self.bot = bot
-        self.optional_modules: list[str] = []
-        self.modules: dict[str, SparkModule] = {}
+        self.optional_modules: List[str] = []
+        self.modules: Dict[str, SparkModule] = {}
         self.settings = ModuleSettingsManager(self)
         self.api_pages = ModuleApiPagesManager(self)
 
@@ -203,10 +203,10 @@ class ModuleManager:
 class ModuleSettingsManager:
     def __init__(self, module_manager: ModuleManager):
         self.module_manager = module_manager
-        self.default_settings: dict[str, Setting] = {}
+        self.default_settings: Dict[str, Setting] = {}
 
-    def initialize(self, modules: list[SparkModule]):
-        settings_keys: dict[str, str] = {}
+    def initialize(self, modules: List[SparkModule]):
+        settings_keys: Dict[str, str] = {}
         for module in modules:
             if not isinstance(module.get_settings(), dict):
                 raise RuntimeError('settings of module {} not dict'.format(module.get_name()))
@@ -291,10 +291,10 @@ class ModuleSettingsManager:
 class ModuleApiPagesManager:
     def __init__(self, module_manager: ModuleManager):
         self.module_manager = module_manager
-        self.default_api_pages: dict[str, Page] = {}
+        self.default_api_pages: Dict[str, Page] = {}
 
-    def initialize(self, modules: list[SparkModule]):
-        pages_keys: dict[str, str] = {}
+    def initialize(self, modules: List[SparkModule]):
+        pages_keys: Dict[str, str] = {}
         for module in modules:
             if not isinstance(module.get_api_pages(), list):
                 raise RuntimeError('api pages of module {} not list'.format(module.get_name()))

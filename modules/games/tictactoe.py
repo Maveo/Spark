@@ -1,7 +1,7 @@
 import discord
 import discord.commands
 
-from typing import TYPE_CHECKING
+from typing import *
 
 
 if TYPE_CHECKING:
@@ -81,7 +81,7 @@ class TicTacToeButton(discord.ui.Button["TicTacToeView"]):
 class TicTacToeView(discord.ui.View):
     # This tells the IDE or linter that all our children will be TicTacToeButtons
     # This is not required
-    children: list[TicTacToeButton]
+    children: List[TicTacToeButton]
     X = -1
     O = 1
     Tie = 2

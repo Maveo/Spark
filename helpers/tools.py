@@ -1,10 +1,11 @@
 import re
 
+from typing import *
 import discord
 from discord.utils import get
 
 
-def autocomplete_match(s: str, li: list[str]):
+def autocomplete_match(s: str, li: List[str]):
     sl = s.lower()
     return filter(lambda s2: sl in s2.lower(), li)
 
@@ -55,18 +56,6 @@ def search_channel(guild, search, t):
     if channel is not None:
         return channel
     return None
-
-# def search_text_channel(ctx, search):
-#     if search[:2] == '<#' and search[-1] == '>':
-#         search = search[2:-1]
-#     if search.isnumeric():
-#         channel = get(ctx.guild, id=int(search))
-#         if channel is not None:
-#             return channel
-#     channel = get(ctx.guild.text_channels, name=search)
-#     if channel is not None:
-#         return channel
-#     return None
 
 
 def search_text_channel(guild, search):

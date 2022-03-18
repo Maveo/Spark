@@ -1,15 +1,14 @@
-import typing
-import discord
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
+from typing import *
 
 
 class Representable:
     def __repr__(self) -> str:
         return self._repr(**{k: v for k, v in self.__dict__.items() if not k.startswith('_')})
 
-    def _repr(self, **fields: typing.Dict[str, typing.Any]) -> str:
+    def _repr(self, **fields: Dict[str, Any]) -> str:
         """
         Helper for __repr__
         """
@@ -129,7 +128,7 @@ class Database:
         session.execute(stmt)
         session.commit()
 
-    def get_activated_modules(self, guild_id) -> list[str]:
+    def get_activated_modules(self, guild_id) -> List[str]:
         session = self.Session()
         stmt = db.select(ActiveModule).where(ActiveModule.guild_id == guild_id)
         return [x.module for x in session.scalars(stmt)]
@@ -153,7 +152,7 @@ class Database:
         session.execute(stmt)
         session.commit()
 
-    def get_levelsystem(self, guild_id) -> list[LevelSystem]:
+    def get_levelsystem(self, guild_id) -> List[LevelSystem]:
         session = self.Session()
         stmt = db.select(LevelSystem).where(LevelSystem.guild_id == guild_id)
         return list(session.scalars(stmt))
@@ -174,18 +173,18 @@ class Database:
         stmt = db.select(LevelUser).where(db.and_(LevelUser.guild_id == guild_id, LevelUser.user_id == user_id))
         return session.scalars(stmt).first()
 
-    def get_level_users(self, guild_id) -> list[LevelUser]:
+    def get_level_users(self, guild_id) -> List[LevelUser]:
         session = self.Session()
         stmt = db.select(LevelUser).where(LevelUser.guild_id == guild_id)
         return session.scalars(stmt).all()
 
-    def get_level_user_xp_boosts(self, guild_id, user_id, current_time=-1) -> list[XPBoost]:
+    def get_level_user_xp_boosts(self, guild_id, user_id, current_time=-1) -> List[XPBoost]:
         session = self.Session()
         stmt = db.select(XPBoost).where(db.and_(XPBoost.guild_id == guild_id, XPBoost.user_id == user_id,
                                                 db.or_(XPBoost.expires.is_(None), XPBoost.expires > current_time)))
         return session.scalars(stmt).all()
 
-    def get_level_user_xp_boosts_by_origin(self, guild_id, user_id, origin, current_time=-1) -> list[XPBoost]:
+    def get_level_user_xp_boosts_by_origin(self, guild_id, user_id, origin, current_time=-1) -> List[XPBoost]:
         session = self.Session()
         stmt = db.select(XPBoost).where(db.and_(XPBoost.guild_id == guild_id,
                                                 XPBoost.user_id == user_id,
@@ -193,7 +192,7 @@ class Database:
                                                 db.or_(XPBoost.expires.is_(None), XPBoost.expires > current_time)))
         return session.scalars(stmt).all()
 
-    def get_level_users_xp_boosts_by_origin(self, guild_id, origin, current_time=-1) -> list[XPBoost]:
+    def get_level_users_xp_boosts_by_origin(self, guild_id, origin, current_time=-1) -> List[XPBoost]:
         session = self.Session()
         stmt = db.select(XPBoost).where(db.and_(XPBoost.guild_id == guild_id,
                                                 XPBoost.origin == origin,
@@ -201,7 +200,7 @@ class Database:
         return session.scalars(stmt).all()
 
     def get_level_user_xp_boosts_by_origin_prefix(
-            self, guild_id, user_id, origin_prefix, current_time=-1) -> list[XPBoost]:
+            self, guild_id, user_id, origin_prefix, current_time=-1) -> List[XPBoost]:
         session = self.Session()
         stmt = db.select(XPBoost).where(db.and_(XPBoost.guild_id == guild_id,
                                                 XPBoost.user_id == user_id,
@@ -235,7 +234,7 @@ class Database:
             db.and_(MessageReaction.guild_id == guild_id, MessageReaction.trigger == trigger)).delete()
         session.commit()
 
-    def get_message_reactions(self, guild_id) -> list[MessageReaction]:
+    def get_message_reactions(self, guild_id) -> List[MessageReaction]:
         session = self.Session()
         stmt = db.select(MessageReaction).where(MessageReaction.guild_id == guild_id)
         return session.scalars(stmt).all()
@@ -256,12 +255,12 @@ class Database:
                                     action=action))
         session.commit()
 
-    def get_emoji_reactions(self, guild_id) -> list[EmojiReaction]:
+    def get_emoji_reactions(self, guild_id) -> List[EmojiReaction]:
         session = self.Session()
         stmt = db.select(EmojiReaction).where(EmojiReaction.guild_id == guild_id)
         return session.scalars(stmt).all()
 
-    def get_emoji_reactions_by_payload(self, guild_id, channel_id, message_id, emoji) -> list[EmojiReaction]:
+    def get_emoji_reactions_by_payload(self, guild_id, channel_id, message_id, emoji) -> List[EmojiReaction]:
         session = self.Session()
         stmt = db.select(EmojiReaction).where(db.and_(
             EmojiReaction.guild_id == guild_id,

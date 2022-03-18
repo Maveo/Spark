@@ -1,4 +1,3 @@
-import atexit
 import functools
 import os
 import asyncio
@@ -8,7 +7,7 @@ import shutil
 import time
 
 import logging
-from typing import Union
+from typing import *
 
 from helpers.db import Database
 import discord
@@ -26,7 +25,7 @@ class DiscordBot:
 
     def user_missing_permissions(self, member: discord.Member,
                                  channel=None,
-                                 **perms: bool) -> list[str]:
+                                 **perms: bool) -> List[str]:
         if self.is_super_admin(member.id):
             return []
 

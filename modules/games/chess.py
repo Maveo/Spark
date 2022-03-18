@@ -1,5 +1,5 @@
 import io
-from typing import Coroutine, Callable, Type, TYPE_CHECKING
+from typing import *
 
 import discord
 import discord.commands
@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from bot import DiscordBot
 
 
-def check_knight(color: bool, board: 'Board', pos: tuple[int, int]) -> bool:
+def check_knight(color: bool, board: 'Board', pos: Tuple[int, int]) -> bool:
     """
     Check if there is a knight of the opposite `color` at
     position `pos` on board `board`.
@@ -26,7 +26,7 @@ def check_knight(color: bool, board: 'Board', pos: tuple[int, int]) -> bool:
     return True
 
 
-def check_diag_castle(color: bool, board: 'Board', start: tuple[int, int], to: tuple[int, int]) -> bool:
+def check_diag_castle(color: bool, board: 'Board', start: Tuple[int, int], to: Tuple[int, int]) -> bool:
     """
     Checks the diagonal path from `start` (non-inclusive) to `to` (inclusive)
     on board `board` for any threats from the opposite `color`
@@ -73,7 +73,7 @@ def check_diag_castle(color: bool, board: 'Board', start: tuple[int, int], to: t
     return True
 
 
-def check_diag(board: 'Board', start: tuple[int, int], to: tuple[int, int]) -> bool:
+def check_diag(board: 'Board', start: Tuple[int, int], to: Tuple[int, int]) -> bool:
     """
     Checks if there are no pieces along the diagonal path from
     `start` (non-inclusive) to `to` (non-inclusive).
@@ -101,7 +101,7 @@ def check_diag(board: 'Board', start: tuple[int, int], to: tuple[int, int]) -> b
     return True
 
 
-def check_updown_castle(color: bool, board: 'Board', start: tuple[int, int], to: tuple[int, int]) -> bool:
+def check_updown_castle(color: bool, board: 'Board', start: Tuple[int, int], to: Tuple[int, int]) -> bool:
     """
     Checks if there are any threats from the opposite `color` from `start` (non-inclusive)
     to `to` (inclusive) on board `board`.
@@ -136,7 +136,7 @@ def check_updown_castle(color: bool, board: 'Board', start: tuple[int, int], to:
     return True
 
 
-def check_updown(board: 'Board', start: tuple[int, int], to: tuple[int, int]) -> bool:
+def check_updown(board: 'Board', start: Tuple[int, int], to: Tuple[int, int]) -> bool:
     """
     Checks if there are no pieces along the vertical or horizontal path
     from `start` (non-inclusive) to `to` (non-inclusive).
@@ -199,10 +199,10 @@ class Piece:
         self.emoji_white: str = "\u200b"
         self.emoji_black: str = "\u200b"
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         return False
 
-    def is_valid_capture(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_capture(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         return self.is_valid_move(board, start, to, apply_move)
 
     def is_white(self) -> bool:
@@ -233,7 +233,7 @@ class Rook(Piece):
         self.emoji_black = '♖'
         self.first_move = first_move
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         if start[0] == to[0] or start[1] == to[1]:
             return check_updown(board, start, to)
         return False
@@ -246,7 +246,7 @@ class Knight(Piece):
         self.emoji_white = '·♞·'
         self.emoji_black = '♘'
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         if abs(start[0] - to[0]) == 2 and abs(start[1] - to[1]) == 1:
             return True
         if abs(start[0] - to[0]) == 1 and abs(start[1] - to[1]) == 2:
@@ -261,7 +261,7 @@ class Bishop(Piece):
         self.emoji_white = '·♝·'
         self.emoji_black = '♗'
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         return check_diag(board, start, to)
 
 
@@ -272,7 +272,7 @@ class Queen(Piece):
         self.emoji_white = '·♛·'
         self.emoji_black = '♕'
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         # diagonal
         if abs(start[0] - to[0]) == abs(start[1] - to[1]):
             return check_diag(board, start, to)
@@ -295,7 +295,7 @@ class King(Piece):
         self.emoji_white = '·♚·'
         self.emoji_black = '♔'
 
-    def can_castle(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], right: bool, apply_move=False):
+    def can_castle(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], right: bool, apply_move=False):
         """
         Returns True if king at `start` can move to `to` on `board`.
         board : Board
@@ -490,7 +490,7 @@ class King(Piece):
 
             return True
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         for y in range(board.max_size[0]):
             for x in range(board.max_size[1]):
                 if (y, x) != start and (y, x) != to:
@@ -519,7 +519,7 @@ class GhostPawn(Piece):
         self.name = "GP"
         self.ghost = True
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         return False
 
 
@@ -531,7 +531,7 @@ class Pawn(Piece):
         self.emoji_black = '♙'
         self.first_move = True
 
-    def is_valid_move(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         if self.color:
             if self.is_valid_capture(board, start, to, apply_move):
                 return True
@@ -565,7 +565,7 @@ class Pawn(Piece):
                 return False
             return False
 
-    def is_valid_capture(self, board: 'Board', start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_capture(self, board: 'Board', start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         if self.color:
             if start[0] == to[0] + 1 and (start[1] == to[1] + 1 or start[1] == to[1] - 1):
                 if board.board[to[0]][to[1]] is not None:
@@ -607,20 +607,20 @@ class Board:
 
     """
 
-    def __init__(self, board: list[list[Piece or None]], max_size=(8, 8)):
+    def __init__(self, board: List[List[Piece or None]], max_size=(8, 8)):
         """
         Initializes the board per standard chess rules
         """
 
-        self.board: list[list[Piece or None]] = board
+        self.board: List[List[Piece or None]] = board
         self.max_size = max_size
 
         self.white_ghost_piece = None
         self.black_ghost_piece = None
 
     @staticmethod
-    def empty(size=(8, 8)) -> list[list[Piece or None]]:
-        board: list[list[Piece or None]] = []
+    def empty(size=(8, 8)) -> List[List[Piece or None]]:
+        board: List[List[Piece or None]] = []
         # Board set-up
         for i in range(size[1]):
             board.append([None] * size[0])
@@ -629,7 +629,7 @@ class Board:
 
     @classmethod
     def default(cls):
-        board: list[list[Piece or None]] = Board.empty()
+        board: List[List[Piece or None]] = Board.empty()
         # White
         board[7][0] = Rook(True)
         board[7][1] = Knight(True)
@@ -659,7 +659,7 @@ class Board:
 
     @classmethod
     def small(cls):
-        board: list[list[Piece or None]] = Board.empty()
+        board: List[List[Piece or None]] = Board.empty()
         # White
         board[7][0] = Rook(True)
         board[7][1] = Knight(True)
@@ -719,7 +719,7 @@ class Chess:
 
         self.turn = True
 
-    def promotion_by_string(self, promote: str, pos: tuple[int, int]):
+    def promotion_by_string(self, promote: str, pos: Tuple[int, int]):
         if promote == '' or promote == 'Q':
             self.promotion(pos, Queen)
             return
@@ -733,13 +733,13 @@ class Chess:
             self.promotion(pos, Bishop)
             return
 
-    def promotion(self, pos: tuple[int, int], cls: Type[Piece]):
+    def promotion(self, pos: Tuple[int, int], cls: Type[Piece]):
         old_piece = self.board.board[pos[0]][pos[1]]
         new_piece = cls(old_piece.color)
         new_piece.first_move = False
         self.board.board[pos[0]][pos[1]] = new_piece
 
-    def has_valid_move(self, start: tuple[int, int]) -> bool:
+    def has_valid_move(self, start: Tuple[int, int]) -> bool:
         for y in range(self.board.max_size[0]):
             for x in range(self.board.max_size[1]):
                 if self.is_valid_move(start, (y, x)):
@@ -772,7 +772,7 @@ class Chess:
                                 return True
         return False
 
-    def in_check_after_move(self, start: tuple[int, int], to: tuple[int, int]) -> bool:
+    def in_check_after_move(self, start: Tuple[int, int], to: Tuple[int, int]) -> bool:
         start_t = self.board.board[start[0]][start[1]]
         to_t = self.board.board[to[0]][to[1]]
         self.board.board[start[0]][start[1]] = None
@@ -808,7 +808,7 @@ class Chess:
                                 return False
         return True
 
-    def is_valid_move(self, start: tuple[int, int], to: tuple[int, int], apply_move=False) -> bool:
+    def is_valid_move(self, start: Tuple[int, int], to: Tuple[int, int], apply_move=False) -> bool:
         if self.board.board[start[0]][start[1]] is None:
             return False
 
@@ -848,7 +848,7 @@ class Chess:
 
         return res
 
-    def move(self, start: tuple[int, int], to: tuple[int, int]):
+    def move(self, start: Tuple[int, int], to: Tuple[int, int]):
         """
         Moves a piece at `start` to `to`. Does nothing if there is no piece at the starting point.
         Does nothing if the piece at `start` belongs to the wrong color for the current turn.
@@ -884,7 +884,7 @@ class Chess:
 
 
 class ChessButton(discord.ui.Button):
-    def __init__(self, x: int, y: int, pos: tuple[int, int],
+    def __init__(self, x: int, y: int, pos: Tuple[int, int],
                  callback: Callable[['ChessButton', discord.Interaction], Coroutine],
                  light_field: bool):
         self.default_style = discord.ButtonStyle.secondary
@@ -902,7 +902,7 @@ class ChessButton(discord.ui.Button):
 
 
 class ChessView(discord.ui.View):
-    children: list[ChessButton]
+    children: List[ChessButton]
 
     def __init__(self, callback: Callable[['ChessButton', discord.Interaction], Coroutine],
                  x_rows=4, y_cols=4, x_offset=0, y_offset=0):
@@ -1086,8 +1086,8 @@ class ChessViewHolder:
     def __init__(self, bot: 'DiscordBot', ctx: discord.commands.context.ApplicationContext):
         self.bot = bot
 
-        self.selected_pos: tuple[int, int] or None = None
-        self.promotion_square: tuple[int, int] or None = None
+        self.selected_pos: Tuple[int, int] or None = None
+        self.promotion_square: Tuple[int, int] or None = None
         self.suffix_message: int or None = None
 
         self.chess_game: Chess = Chess(Board.small())
@@ -1115,7 +1115,7 @@ class ChessViewHolder:
             self.promotion_view.add_item(child)
 
         self.original_context: discord.commands.context.ApplicationContext = ctx
-        self.view_messages: list[int] or None = None
+        self.view_messages: List[int] or None = None
         self.current_player = True
         self.white_players = []
         self.black_players = []
@@ -1156,7 +1156,7 @@ def translate(s):
         return None
 
 
-def translate_back(pos: tuple[int, int]):
+def translate_back(pos: Tuple[int, int]):
     return '{}{}'.format(list(BOARD_TRANSLATE_KEYS.keys())[pos[1]], 8 - pos[0])
 
 
