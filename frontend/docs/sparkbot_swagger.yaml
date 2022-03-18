@@ -1,0 +1,484 @@
+swagger: "2.0"
+info:
+  description: |
+    The `session_token` is sent with every API call as the following header `Authorization Bearer <session_token>` to authenticate the current user.
+    If the authorization header is not set, invalid or expired, all API calls will repond with `HTTP 401 Unauthorized`.
+
+  version: "0.2.0"
+  title: "Spark frontend API definitions"
+# termsOfService: "http://swagger.io/terms/"
+  # contact:
+  #   email: "apiteam@swagger.io"
+#  license:
+#    name: "Apache 2.0"
+#    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "www.sparkbot.me"
+basePath: "/fap"
+tags:
+- name: "auth"
+  description: "Everything about authorization"
+
+- name: "guild"
+  description: "Everything about guilds"
+
+- name: "user"
+  description: "Everything about the user"
+
+paths:
+
+  /get-auth:
+    get:
+      tags:
+      - "auth"
+      summary: "Get the Discord OAuth redirect uri"
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: object
+            properties: 
+              auth_url:
+                description: The url to redirect the user for authenticating with Discord
+                type: string
+  /create-session:
+    post:
+      tags:
+      - "auth"
+      summary: "Get the session token for accessing all other API resources"
+      parameters:
+      - name: code
+        description: The code retrieved from Discord authentication
+        in: "body"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: object
+            properties:
+              session_token:
+                description: Will be sent in the authorization header with every request to authenticate the current user
+                type: string
+
+  /guild:
+    get:
+      tags:
+      - "guild"
+      summary: "Get basic information about a guild"
+      parameters:
+      - name: guild_id
+        description: The id of the requested guild
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            $ref: '#/definitions/Spark_Guild'
+  /guilds:
+    get:
+      tags:
+      - "guild"
+      summary: "Get basic information about all guilds you are in"
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Spark_Guild'
+  /ranking:
+    get:
+      tags:
+      - "guild"
+      summary: "Get basic information about all guilds you are in"
+      parameters:
+      - name: guild_id
+        description: The id of the guild you want the ranking for
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Spark_Ranking_User'
+  /profile:
+    get:
+      tags:
+      - "user"
+      summary: "Get all the information about you in your selected guild"
+      parameters:
+      - name: guild_id
+        description: The id of the requested guild
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            $ref: '#/definitions/Spark_Profile'
+  /promo:
+    get:
+      tags:
+      - "user"
+      summary: "Get a promo code"
+      parameters:
+      - name: guild_id
+        description: The id of the requested guild
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: object
+            properties:
+              promo_code:
+                description: the promo code
+                type: string
+  /boost:
+    post:
+      tags:
+      - "user"
+      summary: "boost a user"
+      parameters:
+      - name: guild_id
+        description: The guild id of the guild the user belongs to
+        in: "query"
+        required: true
+        type: string
+      - name: username
+        description: The username of the user you want to boost
+        in: "body"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+  /redeem:
+    post:
+      tags:
+      - "user"
+      summary: "redeem a promo code"
+      parameters:
+      - name: guild_id
+        description: The guild id of the guild the user belongs to
+        in: "query"
+        required: true
+        type: string
+      - name: promo_code
+        description: The promo code you want to redeem
+        in: "body"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+  /settings:
+    get:
+      tags:
+      - "settings"
+      summary: "Get all guild settings"
+      parameters:
+      - name: guild_id
+        description: The id of the requested guild
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: object
+            properties:
+              categories:
+                description: available categories of the settings
+                type: array
+                example: ['Cat1', 'Cat2']
+                items:
+                  type: string
+              settings:
+                type: array
+                items:
+                  $ref: '#/definitions/Spark_Setting'
+  /reset-setting:
+    post:
+      tags:
+      - "settings"
+      summary: "Reset a specific setting"
+      parameters:
+      - name: guild_id
+        description: The guild id of the guild the user belongs to
+        in: "query"
+        required: true
+        type: string
+      - name: key
+        description: The key of the setting you want to reset
+        in: "body"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+  /set-setting:
+    post:
+      tags:
+      - "settings"
+      summary: "Set a specific setting"
+      parameters:
+      - name: guild_id
+        description: The guild id of the guild the user belongs to
+        in: "query"
+        required: true
+        type: string
+      - name: key
+        description: The key of the setting you want to set
+        in: "body"
+        required: true
+        type: string
+      - name: value
+        description: The value you want to set
+        in: "body"
+        required: true
+        type: any
+      responses:
+        "200":
+          description: "Successful operation"
+
+definitions:
+  Spark_Guild:
+    type: object
+    description: "Discord guild object, very simplified"
+    properties:
+      id:
+        type: string
+        description: "guild id"
+        example: "12345678"
+      name:
+        type: string
+        description: "guild name (2-100 characters, excluding trailing and leading whitespace)"
+        example: "Server of Yours"
+      icon_url:
+        type: string
+        description: "url to the guild icon"
+        example: "https://cdn.discordapp.com/icons/188893186435973121/a_71ba803956e5189b9dab7d5d2d6b331f.gif"
+  Spark_Profile:
+    type: object
+    description: "custom profile of a user"
+    properties:
+      id:
+        type: string
+        description: "user id"
+        example: "12345678"
+      nick:
+        type: string
+        description: "nick name of the user"
+        example: "Maxi"
+      name:
+        type: string
+        description: "full name of the user"
+        example: "Max Mustermann"
+      avatar_url:
+        type: string
+        description: "url to the avatar icon"
+        example: "https://cdn.discordapp.com/avatars/188893043577847808/a_13a2782779d6938c0e351104e96280d2.gif"
+      top_role:
+        type: string
+        description: "name of the top role of the user"
+        example: "Moderator"
+      admin:
+        type: boolean
+        description: "if user is admin"
+        example: "false"
+      lvl:
+        type: number
+        description: "lvl of the user"
+        example: "42"
+      tag:
+        type: string
+        description: "discord tag of the user (without the #)"
+        example: "0501"
+      joined_at:
+        type: string
+        description: "date of the user joining the guild"
+        example: "17.04.2021 17:22"
+      hype_squad:
+        type: string
+        description: "which discord hypesquad the user belongs to (or None)"
+        example: "Balanced"
+      boosting_since:
+        type: string
+        description: "date since when the user discord boosts the server (or None)"
+        example: "None"
+      total_xp:
+        type: number
+        description: "total xp the user has accumulated"
+        example: "69"
+      text_msg_xp:
+        type: number
+        description: "amount of xp which came from text messages"
+        example: "69"
+      voice_xp:
+        type: number
+        description: "amount of xp which came from voice activity"
+        example: "69"
+      boost_xp:
+        type: number
+        description: "amount of xp which came from boosts"
+        example: "69"
+      boost_xp_multiplier:
+        type: number
+        description: "xp multiplier of normal boosts"
+        example: "0.25"
+      promo_boost_xp_multiplier:
+        type: number
+        description: "xp multiplier of promo boosts"
+        example: "2.0"
+      boosts:
+        type: array
+        description: "boosts user is receiving"
+        items:
+          $ref: '#/definitions/Spark_Boost'
+      promo_boosts:
+        type: array
+        description: "promo boosts user is receiving"
+        items:
+          $ref: '#/definitions/Spark_Boost'
+      boosting:
+        type: boolean
+        description: "if the user is boosting someone"
+        example: "false"
+      boosting_name:
+        type: string
+        description: "name of the boosted user (or None, formatted by api)"
+        example: "🪐Peter"
+      boosting_remaining_days:
+        type: number
+        description: "remaining days of the boost the user is giving (only full days)"
+        example: "5"
+      boosting_remaining_hours:
+        type: number
+        description: "remaining hours of the boost is giving (only full hours)"
+        example: "5"
+      promo_code_expires_hours:
+        type: number
+        description: "after x hours promo code expires"
+        example: "24"
+      can_redeem_promo_code:
+        type: boolean
+        description: "if the user is allowed to redeem a promo code"
+        example: "false"
+      promo_user_set_level:
+        type: number
+        description: "level a user is set after getting promoted"
+        example: "2"
+
+  Spark_Boost:
+    type: object
+    description: "data object of a boost"
+    properties:
+      name:
+        type: string
+        description: "user name (formatted by api)"
+        example: "🪐Peter"
+      remaining_days:
+        type: number
+        description: "remaining days of the boost (only full days)"
+        example: "5"
+      remaining_hours:
+        type: number
+        description: "remaining hours of the boost (only full hours)"
+        example: "2"
+
+  Spark_Ranking_User:
+    type: object
+    description: "data object of a boost"
+    properties:
+      member:
+        $ref: '#/definitions/Spark_Member'
+      avatar_url:
+        type: string
+        description: "avatar icon url"
+        example: "https://cdn.discordapp.com/avatars/188893043577847808/a_13a2782779d6938c0e351104e96280d2.gif"
+      name:
+        type: string
+        description: "full name"
+        example: "Peter Pog"
+      rank:
+        type: number
+        description: "rank of the user"
+        example: "1"
+      lvl:
+        type: number
+        description: "level of the user"
+        example: "5"
+      xp:
+        type: number
+        description: "current xp (this level) of the user"
+        example: "50"
+      max_xp:
+        type: number
+        description: "max xp for the level of the user"
+        example: "100"
+      xp_percentage:
+        type: number
+        description: "the xp of this level in precentage"
+        example: "0.4"
+
+  Spark_Member:
+    type: object
+    description: "data object of a boost"
+    properties:
+      id:
+        type: string
+        description: "member id"
+        example: "1234567"
+      nick:
+        type: string
+        description: "nick name"
+        example: "Peter"
+      name:
+        type: string
+        description: "full name"
+        example: "Peter Pog"
+      avatar_url:
+        type: string
+        description: "avatar icon url"
+        example: "https://cdn.discordapp.com/avatars/188893043577847808/a_13a2782779d6938c0e351104e96280d2.gif"
+      top_role:
+        type: string
+        description: "top role of the member"
+        example: "Moderator"
+  Spark_Setting:
+    type: object
+    description: "data object of a setting"
+    properties:
+      categories:
+        type: array
+        description: "categories of the setting"
+        example: ['Cat1']
+        items:
+          type: string
+      description:
+        type: string
+        description: "description of the setting"
+        example: "Example setting (changes nothing)"
+      type:
+        type: string
+        description: "type of the setting (string, float, text, list)"
+        example: "list"
+      value:
+        type: any
+        description: "value of the setting"
+        example: ['4', '2']
+
+#externalDocs:
+#  description: "Find out more about Swagger"
+#  url: "http://swagger.io"

@@ -1,7 +1,8 @@
-settings.py
+/settings.py
 
 .idea/
 dbs/
+webserver/static/
 images/emojis/
 
 # Byte-compiled / optimized / DLL files

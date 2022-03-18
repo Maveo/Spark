@@ -1,5 +1,80 @@
 import re
-import json
+
+import discord
+from discord.utils import get
+
+
+def autocomplete_match(s: str, li: list[str]):
+    sl = s.lower()
+    return filter(lambda s2: sl in s2.lower(), li)
+
+
+def underscore_to_camelcase(word):
+    return ''.join(x.capitalize() or '_' for x in word.split('_'))
+
+
+async def give_role(guild, member: discord.Member, role_id):
+    role = get(guild.roles, id=role_id)
+    if role is not None and role not in member.roles:
+        await member.add_roles(role)
+
+
+async def remove_role(guild, member: discord.Member, role_id):
+    role = get(guild.roles, id=role_id)
+    if role is not None and role in member.roles:
+        await member.remove_roles(role)
+
+
+def search_member(guild, search):
+    search = str(search)
+    if search[:2] == '<@' and search[-1] == '>':
+        search = search[2:-1]
+        if search[0] == '!':
+            search = search[1:]
+    if search.isnumeric():
+        member = get(guild.members, id=int(search))
+        if member is not None and not member.bot:
+            return member
+    member = get(guild.members, nick=search)
+    if member is not None and not member.bot:
+        return member
+    member = get(guild.members, name=search)
+    if member is not None and not member.bot:
+        return member
+    return None
+
+
+def search_channel(guild, search, t):
+    if search[:2] == '<#' and search[-1] == '>':
+        search = search[2:-1]
+    if search.isnumeric():
+        channel = get(guild.channels, id=int(search), type=t)
+        if channel is not None:
+            return channel
+    channel = get(guild.channels, name=search, type=t)
+    if channel is not None:
+        return channel
+    return None
+
+# def search_text_channel(ctx, search):
+#     if search[:2] == '<#' and search[-1] == '>':
+#         search = search[2:-1]
+#     if search.isnumeric():
+#         channel = get(ctx.guild, id=int(search))
+#         if channel is not None:
+#             return channel
+#     channel = get(ctx.guild.text_channels, name=search)
+#     if channel is not None:
+#         return channel
+#     return None
+
+
+def search_text_channel(guild, search):
+    return search_channel(guild, search, discord.ChannelType.text)
+
+
+def search_voice_channel(guild, search):
+    return search_channel(guild, search, discord.ChannelType.voice)
 
 
 def only_emojis(text):
