@@ -7,6 +7,8 @@
   "BALANCED_HYPE": "Balanced",
   "LOADING": "Loading...",
   "LEFT_USER_NAME": "A USER WHO LEFT",
+  "BOT_MISSING_ADMINISTRATOR_PERMISSIONS": "Sorry, I am missing Administrator permissions and cannot work :(",
+  "BOT_MISSING_COMMANDS_SCOPE": "Sorry, I am missing the application.commands scope and cannot work :(",
   "BOOST_COMMAND": "boost",
   "BOOST_DESCRIPTION": "boost another member",
   "BOOST_TITLE": "Boosts",

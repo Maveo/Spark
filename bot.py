@@ -125,6 +125,21 @@ class DiscordBot:
         self.bot.add_listener(self._on_ready, 'on_ready')
 
         @self.bot.event
+        async def on_guild_join(guild: discord.Guild):
+            try:
+                await discord.bot.ApplicationCommandMixin.get_desynced_commands(self.bot, guild.id)
+
+                if not guild.me.guild_permissions.administrator:
+                    self.logger.warning('no administrator permission in {}'.format(repr(guild)))
+                    await guild.system_channel.send(
+                        embed=discord.Embed(title=self.i18n.get('BOT_MISSING_ADMINISTRATOR_PERMISSIONS'),
+                                            color=discord.Color.red()))
+            except discord.Forbidden:
+                self.logger.warning('Slash commands are disabled in {}'.format(guild))
+                await guild.system_channel.send(embed=discord.Embed(title=self.i18n.get('BOT_MISSING_COMMANDS_SCOPE'),
+                                                                    color=discord.Color.red()))
+
+        @self.bot.event
         async def on_error(event, *args, **kwargs):
             error = sys.exc_info()[1]
             self.logger.error('"{}" in event: {}'.format(error, event))
@@ -221,11 +236,16 @@ class DiscordBot:
 
         modules_to_guilds = {x: [] for x in self.module_manager.keys()}
         for guild in self.bot.guilds:
-            if not guild.me.guild_permissions.administrator:
-                self.logger.warning('no administrator permission in {}'.format(repr(guild)))
-            else:
-                for module in self.module_manager.get_activated_modules(guild.id):
-                    modules_to_guilds[module].append(guild.id)
+            try:
+                await discord.bot.ApplicationCommandMixin.get_desynced_commands(self.bot, guild.id)
+
+                if not guild.me.guild_permissions.administrator:
+                    self.logger.warning('no administrator permission in {}'.format(repr(guild)))
+                else:
+                    for module in self.module_manager.get_activated_modules(guild.id):
+                        modules_to_guilds[module].append(guild.id)
+            except discord.Forbidden:
+                self.logger.warning('Slash commands are disabled in {}'.format(guild))
 
         for module_name, module in self.module_manager.items():
             for command in module.commands:
