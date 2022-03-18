@@ -1,5 +1,5 @@
 # - Spark -
-[![Build Status](https://www.travis-ci.com/skillor/Spark.svg?branch=master)](https://www.travis-ci.com/skillor/Spark)
+[![Build Status](https://github.com/Maveo/Spark/actions/workflows/test-python.yml/badge.svg)](https://github.com/Maveo/Spark/actions/workflows/test-python.yml)
 
 
  ### A Discord Bot
