@@ -296,7 +296,7 @@ def main():
         if build_frontend:
             if install:
                 print('installing node packages...')
-                code = subprocess.Popen(['npm', 'i'],
+                code = subprocess.Popen('npm i',
                                         cwd=os.path.join(current_dir, 'frontend'),
                                         shell=True).wait()
                 if code != 0:
@@ -305,15 +305,16 @@ def main():
 
             print('building frontend...')
 
-            code = subprocess.Popen(['npm', 'run', 'build'],
+            code = subprocess.Popen('npm run build',
                                     cwd=os.path.join(current_dir, 'frontend'),
                                     shell=True).wait()
             if code != 0:
                 print('An error occurred while building!')
                 quit()
 
-            shutil.rmtree(webserver_static_path)
-            shutil.copytree(os.path.join(current_dir, 'frontend', 'dist'), webserver_static_path)
+            if os.path.join(current_dir, 'frontend', 'dist') != webserver_static_path:
+                shutil.rmtree(webserver_static_path)
+                shutil.copytree(os.path.join(current_dir, 'frontend', 'dist'), webserver_static_path)
 
         web = WebServer(
             oauth2_client_id=global_settings['APPLICATION_ID'],
