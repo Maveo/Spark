@@ -96,7 +96,14 @@ class DiscordBot:
         self.logger.setLevel(logging_level)
         # logging.getLogger('discord').setLevel(logging_level)
 
-        intents = discord.Intents(members=True, guilds=True)
+        intents = discord.Intents(members=True,
+                                  guilds=True,
+                                  guild_reactions=True,
+                                  guild_messages=True,
+                                  voice_states=True,
+                                  dm_messages=True,
+                                  emojis=True,
+                                  )
 
         self.bot = discord.ext.commands.Bot(
             description=description,

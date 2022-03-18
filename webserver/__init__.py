@@ -249,8 +249,6 @@ class WebServer(threading.Thread):
                                   methods=page.methods)
 
         for page in self.dbot.module_manager.api_pages.all():
-            # pass
-            # print(page, page.view_func)
             self.app.add_url_rule(rule=f"{api_base}/{page.path}",
                                   endpoint=page.path,
                                   view_func=_wrapper(self.guild_member_wrapper(page.view_func)),
