@@ -34,6 +34,7 @@ jobs:
       working-directory: ./frontend
     - name: Copy dist to webserver static
       run: |
+        rm -rf ./webserver/static
         cp -r ./frontend/dist ./webserver/static
     - name: Commit static
       run: |
