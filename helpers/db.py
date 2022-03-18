@@ -179,6 +179,11 @@ class Database:
         stmt = db.select(LevelUser).where(LevelUser.guild_id == guild_id)
         return session.scalars(stmt).all()
 
+    def get_blacklisted_level_users(self, guild_id, blacklisted) -> List[LevelUser]:
+        session = self.Session()
+        stmt = db.select(LevelUser).where(db.and_(LevelUser.guild_id == guild_id, LevelUser.blacklisted == blacklisted))
+        return session.scalars(stmt).all()
+
     def get_level_user_xp_boosts(self, guild_id, user_id, current_time=-1) -> List[XPBoost]:
         session = self.Session()
         stmt = db.select(XPBoost).where(db.and_(XPBoost.guild_id == guild_id, XPBoost.user_id == user_id,

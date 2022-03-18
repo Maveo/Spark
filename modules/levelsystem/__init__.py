@@ -143,6 +143,18 @@ class LevelsystemModule(SparkModule):
                                         description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_REMOVE_SUCCESSFUL'),
                                         color=discord.Color.green()))
 
+        @bot.has_permissions(administrator=True)
+        async def blacklisted_users(ctx: discord.commands.context.ApplicationContext):
+            description = []
+            for user in self.bot.db.get_blacklisted_level_users(ctx.guild.id, True):
+                member = get(ctx.guild.members, id=int(user.user_id))
+                if member is not None:
+                    description.append(str(member))
+            return await ctx.respond(embed=discord.Embed(
+                title=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_TITLE'),
+                description='\n'.join(description),
+                color=discord.Color.green()))
+
         async def profile(ctx: discord.commands.context.ApplicationContext,
                           member: discord.commands.Option(
                               discord.Member,
@@ -202,6 +214,12 @@ class LevelsystemModule(SparkModule):
             func=blacklist_user,
             name=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_COMMAND'),
             description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_COMMAND_DESCRIPTION'),
+            parent=levelsystem
+        ))
+        levelsystem.subcommands.append(discord.SlashCommand(
+            func=blacklisted_users,
+            name=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND'),
+            description=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND_DESCRIPTION'),
             parent=levelsystem
         ))
         self.commands = [
