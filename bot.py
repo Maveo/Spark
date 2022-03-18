@@ -301,7 +301,7 @@ def main():
                                         shell=True).wait()
                 if code != 0:
                     print('An error occurred while installing!')
-                    quit()
+                    quit(code)
 
             print('building frontend...')
 
@@ -310,7 +310,7 @@ def main():
                                     shell=True).wait()
             if code != 0:
                 print('An error occurred while building!')
-                quit()
+                quit(code)
 
             if os.path.join(current_dir, 'frontend', 'dist') != webserver_static_path:
                 shutil.rmtree(webserver_static_path)
