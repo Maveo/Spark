@@ -7,7 +7,7 @@
     "build": "vue-cli-service build",
     "build-dev": "vue-cli-service build --mode development",
     "build-watch": "vue-cli-service build --watch",
-    "serve-docs": "php -S 0.0.0.0:80 -t ./docs/",
+    "serve-docs": "php -S 0.0.0.0:80 -t ../docs/",
     "buildtest": "vue-cli-service build && php -S 0.0.0.0:80 -t ./dist/",
     "lint": "vue-cli-service lint"
   },
