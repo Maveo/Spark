@@ -212,5 +212,4 @@ def main(token=None):
 
 if __name__ == '__main__':
     from settings import GLOBAL_SETTINGS
-    # main(GLOBAL_SETTINGS['TOKEN'])
-    main('ODQzMjE0MTAyMTA4OTYyODU2.YKAmVA.p0iEpt8qG2ZyAzpSFlMVMowx8ec')
+    main(GLOBAL_SETTINGS['TOKEN'])
