@@ -226,7 +226,6 @@ class Database:
 
     def get_xp_origin(self, guild_id, user_id):
         session = self.Session()
-        # stmt = db.select(XPOrigin).where(db.and_(XPOrigin.guild_id == guild_id, XPOrigin.user_id == user_id))
         stmt = session.query(XPOrigin, func.sum(XPOrigin.amount).label("total")).filter(
             db.and_(XPOrigin.guild_id == guild_id, XPOrigin.user_id == user_id)).group_by(XPOrigin.origin)
         return stmt.all()
