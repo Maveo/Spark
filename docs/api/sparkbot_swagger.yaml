@@ -5,13 +5,8 @@ info:
     If the authorization header is not set, invalid or expired, all API calls will repond with `HTTP 401 Unauthorized`.
 
   version: "0.2.0"
-  title: "Spark frontend API definitions"
-# termsOfService: "http://swagger.io/terms/"
-  # contact:
-  #   email: "apiteam@swagger.io"
-#  license:
-#    name: "Apache 2.0"
-#    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+  title: "Spark API definitions"
+
 host: "www.sparkbot.me"
 basePath: "/fap"
 tags:
@@ -20,6 +15,9 @@ tags:
 
 - name: "guild"
   description: "Everything about guilds"
+
+- name: "modules"
+  description: "Everything about modules"
 
 - name: "user"
   description: "Everything about the user"
@@ -89,11 +87,12 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Spark_Guild'
+
   /ranking:
     get:
       tags:
       - "guild"
-      summary: "Get basic information about all guilds you are in"
+      summary: "Get ranking of all users in the guild"
       parameters:
       - name: guild_id
         description: The id of the guild you want the ranking for
@@ -107,6 +106,54 @@ paths:
             type: array
             items:
               $ref: '#/definitions/Spark_Ranking_User'
+
+  /modules:
+    get:
+      tags:
+      - "modules"
+      summary: "Get information about available modules"
+      parameters:
+      - name: guild_id
+        description: The id of the guild
+        in: "query"
+        required: true
+        type: string
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Spark_Module'
+  /set-module:
+    post:
+      tags:
+      - "modules"
+      summary: "Activate or deactivate a module"
+      parameters:
+      - name: guild_id
+        description: The id of the guild
+        in: "query"
+        required: true
+        type: string
+      - name: module
+        description: The name of the module
+        in: "body"
+        required: true
+        type: string
+      - name: activate
+        description: If the module should be activated or deactivated
+        in: "body"
+        required: true
+        type: boolean
+      responses:
+        "200":
+          description: "Successful operation"
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Spark_Module'
+
   /profile:
     get:
       tags:
@@ -269,30 +316,18 @@ definitions:
         type: string
         description: "url to the guild icon"
         example: "https://cdn.discordapp.com/icons/188893186435973121/a_71ba803956e5189b9dab7d5d2d6b331f.gif"
+      active_modules:
+        type: array
+        description: "active modules of the guild"
+        items:
+          type: string
+  
   Spark_Profile:
     type: object
     description: "custom profile of a user"
     properties:
-      id:
-        type: string
-        description: "user id"
-        example: "12345678"
-      nick:
-        type: string
-        description: "nick name of the user"
-        example: "Maxi"
-      name:
-        type: string
-        description: "full name of the user"
-        example: "Max Mustermann"
-      avatar_url:
-        type: string
-        description: "url to the avatar icon"
-        example: "https://cdn.discordapp.com/avatars/188893043577847808/a_13a2782779d6938c0e351104e96280d2.gif"
-      top_role:
-        type: string
-        description: "name of the top role of the user"
-        example: "Moderator"
+      member:
+        $ref: '#/definitions/Spark_Member'
       admin:
         type: boolean
         description: "if user is admin"
@@ -456,6 +491,40 @@ definitions:
         type: string
         description: "top role of the member"
         example: "Moderator"
+
+  Spark_Module:
+    type: object
+    description: "data object of a module"
+    properties:
+      name:
+        type: string
+        description: "name of the module"
+        example: "boosted"
+      title:
+        type: string
+        description: "title of the module"
+        example: "Boosted Module"
+      description:
+        type: string
+        description: "description of the module"
+        example: "Example module (changes nothing)"
+      dependencies:
+        type: array
+        description: "dependencies of the module"
+        example: ['m1']
+        items:
+          type: string
+      dependency_for:
+        type: array
+        description: "modules which have this module as dependency"
+        example: ['m4']
+        items:
+          type: string
+      is_optional:
+        type: boolean
+        description: "if this module is optional"
+        example: "true"
+
   Spark_Setting:
     type: object
     description: "data object of a setting"
