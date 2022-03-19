@@ -9,20 +9,20 @@
         <div class="view-main-card">
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Status:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="set_presence(activity_name, activity_type, status_type)">
                         
-                        <div class="mr-3 flex-grow-1 d-flex justify-content-end">
-                            <select class="mr-2 form-control form-control-sm" v-model="activity_type" style="max-width: 180px;">
+                        <div class="me-3 flex-grow-1 d-flex justify-content-end">
+                            <select class="me-2 form-control form-control-sm" v-model="activity_type" style="max-width: 180px;">
                                 <option :value="0" >Playing</option>
                                 <option :value="1">Streaming</option>
                                 <option :value="2">Listening</option>
                                 <option :value="3">Watching</option>
                                 <option :value="5">Competing</option>
                             </select>
-                            <select class="mr-2 form-control form-control-sm" v-model="status_type" style="max-width: 180px;">
+                            <select class="me-2 form-control form-control-sm" v-model="status_type" style="max-width: 180px;">
                                 <option :value="'online'" >Online</option>
                                 <option :value="'offline'">Offline</option>
                                 <option :value="'idle'">Idle</option>
@@ -34,7 +34,7 @@
                         <button type="button" class="btn btn-dark btn-sm" style="height: 31px;" @click="set_presence()">
                             <i class="fas fa-fw fa-undo-alt"></i>
                         </button>
-                        <button class="btn btn-info btn-sm ml-2 text-nowrap" type="submit">
+                        <button class="btn btn-info btn-sm ms-2 text-nowrap" type="submit">
                             Send
                         </button>
                     </form>

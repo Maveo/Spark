@@ -24,18 +24,7 @@
     </div>
     <!-- <hr style="width: 100%;"> -->
     <ul class="nav nav-pills flex-column justify-content-start flex-grow-1">
-        <li>
-            <router-link to="/choose-server" class="nav-link text-white">
-                <div class="d-flex">
-                    <div class="d-flex justify-content-left align-items-end" style="width: 28px;">
-                        <svg class="emoji emoji-choose-server"></svg>
-                    </div>
-                    <div>
-                        Choose Server
-                    </div>
-                </div>
-            </router-link>
-        </li>
+        <spark-sidebar-link :route="'/choose-server'" title="Choose Server" emoji="choose-server" :gold_active="false"></spark-sidebar-link>
         
         <li>
             <a href="#" class="nav-link text-white" style="pointer-events: none;">
@@ -71,9 +60,9 @@
     <hr>
 
     <div class="dropdown show px-3">
-        <a class="text-white text-decoration-none d-flex justify-content-between align-items-center" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+        <a class="text-white text-decoration-none d-flex justify-content-between align-items-center" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
             <div>
-                <img :src="profile.member.avatar_url" alt="" class="rounded-circle mr-2" width="32" height="32">
+                <img :src="profile.member.avatar_url" alt="" class="rounded-circle me-2" width="32" height="32">
                 <strong>{{profile.member.name}}</strong>
             </div>
             <div>
@@ -81,8 +70,8 @@
             </div>
         </a>
 
-        <div class="dropdown-menu dropdown-menu-right shadow text-center rounded-1rem">
-            <h6 class="dropdown-header text-gray2">Signed in as<br />{{profile.name}}</h6>
+        <div class="dropdown-menu dropdown-menu-end shadow text-center rounded-1rem">
+            <h6 class="dropdown-header text-gray2">Signed in as<br />{{profile.member.name}}</h6>
             <div class="dropdown-divider"></div>
             <router-link v-if="profile.is_super_admin" class="dropdown-item text-white" :to="'/super-admin/' + selected_server.id">Super Admin</router-link>
             <a class="dropdown-item text-white" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Help</a>

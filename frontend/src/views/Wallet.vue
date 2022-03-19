@@ -47,7 +47,7 @@
                 <div class="col-12 col-xl-5 px-5" style="border-left: 1px solid var(--grey2);">
                     <div class="d-flex align-items-end">
                         <h4>Exchange</h4>
-                        <span class="text-gray4 mb-2 ml-2">Convert your XP to Currency</span>
+                        <span class="text-gray4 mb-2 ms-2">Convert your XP to Currency</span>
                     </div>
 
                     <div>
@@ -84,7 +84,7 @@ background-repeat: repeat-y;">
 
                         <div class="progress spark-rounded" style="height: 2.5rem;">
                             <div class="progress-bar bg-success text-left" role="progressbar" style="width: 35%; font-size: 1.75rem;">
-                                <div class="pl-3">
+                                <div class="ps-3">
                                     +200€
                                 </div>
                             </div>

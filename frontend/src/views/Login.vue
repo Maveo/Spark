@@ -20,9 +20,9 @@
                 <div class="p-4 rounded d-flex flex-column justify-content-center shadow-lg" style="background-color: #444;">
                     <img src="../assets/spark-logo.svg" alt="Spark Logo" class="align-self-center" style="width: 200px; background: transparent;">
                     <button @click="login()" class="btn btn-dark btn-lg text-white mt-3 d-flex" style="background-color: #6c89e0;" :disabled="loading">
-                        <div class="mr-2" style="width: 24px; height: 30px;">
+                        <div class="me-2" style="width: 24px; height: 30px;">
                             <i v-if="!loading" class="fab fa-fw fa-discord"></i>
-                            <span v-if="loading" class="spinner-border spinner-border-sm mb-1 mr-2" role="status" aria-hidden="true"></span>
+                            <span v-if="loading" class="spinner-border spinner-border-sm mb-1 me-2" role="status" aria-hidden="true"></span>
                         </div>
                         Sign In with Discord
                     </button>

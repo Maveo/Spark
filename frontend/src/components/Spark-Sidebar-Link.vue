@@ -3,12 +3,10 @@
         <router-link v-slot="{isActive}" class="nav-link text-white dark-hover" :to="route">
             <div class="d-flex">
                 <div class="d-flex justify-content-left align-items-end" style="width: 28px;">
-                    <svg :class="[isActive ? 'd-none' : 'd-inline', 'emoji', 'emoji-'+emoji]"></svg>
-                    <svg v-if="isActive" :class="['emoji', 'emoji-'+emoji, 'emoji-gold']"></svg>
+                    <svg :class="['emoji', 'emoji-'+emoji, isActive && gold_active ? 'emoji-gold' : '']"></svg>
                 </div>
                 <div>
-                    <div v-if="!isActive" class="text-gray3">{{ title }}</div>
-                    <div v-if="isActive">{{ title }}</div>
+                    <div :class="isActive?'':'text-gray3'">{{ title }}</div>
                 </div>
             </div>
         </router-link>
@@ -23,6 +21,10 @@ export default defineComponent({
   props: {
     title: String,
     emoji: String,
+    gold_active: {
+      type: Boolean,
+      default: true
+    },
     route: String
   },
 });

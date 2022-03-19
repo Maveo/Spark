@@ -7,7 +7,7 @@
 
     <div v-if="loading" class="view-main-card text-center">
       <span
-        class="spinner-border spinner-border-lg mb-1 mr-2"
+        class="spinner-border spinner-border-lg mb-1 me-2"
         role="status"
         aria-hidden="true"
       ></span>
@@ -17,7 +17,7 @@
         v-for="server in servers"
         :key="server.id"
         @click="choose_server(server)"
-        class="view-main-card mb-2 mr-2"
+        class="view-main-card mb-2 me-2"
       >
         <div class="d-flex">
           <div class="d-xl-block">
@@ -27,7 +27,7 @@
               style="max-width: 100px"
             />
           </div>
-          <div class="pl-3 d-flex flex-column justify-content-center">
+          <div class="ps-3 d-flex flex-column justify-content-center">
             <h4>{{ server.name }}</h4>
           </div>
         </div>

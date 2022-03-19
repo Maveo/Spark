@@ -10,12 +10,12 @@
             
             <div class="d-flex flex-column justify-content-between">
                 
-                <div class="row" v-for="user in ranking" :key="user.member.id" >
-                    <div class="col-6">
+                <div class="row" v-for="user in ranking" :key="user.member.id" style="min-width: 400px; max-width: 700px;">
+                    <div class="col-12">
                         
                         <div class="d-flex">
 
-                            <div class="js-tilt shadow bg-gray1 spark-rounded p-3 mb-2" style="width: 500px;">
+                            <div class="js-tilt w-100 shadow bg-gray1 spark-rounded p-3 mb-2">
                                 <div class="d-flex">
                                     <div style="width: 100px; height: 100px; margin-right: 1rem;">
                                         <img class="rounded-circle" v-lazy="{src: user.avatar_url, loading: 'https://cdn.discordapp.com/embed/avatars/1.png'}" style="max-width: 100px;">
@@ -44,12 +44,10 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="flex-grow-1 d-flex align-items-center">
+                            <!-- <div class="flex-grow-1 d-flex align-items-center">
                                 <div class="w-100" style="height: 2px; background-color: #6c757d;">
                                 </div>
-                            </div>
-
+                            </div> -->
                         </div>
 
 
@@ -60,19 +58,19 @@
                             <div>
 
                                 <div class="h-100 d-flex justify-content-start align-items-center">
-                                    <table class="ml-3 ml-xl-0">
+                                    <table class="ms-3 ms-xl-0">
                                         <tbody>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">Best Place:</h6></td>
-                                                <td class="pl-3 text-right">#3</td>
+                                                <td class="ps-3 text-right">#3</td>
                                             </tr>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">Weekly change:</h6></td>
-                                                <td class="pl-3 text-success text-right"><i class="fas fa-fw fa-chevron-up"></i> 5</td>
+                                                <td class="ps-3 text-success text-right"><i class="fas fa-fw fa-chevron-up"></i> 5</td>
                                             </tr>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">Days active:</h6></td>
-                                                <td class="pl-3 text-right">27</td>
+                                                <td class="ps-3 text-right">27</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -86,19 +84,19 @@
                             <div>
 
                                 <div class="h-100 d-flex justify-content-start align-items-center">
-                                    <table class="ml-3 ml-xl-0">
+                                    <table class="ms-3 ms-xl-0">
                                         <tbody>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">XP until Level-UP:</h6></td>
-                                                <td class="pl-3 text-right">234</td>
+                                                <td class="ps-3 text-right">234</td>
                                             </tr>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">XP gained this week:</h6></td>
-                                                <td class="pl-3 text-right">487</td>
+                                                <td class="ps-3 text-right">487</td>
                                             </tr>
                                             <tr>
                                                 <td><h6 class="text-muted mb-0">Total XP gained:</h6></td>
-                                                <td class="pl-3 text-right">4789</td>
+                                                <td class="ps-3 text-right">4789</td>
                                             </tr>
                                         </tbody>
                                     </table>

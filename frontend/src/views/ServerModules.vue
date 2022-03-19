@@ -23,11 +23,11 @@
                                 </template>
                                 <template v-else>
                                     <i v-if="modul.error" class="fas fa-exclamation-circle text-danger"></i>
-                                    <div class="mr-3">
-                                        <button :disabled="state.selected_server.active_modules.includes(modul.name)" v-bind:class="{'btn-dark': !state.selected_server.active_modules.includes(modul.name)}" class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="set_module(modul, true)">
+                                    <div class="me-3">
+                                        <button :disabled="state.selected_server.active_modules.includes(modul.name)" v-bind:class="{'btn-dark': !state.selected_server.active_modules.includes(modul.name)}" class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="set_module(modul, true)">
                                             <i class="fas fa-fw fa-check"></i>
                                         </button>
-                                        <button :disabled="!state.selected_server.active_modules.includes(modul.name)" v-bind:class="{'btn-dark': state.selected_server.active_modules.includes(modul.name)}" class="ml-2 btn btn-danger btn-sm" style="height: 31px;" @click="set_module(modul, false)">
+                                        <button :disabled="!state.selected_server.active_modules.includes(modul.name)" v-bind:class="{'btn-dark': state.selected_server.active_modules.includes(modul.name)}" class="ms-2 btn btn-danger btn-sm" style="height: 31px;" @click="set_module(modul, false)">
                                             <i class="fas fa-fw fa-times"></i>
                                         </button>
                                     </div>
