@@ -75,6 +75,7 @@ async def set_setting(module: 'GeneralModule',
     }), 200
 
 
+@has_permissions(administrator=True)
 async def get_modules(module: 'GeneralModule',
                       guild: discord.Guild,
                       member: discord.Member):
