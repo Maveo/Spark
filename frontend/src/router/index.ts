@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import store from '@/store'
 import YourProfile from '../views/YourProfile.vue'
-import Wallet from '../views/Wallet.vue'
-import Wheelspin from '../views/Wheelspin.vue'
 import Boosts from '../views/Boosts.vue'
 import ProfileCard from '../views/ProfileCard.vue'
 import ServerSettings from '../views/ServerSettings.vue'
@@ -37,18 +35,6 @@ const routes: Array<RouteRecordRaw> = [
         path: '/your-profile/:id',
         name: 'Your Profile',
         component: YourProfile,
-        meta: { requiresLogin: true, requiresServer: true }
-    },
-    {
-        path: '/wallet/:id',
-        name: 'Wallet',
-        component: Wallet,
-        meta: { requiresLogin: true, requiresServer: true }
-    },
-    {
-        path: '/wheelspin/:id',
-        name: 'Wheelspin',
-        component: Wheelspin,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {

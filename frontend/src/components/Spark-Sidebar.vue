@@ -2,12 +2,6 @@
   <div class="d-flex flex-column h-100">
     
     <div class="d-flex justify-content-center align-items-center mb-3 text-white text-decoration-none">
-        <!-- <svg class="bi me-2" width="40" height="32">
-            <use xlink:href="#bootstrap"></use>
-        </svg> -->
-        <!-- <span class="fs-4">
-            Spark
-        </span> -->
 
         <div class="spark-logo text-center py-3" style="z-index: 0; width: 200px; position: relative;">
 
@@ -22,7 +16,6 @@
             
         </div>
     </div>
-    <!-- <hr style="width: 100%;"> -->
     <ul class="nav nav-pills flex-column justify-content-start flex-grow-1">
         <spark-sidebar-link :route="'/choose-server'" title="Choose Server" emoji="choose-server" :gold_active="false"></spark-sidebar-link>
         
@@ -45,11 +38,7 @@
         <hr v-if="selected_server.active_modules.includes('levelsystem')">
 
         <spark-sidebar-link :route="'/your-profile/' + selected_server.id" title="Your Profile" emoji="profile"></spark-sidebar-link>
-        <!-- <spark-sidebar-link :route="'/wallet/' + selected_server.id" title="Wallet" emoji="wallet"></spark-sidebar-link> -->
-        <!-- <spark-sidebar-link :route="'/wheelspin/' + selected_server.id" title="Wheelspin" emoji="wheelspin"></spark-sidebar-link> -->
         <spark-sidebar-link v-if="selected_server.active_modules.includes('boost') || selected_server.active_modules.includes('promo')" :route="'/boosts/' + selected_server.id" title="Boosts" emoji="boosts"></spark-sidebar-link>
-        <!-- <spark-sidebar-link :route="'/profile-card/' + selected_server.id" title="Profile Card" emoji="profile-card"></spark-sidebar-link> -->
-
     </ul>
     <ul class="nav nav-pills flex-column justify-content-start">
         <spark-sidebar-link v-if="profile.is_admin" :route="'/admin-tools/' + selected_server.id" title="Admin Tools" emoji="boosts"></spark-sidebar-link>

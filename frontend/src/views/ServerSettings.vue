@@ -411,7 +411,7 @@ export default defineComponent({
                     let errorCount = 0;
                     
                     loadingSubject.subscribe({
-                        next: (correct) => {
+                        next: (correct: any) => {
                             if (!correct) errorCount++;
                             const leftLoading = this.count_loading_settings();
                             if (leftLoading == 0) {
