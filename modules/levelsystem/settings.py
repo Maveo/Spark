@@ -32,7 +32,7 @@ profile_image = ImageStackResolveString('''ImageStack([
         emoji=Variable(('member', 'top_role', 'name', 0,))
     ),
 
-    # Pregressbar BG
+    # Progressbar BG
     ProgressLayer(
         pos=(150, 115),
         percentage=1,
