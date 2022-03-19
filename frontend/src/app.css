@@ -121,6 +121,17 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
+button.view-main-card {
+    border-width: 0;
+}
+
+button.view-main-card:hover {
+    background-color: #292b2f;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+    transform: translateY(-5px);
+    transition: background-color .125s,box-shadow .3s,transform .3s;
+}
+
 .spark-sidebar-container {
     background-color: #303237;
     width: 325px;

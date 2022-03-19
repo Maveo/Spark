@@ -17,13 +17,13 @@
         v-for="server in servers"
         :key="server.id"
         @click="choose_server(server)"
-        class="view-main-card mb-2 me-2"
+        class="view-main-card mb-3 me-3"
       >
         <div class="d-flex">
           <div class="d-xl-block">
             <img
               class="rounded-circle"
-              v-lazy="{src: server.icon_url, loading: 'TODO'}"
+              v-lazy="{src: server.icon_url ? server.icon_url : 'https://cdn.discordapp.com/embed/avatars/1.png', loading: 'https://cdn.discordapp.com/embed/avatars/1.png'}"
               style="max-width: 100px"
             />
           </div>

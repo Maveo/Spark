@@ -44,68 +44,10 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- <div class="flex-grow-1 d-flex align-items-center">
-                                <div class="w-100" style="height: 2px; background-color: #6c757d;">
-                                </div>
-                            </div> -->
                         </div>
 
 
                     </div>
-                    <!-- <div class="col-6">
-
-                        <div class="d-flex align-items-center h-100">
-                            <div>
-
-                                <div class="h-100 d-flex justify-content-start align-items-center">
-                                    <table class="ms-3 ms-xl-0">
-                                        <tbody>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">Best Place:</h6></td>
-                                                <td class="ps-3 text-right">#3</td>
-                                            </tr>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">Weekly change:</h6></td>
-                                                <td class="ps-3 text-success text-right"><i class="fas fa-fw fa-chevron-up"></i> 5</td>
-                                            </tr>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">Days active:</h6></td>
-                                                <td class="ps-3 text-right">27</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                            </div>
-                            <div class="d-flex align-items-center mx-4" style="width: 50px;">
-                                <div class="w-100" style="height: 2px; background-color: #6c757d;">
-                                </div>
-                            </div>
-                            <div>
-
-                                <div class="h-100 d-flex justify-content-start align-items-center">
-                                    <table class="ms-3 ms-xl-0">
-                                        <tbody>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">XP until Level-UP:</h6></td>
-                                                <td class="ps-3 text-right">234</td>
-                                            </tr>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">XP gained this week:</h6></td>
-                                                <td class="ps-3 text-right">487</td>
-                                            </tr>
-                                            <tr>
-                                                <td><h6 class="text-muted mb-0">Total XP gained:</h6></td>
-                                                <td class="ps-3 text-right">4789</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                            </div>
-                        </div>
-
-                    </div> -->
                 </div>
 
                 <div v-if="loading" class="row">
