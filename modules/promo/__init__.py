@@ -46,7 +46,10 @@ class PromoModule(SparkModule):
         channel_id = self.bot.module_manager.settings.get(member.guild.id, 'PROMO_CHANNEL_ID')
         if channel_id == '':
             return False
-        channel = get(member.guild.channels, id=int(channel_id))
+        try:
+            channel = get(member.guild.channels, id=int(channel_id))
+        except ValueError:
+            return False
         if channel is None:
             return False
         return channel.permissions_for(member).send_messages
