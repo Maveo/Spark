@@ -7,7 +7,7 @@
 
     <div v-if="loading" class="view-main-card text-center">
       <span
-        class="spinner-border spinner-border-lg mb-1 mr-2"
+        class="spinner-border spinner-border-lg mb-1 me-2"
         role="status"
         aria-hidden="true"
       ></span>
@@ -17,17 +17,17 @@
         v-for="server in servers"
         :key="server.id"
         @click="choose_server(server)"
-        class="view-main-card mb-2 mr-2"
+        class="view-main-card mb-3 me-3"
       >
         <div class="d-flex">
           <div class="d-xl-block">
             <img
               class="rounded-circle"
-              v-lazy="{src: server.icon_url, loading: 'TODO'}"
+              v-lazy="{src: server.icon_url ? server.icon_url : 'https://cdn.discordapp.com/embed/avatars/1.png', loading: 'https://cdn.discordapp.com/embed/avatars/1.png'}"
               style="max-width: 100px"
             />
           </div>
-          <div class="pl-3 d-flex flex-column justify-content-center">
+          <div class="ps-3 d-flex flex-column justify-content-center">
             <h4>{{ server.name }}</h4>
           </div>
         </div>

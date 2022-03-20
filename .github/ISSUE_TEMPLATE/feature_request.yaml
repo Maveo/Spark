@@ -1,0 +1,31 @@
+name: Feature Request
+description: Got an idea for a new feature?
+labels: [💡New Feature]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **IMPORTANT:** Before submitting:
+        - Check if the feature you're suggesting already exists in our [Wiki](https://github.com/Maveo/Spark/wiki)
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature
+      placeholder: Spark should be able to do this...
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example situation
+      placeholder: A user can do this, an Admin this...
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Anymore information needed? (Mockups, Screenshots?)
+    validations:
+      required: false

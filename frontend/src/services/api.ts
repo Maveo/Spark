@@ -297,6 +297,34 @@ function send_voice_audio(voice_channel: string, audio_file: string | Blob, prog
     });
 }
 
+function change_emoji_image(emoji: string, emoji_file: string | Blob, progressSubject: Subject<number> = new Subject()): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('emoji', emoji);
+    formData.append('emoji_file', emoji_file);
+
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/change-emoji', formData, {
+        onUploadProgress: progressEvent => progressSubject.next(progressEvent.loaded / progressEvent.total),
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': store.state.persistant.token,
+        }
+    });
+}
+
+function get_emojis(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/emojis', {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token,
+        }
+    });
+}
+
 const api = {
     get_auth,
     create_session,
@@ -321,7 +349,9 @@ const api = {
     get_messages,
     set_nickname,
     set_presence,
-    send_voice_audio
+    send_voice_audio,
+    get_emojis,
+    change_emoji_image
 };
 
 export default api;

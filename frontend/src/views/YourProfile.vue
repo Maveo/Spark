@@ -14,7 +14,7 @@
                         <div class="d-none d-xl-block">
                             <img class="rounded-circle" :src="profile.member.avatar_url" style="max-width: 150px;">
                         </div>
-                        <div class="pl-3 d-flex flex-column justify-content-between">
+                        <div class="ps-3 d-flex flex-column justify-content-between">
                             <div>
                                 <h2 class="mb-0">{{profile.member.nick}}</h2>
                                 <div class="text-gray4">{{profile.member.name}}</div>
@@ -26,34 +26,34 @@
                             </div>
                         </div>
 
-                        <div class="d-block d-xl-none ml-auto">
+                        <div class="d-block d-xl-none ms-auto">
                             <img class="rounded-circle" :src="profile.member.avatar_url" style="max-width: 150px;">
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-xl-6">
                     <div class="d-none d-xl-block vertical-divider"></div>
-                    <table class="ml-3 ml-xl-0">
+                    <table class="ms-3 ms-xl-0">
                         <tbody>
                             <tr>
                                 <td><h6 class="mb-0">User-ID:</h6></td>
-                                <td class="text-muted pl-3">{{profile.member.id}}</td>
+                                <td class="text-muted ps-3">{{profile.member.id}}</td>
                             </tr>
                             <tr>
                                 <td><h6 class="mb-0">Discord Tag:</h6></td>
-                                <td class="text-muted pl-3">#{{profile.member.tag}}</td>
+                                <td class="text-muted ps-3">#{{profile.member.tag}}</td>
                             </tr>
                             <tr>
                                 <td><h6 class="mb-0">Joined At:</h6></td>
-                                <td class="text-muted pl-3">{{profile.joined_at}}</td>
+                                <td class="text-muted ps-3">{{profile.joined_at}}</td>
                             </tr>
                             <tr>
                                 <td><h6 class="mb-0">Hypesquad:</h6></td>
-                                <td class="text-muted pl-3">{{profile.hype_squad}}</td>
+                                <td class="text-muted ps-3">{{profile.hype_squad}}</td>
                             </tr>
                             <tr>
                                 <td><h6 class="mb-0">Boosting since:</h6></td>
-                                <td class="text-muted pl-3">{{profile.boosting_since}}</td>
+                                <td class="text-muted ps-3">{{profile.boosting_since}}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -79,22 +79,22 @@
 
                 <div class="mx-4 d-flex justify-content-between pt-2">
                     <div v-if="unknown_xp_percent > 0" class="d-flex align-items-center">
-                        <div class="xp-dot mr-2 bg-gray2-important">
+                        <div class="xp-dot me-2 bg-gray2-important">
                         </div>
                         <span class="text-gray4 text-nowrap">Unknown</span>
                     </div>
                     <div v-if="text_msg_xp_percent > 0" class="d-flex align-items-center">
-                        <div class="xp-dot mr-2 bg-purple">
+                        <div class="xp-dot me-2 bg-purple">
                         </div>
                         <span class="text-gray4 text-nowrap">Text-Messages</span>
                     </div>
                     <div v-if="voice_xp_percent > 0" class="d-flex align-items-center">
-                        <div class="xp-dot mr-2 bg-blue">
+                        <div class="xp-dot me-2 bg-blue">
                         </div>
                         <span class="text-gray4 text-nowrap">Voice-Activity</span>
                     </div>
                     <div v-if="boost_xp_percent > 0" class="d-flex align-items-center">
-                        <div class="xp-dot mr-2 bg-cyan">
+                        <div class="xp-dot me-2 bg-cyan">
                         </div>
                         <span class="text-gray4 text-nowrap">XP-Boost</span>
                     </div>

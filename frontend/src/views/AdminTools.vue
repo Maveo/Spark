@@ -9,17 +9,17 @@
         <div class="view-main-card">
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Nickname:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="set_nickname(nickname)">
-                        <div class="mr-3 flex-grow-1 d-flex justify-content-end">
+                        <div class="me-3 flex-grow-1 d-flex justify-content-end">
                             <input type="text" class="form-control form-control-sm" style="max-width: 200px;" placeholder="Nickname" v-model="nickname" required>
                         </div>
                         <button type="button" class="btn btn-dark btn-sm" style="height: 31px;" @click="set_nickname(null)">
                             <i class="fas fa-fw fa-undo-alt"></i>
                         </button>
-                        <button class="btn btn-info btn-sm ml-2 text-nowrap" type="submit">
+                        <button class="btn btn-info btn-sm ms-2 text-nowrap" type="submit">
                             Send
                         </button>
                     </form>
@@ -28,20 +28,19 @@
 
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Audio:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_voice_audio()">
-                        <select class="mr-2 form-control form-control-sm" v-model="selected_voice_channel" style="max-width: 180px;" required>
+                        <select class="me-2 form-select form-select-sm" v-model="selected_voice_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in voice_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
                         </select>
-                        <div class="mr-3 flex-grow-1">
-                            <div class="custom-file">
-                                <input type="file" onchange="this.nextElementSibling.innerText=this.files[0].name;" class="custom-file-input" id="audioFile" ref="audioFile" required>
-                                <label class="custom-file-label" for="audioFile">Choose file...</label>
+                        <div class="me-3 flex-grow-1">
+                            <div class="input-group input-group-sm custom-file-button">
+                                <input type="file" class="form-control form-control-sm" id="audioFile" ref="audioFile" required>
                             </div>
                         </div>
                         <button class="btn btn-info btn-sm text-nowrap" type="submit">
@@ -53,11 +52,11 @@
 
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Invites:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center">
-                        <button class="mr-2 btn btn-info btn-sm text-nowrap" @click="create_invite()">
+                        <button class="me-2 btn btn-info btn-sm text-nowrap" @click="create_invite()">
                             Create Invite Link
                         </button>
                         <button class="btn btn-info btn-sm text-nowrap" @click="get_invites()">
@@ -69,17 +68,17 @@
 
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Send:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_msg_channel()">
-                        <select class="mr-2 form-control form-control-sm" v-model="selected_send_channel" style="max-width: 180px;" required>
+                        <select class="me-2 form-select form-select-sm" v-model="selected_send_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
                         </select>
-                        <div class="mr-3 flex-grow-1">
+                        <div class="me-3 flex-grow-1">
                             <input type="text" class="form-control form-control-sm" placeholder="Message" v-model="send_message" required>
                         </div>
                         <button class="btn btn-info btn-sm text-nowrap" type="submit">
@@ -91,18 +90,18 @@
 
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="mr-3">
+                    <div class="me-3">
                         <h5 class="mb-0">Watch:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center justify-content-end flex-grow-1">
-                        <select @change="refresh_watch_channel(true)" class="mr-2 form-control form-control-sm" v-model="selected_watch_channel" style="max-width: 180px;" required>
+                        <select @change="refresh_watch_channel(true)" class="me-2 form-select form-select-sm" v-model="selected_watch_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
                         </select>
-                        <a @click="refresh_watch_channel()" class="btn btn-nofocus text-white" data-toggle="collapse" data-target="#collapseWatch">
-                            <i class="fas fa-fw fa-chevron-down"></i>
+                        <a @click="refresh_watch_channel()" class="btn btn-toggle btn-nofocus text-white collapsed" data-bs-toggle="collapse" data-bs-target="#collapseWatch" aria-expanded="false">
+                            <i class="fas fa-fw toggle-icon"></i>
                             Click to watch
                         </a>
                     </div>
@@ -337,7 +336,6 @@ export default defineComponent({
                 
                 loadingSubject.subscribe({
                     next: (progress) => {
-                        console.log(progress);
                         progressbar.style.width = '' + (progress * 100) + '%';
                         progressbar.style.transition = 'width 1s linear';
                     },

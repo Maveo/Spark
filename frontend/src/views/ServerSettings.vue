@@ -11,32 +11,32 @@
             <div class="w-100">
                 
                 <div class="row mb-4">
-                    <div class="col-6">
+                    <div class="col">
                         <div class="d-flex">
                             <div class="flex-grow-1">
                                 <input type="text" class="form-control" v-model="search" placeholder="Search">
                             </div>
-                            <button class="btn text-white mr-2" style="pointer-events: none;">
+                            <button class="btn text-white me-2" style="pointer-events: none;">
                                 <i class="fas fa-fw fa-search"></i>
                             </button>
-                            <button :disabled="loading" class="btn btn-info mr-2" @click="import_settings()">
+                            <button :disabled="loading" class="btn btn-info text-nowrap me-2" @click="import_settings()">
                                 Import Settings
                             </button>
-                            <button :disabled="loading" class="btn btn-info mr-2" @click="export_settings()">
+                            <button :disabled="loading" class="btn btn-info text-nowrap me-2" @click="export_settings()">
                                 Export Settings
                             </button>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col">
                         <div class="d-flex w-100 justify-content-center">
                             <div>
-                                <button v-bind:class="{'btn-secondary': selected_filter == -1}" class="btn dark-hover text-white mr-2" @click="select_all_filter()">
+                                <button v-bind:class="{'btn-secondary': selected_filter == -1}" class="btn dark-hover text-white me-2" @click="select_all_filter()">
                                     All
                                 </button>
-                                <button v-for="(categorie, index) in categories" :key="index" v-bind:class="{'btn-secondary': selected_filter == index}" class="btn dark-hover text-white mr-2" @click="select_filter(index, categorie)">
+                                <button v-for="(categorie, index) in categories" :key="index" v-bind:class="{'btn-secondary': selected_filter == index}" class="btn dark-hover text-white me-2" @click="select_filter(index, categorie)">
                                     {{categorie}}
                                 </button>
-                                <button v-bind:class="{'btn-secondary': selected_filter == -2}" class="btn dark-hover text-white mr-2" @click="select_misc_filter()">
+                                <button v-bind:class="{'btn-secondary': selected_filter == -2}" class="btn dark-hover text-white me-2" @click="select_misc_filter()">
                                     Misc.
                                 </button>
                             </div>
@@ -48,14 +48,14 @@
                     <div v-for="(setting, key, index) in searched_settings()" :key="key" class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                         <template v-if="setting.type == 'list'">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div class="mr-3">
+                                <div class="me-3">
                                     <h5 class="mb-0">{{key}}</h5>
                                     <div class="text-gray4">{{setting.description}}</div>
                                 </div>
                                 <div class="d-flex align-items-center">
-                                    <div class="mr-3">
-                                        <a href="#" class="btn btn-nofocus text-white text-nowrap" data-toggle="collapse" :data-target="'#collapseSetting' + index">
-                                            <i class="fas fa-fw fa-chevron-down"></i>
+                                    <div class="me-3">
+                                        <a href="#" class="btn btn-nofocus text-white text-nowrap btn-toggle collapsed" data-bs-toggle="collapse" :data-bs-target="'#collapseSetting' + index">
+                                            <i class="fas fa-fw toggle-icon"></i>
                                             Click to edit list
                                         </a>
                                     </div>
@@ -64,10 +64,10 @@
                                     </template>
                                     <template v-else>
                                         <i v-if="setting.error" class="fas fa-exclamation-circle text-danger"></i>
-                                        <button class="ml-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
+                                        <button class="ms-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
                                         <i class="fas fa-fw fa-undo-alt"></i>
                                         </button>
-                                        <button class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
+                                        <button class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
                                             Save
                                         </button>
                                     </template>
@@ -79,7 +79,7 @@
                                         <div v-for="(value, index) in setting.value" :key="index">
                                             <div class="d-flex justify-content-center mb-2">
                                                 <input :disabled="setting.loading" type="text" class="form-control form-control-sm" v-model="setting.value[index]">
-                                                <button :disabled="setting.loading" class="btn btn-sm btn-danger ml-2" @click="setting.value.splice(index, 1)">
+                                                <button :disabled="setting.loading" class="btn btn-sm btn-danger ms-2" @click="setting.value.splice(index, 1)">
                                                     <i class="fas fa-fw fa-trash"></i>
                                                 </button>
                                             </div>
@@ -93,14 +93,14 @@
                         </template>
                         <template v-else-if="setting.type == 'text'">
                             <div class="d-flex justify-content-between align-items-center">
-                                <div class="mr-3">
+                                <div class="me-3">
                                     <h5 class="mb-0">{{key}}</h5>
                                     <div class="text-gray4">{{setting.description}}</div>
                                 </div>
                                 <div class="d-flex align-items-center">
-                                    <div class="mr-3">
-                                        <a @click="refresh_preview(setting, false)" class="btn btn-nofocus text-white" data-toggle="collapse" :data-target="'#collapseSetting' + index">
-                                            <i class="fas fa-fw fa-chevron-down"></i>
+                                    <div class="me-3">
+                                        <a @click="refresh_preview(setting, false)" class="btn btn-nofocus btn-toggle text-white collapsed" data-bs-toggle="collapse" :data-bs-target="'#collapseSetting' + index">
+                                            <i class="fas fa-fw toggle-icon"></i>
                                             Click to edit text
                                         </a>
                                     </div>
@@ -109,10 +109,10 @@
                                     </template>
                                     <template v-else>
                                         <i v-if="setting.error" class="fas fa-exclamation-circle text-danger"></i>
-                                        <button class="ml-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
+                                        <button class="ms-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
                                         <i class="fas fa-fw fa-undo-alt"></i>
                                         </button>
-                                        <button class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
+                                        <button class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
                                             Save
                                         </button>
                                     </template>
@@ -122,7 +122,7 @@
                                 <div class="mt-2 px-3 py-4">
                                     <textarea :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" class="w-100 bg-dark text-white p-3" style="border: none;" rows="10" spellcheck="false" v-model="setting.value"></textarea>
                                     <div v-if="setting.preview_call" class="d-flex justify-content-center">
-                                        <button v-if="!setting.preview_loading" class="btn btn-info" @click="refresh_preview(setting)">
+                                        <button v-if="!setting.preview_loading" :disabled="setting.last_value == setting.value" class="btn btn-info" @click="refresh_preview(setting)">
                                             Preview
                                         </button>
                                         <span v-else class="spinner-border"></span>
@@ -140,11 +140,11 @@
                                     <div class="text-gray4">{{setting.description}}</div>
                                 </div>
                                 <div class="d-flex align-items-center">
-                                    <div class="mr-3">
-                                        <button :disabled="setting.loading" v-bind:class="{'btn-dark': !setting.value}" class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="setting.value = true">
+                                    <div class="me-3">
+                                        <button :disabled="setting.loading" v-bind:class="{'btn-dark': !setting.value}" class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="setting.value = true">
                                             <i class="fas fa-fw fa-check"></i>
                                         </button>
-                                        <button :disabled="setting.loading" v-bind:class="{'btn-dark': setting.value}" class="ml-2 btn btn-danger btn-sm" style="height: 31px;" @click="setting.value = false">
+                                        <button :disabled="setting.loading" v-bind:class="{'btn-dark': setting.value}" class="ms-2 btn btn-danger btn-sm" style="height: 31px;" @click="setting.value = false">
                                             <i class="fas fa-fw fa-times"></i>
                                         </button>
                                     </div>
@@ -153,10 +153,10 @@
                                     </template>
                                     <template v-else>
                                         <i v-if="setting.error" class="fas fa-exclamation-circle text-danger"></i>
-                                        <button class="ml-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
+                                        <button class="ms-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
                                         <i class="fas fa-fw fa-undo-alt"></i>
                                         </button>
-                                        <button class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
+                                        <button class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
                                             Save
                                         </button>
                                     </template>
@@ -165,12 +165,12 @@
                         </template>
                         <template v-else>
                             <div class="d-flex justify-content-between align-items-center">
-                                <div class="mr-3">
+                                <div class="me-3">
                                     <h5 class="mb-0">{{key}}</h5>
                                     <div class="text-gray4">{{setting.description}}</div>
                                 </div>
                                 <div class="d-flex align-items-center">
-                                    <div class="mr-3">
+                                    <div class="me-3">
                                         <input :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" :type="(setting.type == 'int' || setting.type == 'float' ? 'number' : 'text')" class="form-control form-control-sm" placeholder="" v-model="setting.value" style="width: 300px;">
                                     </div>
                                     <template v-if="setting.loading">
@@ -178,10 +178,10 @@
                                     </template>
                                     <template v-else>
                                         <i v-if="setting.error" class="fas fa-exclamation-circle text-danger"></i>
-                                        <button class="ml-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
+                                        <button class="ms-2 btn btn-dark btn-sm" style="height: 31px;" @click="reset_setting(key)">
                                         <i class="fas fa-fw fa-undo-alt"></i>
                                         </button>
-                                        <button class="ml-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
+                                        <button class="ms-2 btn btn-success btn-sm" style="height: 31px;" @click="save_setting(key, setting.value)">
                                             Save
                                         </button>
                                     </template>
@@ -376,7 +376,7 @@ export default defineComponent({
         input.style.display = 'none';
         document.body.appendChild(input);
         input.onchange = () => {
-            if (!input.files || input.files.length == 0 || input.files[0].size > 250000000) {
+            if (!input.files || input.files.length == 0 || input.files[0].size > 250000000 || !FileReader) {
                 Toast.fire({
                     icon: 'error',
                     title: 'Something went wrong'
@@ -411,7 +411,7 @@ export default defineComponent({
                     let errorCount = 0;
                     
                     loadingSubject.subscribe({
-                        next: (correct) => {
+                        next: (correct: any) => {
                             if (!correct) errorCount++;
                             const leftLoading = this.count_loading_settings();
                             if (leftLoading == 0) {

@@ -13,6 +13,10 @@ class WrongInputException(werkzeug.exceptions.HTTPException):
     code = 400
 
 
+class MethodNotAvailableException(werkzeug.exceptions.HTTPException):
+    code = 400
+
+
 class ModuleNotActivatedException(werkzeug.exceptions.HTTPException):
     code = 400
 

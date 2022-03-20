@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import store from '@/store'
 import YourProfile from '../views/YourProfile.vue'
-import Wallet from '../views/Wallet.vue'
-import Wheelspin from '../views/Wheelspin.vue'
 import Boosts from '../views/Boosts.vue'
 import ProfileCard from '../views/ProfileCard.vue'
 import ServerSettings from '../views/ServerSettings.vue'
@@ -37,18 +35,6 @@ const routes: Array<RouteRecordRaw> = [
         path: '/your-profile/:id',
         name: 'Your Profile',
         component: YourProfile,
-        meta: { requiresLogin: true, requiresServer: true }
-    },
-    {
-        path: '/wallet/:id',
-        name: 'Wallet',
-        component: Wallet,
-        meta: { requiresLogin: true, requiresServer: true }
-    },
-    {
-        path: '/wheelspin/:id',
-        name: 'Wheelspin',
-        component: Wheelspin,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
@@ -121,7 +107,10 @@ const router = createRouter({
 })
 
 router.beforeResolve((to, from, next) => {
-    if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
+    if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
+        store.commit('set_redirect', to.fullPath);
+        next('/login');
+    } else if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
         if (to.params.id) {
             store.commit('choose_server', to.params.id);
             next();
@@ -130,8 +119,6 @@ router.beforeResolve((to, from, next) => {
         } else {
             next();
         }
-    } else if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
-        next('/login');
     } else {
         next();
     }

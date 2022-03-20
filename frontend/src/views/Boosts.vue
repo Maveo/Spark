@@ -6,13 +6,12 @@
             <span class="text-gray4">Enter or create a Promo Code or manage your regular boosts</span>
         </div>
 
-        <div class="view-main-card p-4">
+        <div class="view-main-card px-1 py-4 p-md-4">
             
             <div class="row">
 
-                <div v-if="selected_server.active_modules.includes('promo')" class="col-4 px-5">
+                <div v-if="selected_server.active_modules.includes('promo')" class="col-xxl-4 px-4 px-sm-5 mb-3">
                     <h4 class="mb-3">Promotion Code</h4>
-
                     
                     <div style="position: relative;">
 
@@ -37,7 +36,7 @@
 
                             <div class="d-flex">
                                 <form @submit.prevent="redeem_promo_code()" class="d-flex">
-                                    <div class="mr-2">   
+                                    <div class="me-2">   
                                         <div class="input-group">
                                             <input v-model.trim="redeem_code" type="text" class="form-control form-control-sm font-weight-bold" style="max-width: 150px;" placeholder="Promo Code" required>
                                         </div>
@@ -67,7 +66,7 @@
 
                             <div>
                                 <i class="fas fa-fw fa-plus"></i>
-                                <span style="color: var(--green); font-weight: bold;" class="pl-1">x{{profile.promo_boost_xp_multiplier}}</span>
+                                <span style="color: var(--green); font-weight: bold;" class="ps-1">x{{profile.promo_boost_xp_multiplier}}</span>
                                 XP-Multiplier
                             </div>
 
@@ -79,7 +78,7 @@
                                     New Code
                                 </button>
                             </div>
-                            <div class="ml-2">
+                            <div class="ms-2">
                                 <span v-if="loading_promo_code" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                 <div v-if="!loading_promo_code && promo_code" class="input-group">
                                     <input :class="{'bg-grey2': true}" type="text" class="form-control form-control-sm font-weight-bold" :value="promo_code" disabled>
@@ -92,14 +91,14 @@
 
                 </div>
 
-                <div class="col-8 px-5">
+                <div class="col-xxl-8 px-4 px-sm-5">
 
-                    <div v-if="selected_server.active_modules.includes('promo')" class="vertical-divider"></div>
+                    <div v-if="selected_server.active_modules.includes('promo')" class="d-none d-xxl-block vertical-divider"></div>
 
                     <h4 class="mb-3">Boosts</h4>
 
                     <div class="row">
-                        <div v-if="selected_server.active_modules.includes('boost')" class="col-5">
+                        <div v-if="selected_server.active_modules.includes('boost')" class="col-lg-5 mb-3">
                             
                             <div class="bg-gray2 p-3 spark-rounded">
                         
@@ -117,20 +116,18 @@
 
                                 </div>
 
-                                <div class="d-flex">
-                                    <form class="d-flex" @submit.prevent="boost_user()">
-                                        <div class="mr-2">   
-                                            <div class="input-group">
-                                                <input v-model.trim="boost_username" @input="boost_username_change" :class="{'is-invalid': !!boost_error_msg}" type="text" class="form-control form-control-sm font-weight-bold" style="width: 150px;" placeholder="Username" :disabled="profile.boosting" required>
-                                            </div>
+                                <form class="row" @submit.prevent="boost_user()">
+                                    <div class="col mb-2">   
+                                        <div class="input-group">
+                                            <input v-model.trim="boost_username" @input="boost_username_change" :class="{'is-invalid': !!boost_error_msg}" type="text" class="form-control form-control-sm font-weight-bold" style="width: 150px;" placeholder="Username" :disabled="profile.boosting" required>
                                         </div>
-                                        <div>
-                                            <button type="submit" class="btn btn-success btn-sm font-weight-bold" :disabled="profile.boosting">
-                                                Boost
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                    </div>
+                                    <div class="col">
+                                        <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold" :disabled="profile.boosting">
+                                            Boost
+                                        </button>
+                                    </div>
+                                </form>
                                 <div v-if="boost_error_msg" class="text-danger" style="font-size: 0.9rem;">
                                     {{boost_error_msg}}
                                 </div>
@@ -150,14 +147,14 @@
                             </div>
 
                         </div>
-                        <div class="col-7">
+                        <div class="col-lg-7">
 
                             <div v-if="selected_server.active_modules.includes('boost')" class="mb-4">
 
                                 <div class="text-field-dark d-flex flex-row mb-3 mt-1">
                                     Normal Boosts
                                     <div class="col d-flex justify-content-end" style="color: var(--green);">
-                                        x{{profile.boost_xp_multiplier}} XP-Boost
+                                        x{{profile.boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">XP-Boost</span>
                                     </div>
                                 </div>
                                 <div v-for="boost in profile.boosts_raw_data" :key="boost.name" class="ms-3 mb-2">
@@ -172,7 +169,7 @@
                                 <div class="text-field-dark d-flex flex-row mb-3 mt-1">
                                     Promo Boosts
                                     <div class="col d-flex justify-content-end" style="color: var(--green);">
-                                        x{{profile.promo_boost_xp_multiplier}} XP-Boost
+                                        x{{profile.promo_boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">XP-Boost</span>
                                     </div>
                                 </div>
                                 <div v-for="boost in profile.promo_boosts_raw_data" :key="boost.name" class="ms-3 mb-2">

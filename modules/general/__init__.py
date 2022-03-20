@@ -224,11 +224,11 @@ class GeneralModule(SparkModule):
         name = member.display_name
         guild_icon_url = None
         if member.guild.icon:
-            guild_icon_url = str(member.guild.icon.with_static_format('png'))
+            guild_icon_url = str(member.guild.icon.with_format('png'))
         data_obj = {
             'member': member,
             'name': name,
-            'avatar_url': str(member.display_avatar.with_static_format('png')),
+            'avatar_url': str(member.display_avatar.with_format('png')),
             'guild_icon_url': guild_icon_url
         }
         img_buf = await self.bot.image_creator.create(template(data_obj))
