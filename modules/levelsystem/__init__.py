@@ -276,7 +276,7 @@ class LevelsystemModule(SparkModule):
                     'xp_percentage': data_percentage,
                     'rank': data_rank,
                     'xp_multiplier': data_xp_multiplier,
-                    'avatar_url': str(member.display_avatar.with_static_format('png'))}
+                    'avatar_url': str(member.display_avatar.with_format('png'))}
 
         img_buf = await self.bot.image_creator.create(template(data_obj))
         return discord.File(filename="member.png", fp=img_buf)
@@ -387,7 +387,7 @@ class LevelsystemModule(SparkModule):
                     'xp_multiplier': await self.get_member_xp_multiplier(member),
                     'name': name,
                     'color': member.color.to_rgb(),
-                    'avatar_url': str(member.display_avatar.with_static_format('png')),
+                    'avatar_url': str(member.display_avatar.with_format('png')),
                 })
         return user_infos
 
