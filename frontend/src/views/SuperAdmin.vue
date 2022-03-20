@@ -41,13 +41,13 @@
                 </div>
             </div>
 
-            <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
+            <div v-if="selected_server.id" class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
                         <h5 class="mb-0 text-nowrap">Change emoji:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center flex-grow-1">
-                        <a @click="get_emojis()" class="btn btn-toggle btn-nofocus text-nowrap text-white collapsed" data-bs-toggle="collapse" data-bs-target="#collapseEmojis" aria-expanded="false">
+                        <a @click="get_emojis()" class="btn btn-toggle btn-nofocus text-nowrap text-white collapsed me-2" data-bs-toggle="collapse" data-bs-target="#collapseEmojis" aria-expanded="false">
                             <i class="fas fa-fw toggle-icon"></i>
                             Show emojis
                         </a>
@@ -81,6 +81,7 @@
 import { defineComponent } from "vue";
 
 import api from '@/services/api';
+import store from '@/store';
 import { Subject } from "rxjs";
 import { AxiosResponse } from "axios";
 
@@ -98,6 +99,7 @@ export default defineComponent({
   name: "Super Admin",
   data() {
     return {
+        selected_server: store.state.selected_server,
         activity_name: '',
         activity_type: 0,
         status_type: 'online',
