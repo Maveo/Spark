@@ -6,47 +6,14 @@
             <span class="text-gray4">View the ranking of you and your Friends</span>
         </div>
 
-        <div class="text-white bg-gray2">
+        <div class="d-flex text-white bg-gray2">
             
             <div class="d-flex flex-column justify-content-between">
                 
-                <div class="row" v-for="user in ranking" :key="user.member.id" style="min-width: 400px; max-width: 700px;">
-                    <div class="col-12">
-                        
-                        <div class="d-flex">
-
-                            <div class="js-tilt w-100 shadow bg-gray1 spark-rounded p-3 mb-2">
-                                <div class="d-flex">
-                                    <div style="width: 100px; height: 100px; margin-right: 1rem;">
-                                        <img class="rounded-circle" v-lazy="{src: user.avatar_url, loading: 'https://cdn.discordapp.com/embed/avatars/1.png'}" style="max-width: 100px;">
-                                    </div>
-                                    <div class="flex-grow-1 d-flex flex-column justify-content-between">
-                                        <div>
-                                            <div class="d-flex justify-content-between">
-                                                <h4 class="mb-0">{{user.name}}</h4>
-                                                <h4 class="mb-0">#{{user.rank}}</h4>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="d-flex justify-content-between align-items-end">
-                                                <div>
-                                                    <span class="text-gray3">Level:</span>
-                                                    <span style="font-size: 1.5em; padding-left: 0.25em;">{{user.lvl}}</span>
-                                                </div>
-                                                <div>
-                                                    <span class="text-gray3">{{user.xp}} / {{user.max_xp}} XP</span>
-                                                </div>
-                                            </div>
-                                            <div class="progress" style="border-radius: 3rem;">
-                                                <div class="progress-bar default-gradient" role="progressbar" :style="{'width': ''+(user.xp_percentage*100)+'%'}"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
+                <div class="row" v-for="(image, index) in shown_ranking_images" :key="index">
+                    <div class="js-tilt w-100 mb-2">
+                        <iframe class="invisible position-absolute" @load="on_iframe_load($event)" scrolling="no" :srcdoc="`<html><head><style>html,body{margin:0}${ranking_style}</style></head><body>${image}</body></html>`">
+                        </iframe>
                     </div>
                 </div>
 
@@ -57,8 +24,6 @@
                 </div>
 
             </div>
-
-
         </div>
 
     </div>
@@ -76,14 +41,35 @@ export default defineComponent({
   data() {
     return {
         loading: true,
-        ranking: [],
+        ranking_images: [],
+        shown_ranking_images: [],
+        ranking_style: ''
+    }
+  },
+  methods: {
+    on_iframe_load(event: any) {
+        const iframe = event.target ? event.target : event.path[0];
+        iframe.width  = iframe.contentWindow.document.body.scrollWidth;
+        iframe.height = iframe.contentWindow.document.body.scrollHeight;
+        iframe.classList.remove('invisible');
+        iframe.classList.remove('position-absolute');
+        this.load_next_iframe();
+    },
+    load_next_iframe() {
+        if (this.ranking_images.length > this.shown_ranking_images.length) {
+            this.shown_ranking_images.push(this.ranking_images[this.shown_ranking_images.length]);
+        } else {
+            this.loading = false;
+        }
     }
   },
   created() {
     api.get_ranking().then((response: AxiosResponse) => {
         console.log(response.data);
-        this.ranking = response.data;
-        this.loading = false;
+        this.ranking_images = response.data.images;
+        this.shown_ranking_images = [];
+        this.ranking_style = response.data.style;
+        this.load_next_iframe();
     });
   },
   updated() {
@@ -92,6 +78,13 @@ export default defineComponent({
         perspective: 1000,
         maxTilt: 15,
     });
+    
   },
 });
 </script>
+
+<style scoped>
+.js-tilt:hover iframe {
+    z-index: -1;
+}
+</style>
