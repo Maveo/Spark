@@ -258,32 +258,17 @@ class LevelsystemModule(SparkModule):
     async def member_create_profile_image_by_template(self, member, template):
         await self.check_level_user(member)
 
-        user = self.bot.db.get_level_user(member.guild.id, member.id)
-        name = member.display_name
-
-        data_xp_multiplier = await self.get_member_xp_multiplier(member)
-        data_xp = self.lvl_get_xp(user.level)
-        data_max_xp = self.max_xp_for(user.level)
-        data_percentage = data_xp / data_max_xp
-        data_rank = await self.get_ranking_rank(member)
-
-        data_obj = {'member': member,
-                    'name': name,
-                    'color': member.color.to_rgb(),
-                    'lvl': self.get_lvl(user.level),
-                    'xp': data_xp,
-                    'max_xp': data_max_xp,
-                    'xp_percentage': data_percentage,
-                    'rank': data_rank,
-                    'xp_multiplier': data_xp_multiplier,
-                    'avatar_url': str(member.display_avatar.with_format('png'))}
-
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create(template(
+            await self.get_advanced_level_user_infos(member)
+        ))
         return discord.File(filename="member.png", fp=img_buf)
+
+    async def member_get_profile_image_template(self, member):
+        return self.bot.module_manager.settings.get(member.guild.id, 'PROFILE_IMAGE')
 
     async def member_create_profile_image(self, member):
         return await self.member_create_profile_image_by_template(
-            member, self.bot.module_manager.settings.get(member.guild.id, 'PROFILE_IMAGE'))
+            member, await self.member_get_profile_image_template(member))
 
     async def member_create_level_up_image_by_template(self, member, old_lvl, new_lvl, template):
         name = member.display_name
@@ -337,7 +322,7 @@ class LevelsystemModule(SparkModule):
                                                              lvl)))
 
     async def create_ranking_image_by_template(self, member, ranked_users, template):
-        data_obj = await self.get_advanced_user_infos(member.guild, ranked_users)
+        data_obj = await self.users_get_advanced_infos(member.guild, ranked_users)
 
         img_buf = await self.bot.image_creator.create(template(data_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
@@ -369,26 +354,34 @@ class LevelsystemModule(SparkModule):
             users[i].rank = i + 1
         return users
 
-    async def get_advanced_user_infos(self, guild, ranked_users):
+    async def get_advanced_user_infos(self, member, user):
+        name = member.display_name
+        current_xp = self.lvl_get_xp(user.level)
+        max_xp = self.max_xp_for(user.level)
+        return {
+            'member': member,
+            'rank': user.rank,
+            'lvl': self.get_lvl(user.level),
+            'xp': current_xp,
+            'max_xp': max_xp,
+            'xp_percentage': current_xp / max_xp,
+            'xp_multiplier': await self.get_member_xp_multiplier(member),
+            'name': name,
+            'color': member.color.to_rgb(),
+            'avatar_url': str(member.display_avatar.with_format('png')),
+        }
+
+    async def get_advanced_level_user_infos(self, member):
+        user = self.bot.db.get_level_user(member.guild.id, member.id)
+        user.rank = await self.get_ranking_rank(member)
+        return await self.get_advanced_user_infos(member, user)
+
+    async def users_get_advanced_infos(self, guild, ranked_users):
         user_infos = []
         for user in ranked_users:
             member = get(guild.members, id=int(user.user_id))
             if member is not None and await self.leveling_allowed(member):
-                name = member.display_name
-                current_xp = self.lvl_get_xp(user.level)
-                max_xp = self.max_xp_for(user.level)
-                user_infos.append({
-                    'member': member,
-                    'rank': user.rank,
-                    'lvl': self.get_lvl(user.level),
-                    'xp': current_xp,
-                    'max_xp': max_xp,
-                    'xp_percentage': current_xp / max_xp,
-                    'xp_multiplier': await self.get_member_xp_multiplier(member),
-                    'name': name,
-                    'color': member.color.to_rgb(),
-                    'avatar_url': str(member.display_avatar.with_format('png')),
-                })
+                user_infos.append(await self.get_advanced_user_infos(member, user))
         return user_infos
 
     async def check_level_user(self, member: discord.Member):

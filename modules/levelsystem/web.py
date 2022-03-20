@@ -1,9 +1,9 @@
 import discord
 from flask import jsonify, request, send_file
+from imagestack import VisitorHtml
 
 from helpers.dummys import RoleDummy
 from helpers.exceptions import WrongInputException
-from helpers.module_pages import has_permissions
 from webserver import Page
 
 from typing import TYPE_CHECKING
@@ -15,7 +15,18 @@ if TYPE_CHECKING:
 async def get_ranking(module: 'LevelsystemModule',
                       guild: discord.Guild,
                       member: discord.Member):
-    return jsonify(await module.get_advanced_user_infos(guild, await module.get_ranking(guild))), 200
+    images = []
+    for u in await module.users_get_advanced_infos(guild, await module.get_ranking(guild)):
+        images.append(module.bot.image_creator.create_raw_html(
+            (await module.member_get_profile_image_template(u['member']))(
+                await module.get_advanced_level_user_infos(u['member'])
+            )
+        ))
+
+    return jsonify({
+        'images': images,
+        'style': VisitorHtml(module.bot.image_creator).style_html(),
+    }), 200
 
 
 async def profile_image(module: 'LevelsystemModule',

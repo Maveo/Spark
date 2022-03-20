@@ -6,7 +6,7 @@
                     <svg :class="['emoji', 'emoji-'+emoji, isActive && gold_active ? 'emoji-gold' : '']"></svg>
                 </div>
                 <div class="sidebar-hide-collapsed">
-                    <div :class="isActive?'':'text-gray3'">&nbsp;{{ title }}</div>
+                    <div :class="isActive?'':'text-gray3'">{{ title }}</div>
                 </div>
             </div>
         </router-link>
