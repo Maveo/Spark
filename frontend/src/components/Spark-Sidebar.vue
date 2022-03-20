@@ -29,7 +29,7 @@
                 <a class="nav-link text-white" style="pointer-events: none;">
                     <div class="d-flex align-items-center">
                         <img class="sidebar-server-image" :src="selected_server.icon_url ? selected_server.icon_url : 'https://cdn.discordapp.com/embed/avatars/1.png'" alt=" ">
-                        <div class="sidebar-hide-collapsed" style="padding-left: 0.5rem;">
+                        <div class="sidebar-hide-collapsed text-truncate" style="padding-left: 0.5rem;">
                             {{selected_server.name}}
                         </div>
                     </div>
