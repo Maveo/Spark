@@ -107,7 +107,10 @@ const router = createRouter({
 })
 
 router.beforeResolve((to, from, next) => {
-    if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
+    if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
+        store.commit('set_redirect', to.fullPath);
+        next('/login');
+    } else if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
         if (to.params.id) {
             store.commit('choose_server', to.params.id);
             next();
@@ -116,8 +119,6 @@ router.beforeResolve((to, from, next) => {
         } else {
             next();
         }
-    } else if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
-        next('/login');
     } else {
         next();
     }

@@ -42,12 +42,16 @@ export default createStore({
     state: {
         persistant: {
             token: '',
+            wanted_redirect: '',
         },
         global_loading: false,
         selected_server: new ServerModel(),
         profile: new ProfileModel()
     },
     mutations: {
+        set_redirect(state, redirect: string) {
+            state.persistant.wanted_redirect = redirect;
+        },
         login(state, token: string) {
             state.persistant.token = token;
         },

@@ -68,7 +68,13 @@ export default defineComponent({
             console.log(response.data);
 
             store.commit('login', response.data.session_token);
-            router.push('choose-server');
+            if (store.state.persistant.wanted_redirect) {
+                router.push(store.state.persistant.wanted_redirect);
+                store.commit('set_redirect', '');
+            } else {
+                router.push('choose-server');
+            }
+            
         }).catch(() => {
             this.loading = false;
 
