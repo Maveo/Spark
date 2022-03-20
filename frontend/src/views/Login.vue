@@ -18,7 +18,10 @@
                 </div>
     
                 <div class="p-4 rounded d-flex flex-column justify-content-center shadow-lg" style="background-color: #444;">
-                    <img src="../assets/spark-logo.svg" alt="Spark Logo" class="align-self-center" style="width: 200px; background: transparent;">
+                    <div class="d-flex justify-content-center">
+                        <img src="../assets/spark-logo.png" alt="Spark Logo" class="align-self-center" style="background: transparent;">
+                        <img src="../assets/spark-title.png" alt="Spark Logo" class="align-self-center" style="background: transparent;">
+                    </div>
                     <button @click="login()" class="btn btn-dark btn-lg text-white mt-3 d-flex" style="background-color: #6c89e0;" :disabled="loading">
                         <div class="me-2" style="width: 24px; height: 30px;">
                             <i v-if="!loading" class="fab fa-fw fa-discord"></i>

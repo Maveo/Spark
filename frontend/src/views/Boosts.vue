@@ -6,11 +6,11 @@
             <span class="text-gray4">Enter or create a Promo Code or manage your regular boosts</span>
         </div>
 
-        <div class="view-main-card p-4">
+        <div class="view-main-card px-1 py-4 p-md-4">
             
             <div class="row">
 
-                <div v-if="selected_server.active_modules.includes('promo')" class="col-xxl-4 px-5 mb-3">
+                <div v-if="selected_server.active_modules.includes('promo')" class="col-xxl-4 px-4 px-sm-5 mb-3">
                     <h4 class="mb-3">Promotion Code</h4>
                     
                     <div style="position: relative;">
@@ -91,7 +91,7 @@
 
                 </div>
 
-                <div class="col-xxl-8 px-5">
+                <div class="col-xxl-8 px-4 px-sm-5">
 
                     <div v-if="selected_server.active_modules.includes('promo')" class="d-none d-xxl-block vertical-divider"></div>
 

@@ -4,22 +4,12 @@
     <span class="spinner-border" role="status" aria-hidden="true"></span>
   </div>
   <main v-if="selected_server()" class="main">
-    <!-- Sidebar Container -->
-    <div
-      class="
-        spark-sidebar-container
-        d-flex
-        flex-column flex-shrink-0
-        p-3
-        text-white
-      "
-    >
-      <sparksidebar></sparksidebar>
-    </div>
+    <!-- Sidebar -->
+    <sparksidebar></sparksidebar>
 
     <!-- Main Site Container -->
     <div class="d-flex flex-column flex-grow-1">
-      <div class="p-5 overflow-auto">
+      <div class="py-5 px-0 p-lg-5 overflow-auto">
         <router-view v-slot="{ Component }">
           <transition name="route" mode="out-in">
             <component :is="Component"></component>

@@ -2,11 +2,11 @@
     <li>
         <router-link v-slot="{isActive}" class="nav-link text-white dark-hover" :to="route">
             <div class="d-flex">
-                <div class="d-flex justify-content-left align-items-end" style="width: 28px;">
+                <div class="d-flex justify-content-start align-items-end" style="width: 28px;">
                     <svg :class="['emoji', 'emoji-'+emoji, isActive && gold_active ? 'emoji-gold' : '']"></svg>
                 </div>
-                <div>
-                    <div :class="isActive?'':'text-gray3'">{{ title }}</div>
+                <div class="sidebar-hide-collapsed">
+                    <div :class="isActive?'':'text-gray3'">&nbsp;{{ title }}</div>
                 </div>
             </div>
         </router-link>
