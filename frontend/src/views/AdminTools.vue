@@ -336,7 +336,6 @@ export default defineComponent({
                 
                 loadingSubject.subscribe({
                     next: (progress) => {
-                        console.log(progress);
                         progressbar.style.width = '' + (progress * 100) + '%';
                         progressbar.style.transition = 'width 1s linear';
                     },

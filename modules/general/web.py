@@ -1,11 +1,14 @@
 import asyncio
+import base64
+import os
 from io import BytesIO
 
 import discord
 from discord import PCMAudio, ActivityType, Status, Activity
 from flask import jsonify, request, send_file
+from imagestack import is_emoji, from_char
 
-from helpers.exceptions import WrongInputException
+from helpers.exceptions import WrongInputException, MethodNotAvailableException
 from helpers.module_pages import has_permissions
 from helpers.tools import search_text_channel, search_voice_channel
 from webserver import Page
@@ -88,7 +91,6 @@ async def get_modules(module: 'GeneralModule',
 async def set_module(module: 'GeneralModule',
                      guild: discord.Guild,
                      member: discord.Member):
-
     json = request.get_json()
     if json is None or 'module' not in json or 'activate' not in json:
         raise WrongInputException('module or activate not provided')
@@ -281,6 +283,45 @@ async def set_presence(module: 'GeneralModule',
     }), 200
 
 
+@has_permissions(super_admin=True)
+async def get_emojis(module: 'GeneralModule',
+                     guild: discord.Guild,
+                     member: discord.Member):
+    emojis = module.bot.image_creator.get_downloaded_emojis()
+    send_emojis = []
+    for e in emojis:
+        with open(os.path.join(module.bot.image_creator.emoji_path, e['path']), 'rb') as f:
+            send_emojis.append({'emoji': e['emoji'], 'base64': base64.b64encode(f.read()).decode()})
+
+    return jsonify({
+        'msg': 'success',
+        'emojis': send_emojis
+    }), 200
+
+
+@has_permissions(super_admin=True)
+async def change_emoji(module: 'GeneralModule',
+                       guild: discord.Guild,
+                       member: discord.Member):
+    if 'emoji_file' not in request.files or 'emoji' not in request.form:
+        raise WrongInputException('emoji_file or emoji not provided')
+
+    if not is_emoji(request.form['emoji']):
+        raise WrongInputException('emoji is wrong')
+
+    if not module.bot.image_creator.save_downloaded_emojis:
+        raise MethodNotAvailableException('cannot save emojis')
+
+    emoji_id = from_char(request.form['emoji'])
+    request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_path,
+                                                  emoji_id + '.png'))
+    module.bot.logger.info('saved new image for emoji {}'.format(emoji_id))
+
+    return jsonify({
+        'msg': 'success',
+    }), 200
+
+
 API_PAGES = [
     Page(path='profile', view_func=get_profile),
     Page(path='settings', view_func=get_settings),
@@ -301,4 +342,6 @@ API_PAGES = [
     Page(path='nickname', view_func=set_nickname, methods=['POST']),
     Page(path='audio', view_func=send_voice_audio, methods=['POST']),
     Page(path='presence', view_func=set_presence, methods=['POST']),
+    Page(path='emojis', view_func=get_emojis),
+    Page(path='change-emoji', view_func=change_emoji, methods=['POST']),
 ]

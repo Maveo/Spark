@@ -376,7 +376,7 @@ export default defineComponent({
         input.style.display = 'none';
         document.body.appendChild(input);
         input.onchange = () => {
-            if (!input.files || input.files.length == 0 || input.files[0].size > 250000000) {
+            if (!input.files || input.files.length == 0 || input.files[0].size > 250000000 || !FileReader) {
                 Toast.fire({
                     icon: 'error',
                     title: 'Something went wrong'
