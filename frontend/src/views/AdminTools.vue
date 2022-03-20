@@ -32,7 +32,7 @@
                         <h5 class="mb-0">Audio:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_voice_audio()">
-                        <select class="me-2 form-control form-control-sm" v-model="selected_voice_channel" style="max-width: 180px;" required>
+                        <select class="me-2 form-select form-select-sm" v-model="selected_voice_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in voice_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
@@ -40,7 +40,7 @@
                         </select>
                         <div class="me-3 flex-grow-1">
                             <div class="input-group input-group-sm custom-file-button">
-                                <input type="file" onchange="this.nextElementSibling.innerText=this.files[0].name;" class="form-control form-control-sm" id="audioFile" ref="audioFile" required>
+                                <input type="file" class="form-control form-control-sm" id="audioFile" ref="audioFile" required>
                             </div>
                         </div>
                         <button class="btn btn-info btn-sm text-nowrap" type="submit">
@@ -72,7 +72,7 @@
                         <h5 class="mb-0">Send:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_msg_channel()">
-                        <select class="me-2 form-control form-control-sm" v-model="selected_send_channel" style="max-width: 180px;" required>
+                        <select class="me-2 form-select form-select-sm" v-model="selected_send_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
@@ -94,7 +94,7 @@
                         <h5 class="mb-0">Watch:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center justify-content-end flex-grow-1">
-                        <select @change="refresh_watch_channel(true)" class="me-2 form-control form-control-sm" v-model="selected_watch_channel" style="max-width: 180px;" required>
+                        <select @change="refresh_watch_channel(true)" class="me-2 form-select form-select-sm" v-model="selected_watch_channel" style="max-width: 180px;" required>
                             <option value="0" hidden>Loading channels...</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}

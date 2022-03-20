@@ -15,14 +15,14 @@
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="set_presence(activity_name, activity_type, status_type)">
                         
                         <div class="me-3 flex-grow-1 d-flex justify-content-end">
-                            <select class="me-2 form-control form-control-sm" v-model="activity_type" style="max-width: 180px;">
+                            <select class="me-2 form-select form-select-sm" v-model="activity_type" style="max-width: 180px;">
                                 <option :value="0" >Playing</option>
                                 <option :value="1">Streaming</option>
                                 <option :value="2">Listening</option>
                                 <option :value="3">Watching</option>
                                 <option :value="5">Competing</option>
                             </select>
-                            <select class="me-2 form-control form-control-sm" v-model="status_type" style="max-width: 180px;">
+                            <select class="me-2 form-select form-select-sm" v-model="status_type" style="max-width: 180px;">
                                 <option :value="'online'" >Online</option>
                                 <option :value="'offline'">Offline</option>
                                 <option :value="'idle'">Idle</option>
