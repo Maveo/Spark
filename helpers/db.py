@@ -221,12 +221,12 @@ class Database:
 
     def add_xp_boost(self, guild_id, user_id, amount, origin, expires=None):
         session = self.Session()
-        session.merge(XPBoost(guild_id=guild_id, user_id=user_id, amount=amount, origin=origin, expires=expires))
+        session.add(XPBoost(guild_id=guild_id, user_id=user_id, amount=amount, origin=origin, expires=expires))
         session.commit()
 
     def add_xp_origin(self, guild_id, user_id, amount, origin):
         session = self.Session()
-        session.merge(XPOrigin(guild_id=guild_id, user_id=user_id, amount=amount, origin=origin))
+        session.add(XPOrigin(guild_id=guild_id, user_id=user_id, amount=amount, origin=origin))
         session.commit()
 
     def get_xp_origin(self, guild_id, user_id):
@@ -282,7 +282,12 @@ class Database:
         ))
         return session.scalars(stmt).all()
 
-    def remove_emoji_reaction(self, reaction_id):
+    def remove_emoji_reaction(self, guild_id, reaction_id):
+        session = self.Session()
+        stmt = db.delete(EmojiReaction).where(db.and_(EmojiReaction.guild_id == guild_id,
+                                                      EmojiReaction.id == reaction_id))
+        session.execute(stmt)
+        session.commit()
         session = self.Session()
         stmt = db.delete(EmojiReaction).where(EmojiReaction.id == reaction_id)
         session.execute(stmt)

@@ -165,7 +165,7 @@ class EmojiReactionsModule(SparkModule):
                 return await ctx.respond(embed=discord.Embed(title='',
                                                              description=self.bot.i18n.get('UNKNOWN_ERROR'),
                                                              color=discord.Color.red()))
-            self.bot.db.remove_emoji_reaction(reaction_id)
+            self.bot.db.remove_emoji_reaction(ctx.author.guild.id, reaction_id)
             return await ctx.respond(
                 embed=discord.Embed(title='',
                                     description=self.bot.i18n.get('EMOJI_REACTIONS_REMOVE_SUCCESSFUL')
