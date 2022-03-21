@@ -116,9 +116,12 @@ function redeem_promo_code(promo_code: string): Promise<AxiosResponse> {
     });
 }
 
-function get_ranking(): Promise<AxiosResponse> {
+function get_ranking(offset: number | undefined, amount: number | undefined, style_wanted: boolean): Promise<AxiosResponse> {
     return axios.get(process.env.VUE_APP_API_BASE_URL + '/ranking', {
         params: {
+            'offset': offset,
+            'amount': amount,
+            'style_wanted': style_wanted ? true : undefined,
             'guild_id': store.state.selected_server.id
         },
         headers: {
