@@ -106,14 +106,15 @@
 .main {
     display: flex;
     flex-wrap: nowrap;
-    height: 100vh;
+    /* height: 100vh; */
     height: -webkit-fill-available;
-    max-height: 100vh;
+    /* max-height: 100vh; */
     overflow-x: auto;
-    overflow-y: hidden;
+    /* overflow-y: hidden; */
 }
 
 .spark-sidebar-container {
+    /* min-height: 100%; */
     background-color: #303237;
     width: 325px;
     padding: 1rem;
@@ -132,7 +133,7 @@ img.sidebar-server-image {
 }
 
 .spark-sidebar-container.sidebar-collapsed:hover {
-    width: 180px;
+    width: 185px;
 }
 
 .sidebar-hide-collapsed {
@@ -308,7 +309,7 @@ body,
 
 body {
     font-family: var(--font-family-sans-serif) !important;
-    overflow: hidden;
+    /* overflow: hidden; */
 }
 
 .nav-link {
@@ -448,6 +449,12 @@ p {
 }
 
 .btn.btn-info:disabled {
+    color: #fff;
+    background-color: var(--stg-info-dark);
+    border-color: var(--stg-info-dark);
+}
+
+.btn.btn-info:focus {
     color: #fff;
     background-color: var(--stg-info-dark);
     border-color: var(--stg-info-dark);
