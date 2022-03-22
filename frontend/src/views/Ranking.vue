@@ -42,6 +42,7 @@ export default defineComponent({
   data() {
     return {
         loading: true,
+        loading_counter: 0,
         ranking_images: ([] as Array<any>),
         shown_ranking_images: ([] as Array<any>),
         ranking_style: '',
@@ -92,7 +93,9 @@ export default defineComponent({
         }
     },
     load_next_ranking_batch() {
-        api.get_ranking(this.ranking_images.length, 5, !this.ranking_style).then((response: AxiosResponse) => {
+        const olc = this.loading_counter;
+        this.loading_counter += 5;
+        api.get_ranking(olc, 5, !this.ranking_style).then((response: AxiosResponse) => {
             console.log(response.data);
             this.ranking_images.push(...response.data.images);
             this.total_amount = response.data.total_amount;
@@ -108,6 +111,7 @@ export default defineComponent({
     if (main_container) {
         this.lazy_subscription = fromEvent((document.getElementById('mainSiteContainer') as any), 'scroll').pipe(debounceTime(100)).subscribe(this.lazy_check);
     }
+    this.loading_counter = 0;
     this.ranking_images = [];
     this.shown_ranking_images = [];
     this.load_next_ranking_batch();
