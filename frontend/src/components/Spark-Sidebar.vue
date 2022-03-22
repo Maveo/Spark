@@ -57,8 +57,8 @@
         <div class="dropdown show ">
             <a class="text-white sidebar-dropdown text-decoration-none d-flex align-items-center" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
                 <div class="d-flex flex-row">
-                    <img :src="profile.member.avatar_url" alt="" class="rounded-circle me-2" width="32" height="32">
-                    <strong class="sidebar-hide-collapsed align-self-center">{{profile.member.name}}</strong>
+                    <img :src="profile.member.avatar_url" alt="" class="rounded-circle" width="30" height="30">
+                    <strong class="sidebar-hide-collapsed align-self-center ms-2">{{profile.member.name}}</strong>
                 </div>
                 <div class="sidebar-hide-collapsed">
                     <i class="fas fa-fw fa-ellipsis-v"></i>
