@@ -25,7 +25,7 @@ async def get_ranking(module: 'LevelsystemModule',
 
     res = {
         'images': [module.bot.image_creator.create_raw_html(
-            (await module.member_get_profile_image_template(u['member']))(u)
+            (await module.get_dependency('profile').member_get_profile_image_template(u['member']))(u)
         ) for u in users],
         'total_amount': total_amount
     }
