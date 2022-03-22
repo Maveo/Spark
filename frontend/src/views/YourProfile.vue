@@ -154,21 +154,27 @@ export default defineComponent({
       return {
           selected_server: store.state.selected_server,
           profile: store.state.profile,
-          total_xp_with_origin: 0,
-          unknown_xp_percent: 100,
-          text_msg_xp_percent: 0,
-          voice_xp_percent: 0,
-          boost_xp_percent: 0,
       };
   },
-  updated() {
-      if (this.profile.total_xp != 0) {
-          this.total_xp_with_origin = this.profile.text_msg_xp + this.profile.voice_xp + this.profile.boost_xp;
-          this.unknown_xp_percent = (this.profile.total_xp - this.total_xp_with_origin) * 100 / this.profile.total_xp;
-          this.text_msg_xp_percent = this.profile.text_msg_xp * 100 / this.profile.total_xp;
-          this.voice_xp_percent = this.profile.voice_xp * 100 / this.profile.total_xp;
-          this.boost_xp_percent = this.profile.boost_xp * 100 / this.profile.total_xp;
-      }
-  }
+  computed: {
+    unknown_xp_percent() {
+        if (store.state.profile.total_xp == 0) return 100;
+        return (store.state.profile.total_xp -
+            (store.state.profile.text_msg_xp + store.state.profile.voice_xp + store.state.profile.boost_xp)) * 100
+            / store.state.profile.total_xp;
+    },
+    text_msg_xp_percent() {
+        if (store.state.profile.total_xp == 0) return 0;
+        return store.state.profile.text_msg_xp * 100 / store.state.profile.total_xp;
+    },
+    voice_xp_percent() {
+        if (store.state.profile.total_xp == 0) return 0;
+        return store.state.profile.voice_xp * 100 / store.state.profile.total_xp;
+    },
+    boost_xp_percent() {
+        if (store.state.profile.total_xp == 0) return 0;
+        return store.state.profile.boost_xp * 100 / store.state.profile.total_xp;
+    }
+  },
 });
 </script>
