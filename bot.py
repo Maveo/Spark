@@ -259,6 +259,9 @@ class DiscordBot:
     async def _on_ready(self):
         self.logger.info('Bot is running...')
 
+        for guild in self.bot.guilds:
+            await self.module_manager.fix_dependencies(guild.id)
+
         self.bot.loop.create_task(self._interval_loop())
         await self.sync_commands()
 

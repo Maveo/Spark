@@ -62,6 +62,13 @@ class ModuleManager:
                 else:
                     self.modules[dep].dependency_for.append(module.get_name())
 
+    async def fix_dependencies(self, guild_id):
+        activated_modules = self.get_activated_modules(guild_id)
+        for module in activated_modules:
+            for missing_dependency in self.missing_dependencies(guild_id, module):
+                self.bot.logger.warning('guild {} is missing {}, activating...'.format(guild_id, missing_dependency))
+                await self.activate_module(guild_id, missing_dependency, False, False, activate_dependencies=True)
+
     def get(self, module_key: str):
         return self.modules[module_key]
 
@@ -77,12 +84,15 @@ class ModuleManager:
     def is_optional(self, module_key):
         return module_key in self.bot.module_manager.optional_modules
 
-    async def activate_module(self, guild_id, module_key, sync_as_task=False):
+    async def activate_module(self, guild_id, module_key, sync_as_task=False, sync=True, activate_dependencies=False):
         if not self.bot.module_manager.is_optional(module_key):
             raise WrongInputException('module "{}" not found!'.format(module_key))
 
         missing_dependencies = self.bot.module_manager.missing_dependencies(guild_id, module_key)
-        if missing_dependencies:
+        if activate_dependencies:
+            for missing_dependency in missing_dependencies:
+                await self.activate_module(guild_id, missing_dependency, False, False, True)
+        elif missing_dependencies:
             raise WrongInputException('module "{}" misses dependencies: {}'.format(
                 module_key,
                 ', '.join(missing_dependencies))
@@ -90,6 +100,8 @@ class ModuleManager:
 
         self.bot.logger.info('guild {} activates module {}'.format(guild_id, module_key))
         self.bot.db.activate_module(guild_id, module_key)
+        if not sync:
+            return
         if sync_as_task:
             self.bot.bot.loop.create_task(self.bot.sync_commands())
         else:
@@ -142,8 +154,9 @@ class ModuleManager:
         for module in self.get_activated_modules(member.guild.id):
             for key, value in (await self.modules[module].create_extended_profile(member)).items():
                 if key in data:
-                    raise KeyError('duplicate extended profile key')
-                data[key] = value
+                    self.bot.logger.warning('duplicate extended profile key: {}'.format(key))
+                else:
+                    data[key] = value
         return data
 
     async def interval_update(self, current_time, guild):
