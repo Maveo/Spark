@@ -6,8 +6,6 @@ name: Node Build Frontend Dist
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 concurrency: 
   group: ${{ github.workflow }}-${{ github.ref }}
