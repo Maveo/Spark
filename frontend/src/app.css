@@ -609,3 +609,12 @@ div.swal2-popup {
 .emoji-boosts.emoji-gold {
     background: url("./assets/icons/boosts-gold.svg") no-repeat;
 }
+
+.emoji-admin-tools {
+    background: url("./assets/icons/admin-tools.svg") no-repeat;
+}
+
+
+.emoji-admin-tools.emoji-gold {
+    background: url("./assets/icons/admin-tools-gold.svg") no-repeat;
+}
