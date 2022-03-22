@@ -3,11 +3,19 @@ import re
 from typing import *
 import discord
 from discord.utils import get
+from imagestack import LinearGradientColor, ImageStackStringParser, SingleColor
 
 
 def autocomplete_match(s: str, li: List[str]):
     sl = s.lower()
     return filter(lambda s2: sl in s2.lower(), li)
+
+
+def make_linear_gradient(color_string: str) -> LinearGradientColor:
+    stack_color = ImageStackStringParser(color_string).build()
+    if not isinstance(stack_color, LinearGradientColor):
+        stack_color = LinearGradientColor(SingleColor(stack_color), SingleColor(stack_color))
+    return stack_color
 
 
 def underscore_to_camelcase(word):

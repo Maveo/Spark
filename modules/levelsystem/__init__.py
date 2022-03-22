@@ -1,6 +1,7 @@
 import time
 
 from helpers import tools
+from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK
 from helpers.spark_module import SparkModule
 import discord
 import discord.commands
@@ -120,14 +121,14 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def blacklist_user(ctx: discord.commands.context.ApplicationContext,
-                            member: discord.commands.Option(
-                                discord.Member,
-                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
-                            ),
-                            blacklist: discord.commands.Option(
-                                bool,
-                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
-                            )):
+                                 member: discord.commands.Option(
+                                     discord.Member,
+                                     description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
+                                 ),
+                                 blacklist: discord.commands.Option(
+                                     bool,
+                                     description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
+                                 )):
 
             await self.check_level_user(member)
             self.bot.db.update_level_user(member.guild.id, member.id, {
@@ -216,6 +217,18 @@ class LevelsystemModule(SparkModule):
                 description=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND_DESCRIPTION'),
             )
         ]
+
+        self.bot.module_manager.hooks.add(
+            self,
+            INVENTORY_ITEM_ACTION_HOOK,
+            hook_id='xp-boost',
+            name='XP Boost',
+            options={
+                'amount': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
+                'duration': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
+            },
+            callback=lambda x: print(x)
+        )
 
     @staticmethod
     def get_lvl(lvl):

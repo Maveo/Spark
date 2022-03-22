@@ -133,6 +133,7 @@ class EmojiReactionsModule(SparkModule):
 
             return await ctx.respond(embed=embed)
 
+        @bot.has_permissions(administrator=True)
         async def remove_emoji_reaction_autocomplete(ctx: discord.AutocompleteContext):
             reactions = []
             for reaction in self.bot.db.get_emoji_reactions(ctx.interaction.guild.id):

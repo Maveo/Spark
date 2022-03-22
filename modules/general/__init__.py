@@ -131,6 +131,7 @@ class GeneralModule(SparkModule):
             parent=settings_command
         ))
 
+        @bot.has_permissions(administrator=True)
         async def activate_module_autocomplete(ctx: discord.AutocompleteContext):
             return autocomplete_match(ctx.value,
                                       self.bot.module_manager.get_activatable_modules(ctx.interaction.guild.id))
@@ -157,6 +158,7 @@ class GeneralModule(SparkModule):
                                     .format(module),
                                     color=discord.Color.green()))
 
+        @bot.has_permissions(administrator=True)
         async def deactivate_module_autocomplete(ctx: discord.AutocompleteContext):
             return autocomplete_match(ctx.value,
                                       self.bot.module_manager.get_deactivatable_modules(ctx.interaction.guild.id))

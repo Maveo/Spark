@@ -2,21 +2,19 @@ import sys
 
 import discord
 
-from helpers import tools
-import json
 import os
 import importlib.util
 
-from helpers.exceptions import WrongInputException, ModuleNotActivatedException
-from helpers.settings_manager import Setting
+from helpers.exceptions import WrongInputException
+from helpers.module_api_pages_manager import ModuleApiPagesManager
+from helpers.module_hook_manager import ModuleHookManager
+from helpers.module_settings_manager import ModuleSettingsManager
 from helpers.spark_module import SparkModule
 
 
-import itertools
 from typing import *
 
 from helpers.tools import underscore_to_camelcase
-from webserver import Page
 
 if TYPE_CHECKING:
     from bot import DiscordBot
@@ -29,6 +27,7 @@ class ModuleManager:
         self.modules: Dict[str, SparkModule] = {}
         self.settings = ModuleSettingsManager(self)
         self.api_pages = ModuleApiPagesManager(self)
+        self.hooks = ModuleHookManager(self)
 
     def initialize(self):
         module_path = os.path.join(self.bot.current_dir, 'modules')
@@ -211,128 +210,3 @@ class ModuleManager:
         if payload.guild_id is not None:
             for module in self.get_activated_modules(payload.guild_id):
                 await self.modules[module].on_raw_reaction_remove(payload)
-
-
-class ModuleSettingsManager:
-    def __init__(self, module_manager: ModuleManager):
-        self.module_manager = module_manager
-        self.default_settings: Dict[str, Setting] = {}
-
-    def initialize(self, modules: List[SparkModule]):
-        settings_keys: Dict[str, str] = {}
-        for module in modules:
-            if not isinstance(module.get_settings(), dict):
-                raise RuntimeError('settings of module {} not dict'.format(module.get_name()))
-            for key, value in module.get_settings().items():
-                if not isinstance(value, Setting):
-                    raise RuntimeError('setting {} of module {} is not of type Setting'.format(key, module.get_name()))
-                if key in settings_keys:
-                    raise RuntimeError('duplicate settings key ({}) in modules {} and {}'.format(
-                        key, module.get_name(), settings_keys[key]
-                    ))
-                else:
-                    settings_keys[key] = module.get_name()
-                    self.default_settings[key] = value
-
-    def keys(self, guild_id=None):
-        if guild_id is None:
-            return self.default_settings.keys()
-        return list(itertools.chain(*map(lambda module: self.module_manager.modules[module].settings.keys(),
-                                         self.module_manager.get_activated_modules(guild_id))))
-
-    def all(self, guild_id):
-        return {k: self.get(guild_id, k) for k in self.keys(guild_id)}
-
-    def get_default(self, key):
-        if key not in self.keys():
-            raise KeyError('Key "{}" not found in default settings!'.format(key))
-        return self.default_settings[key].value
-
-    def get(self, guild_id, key):
-        keys = self.keys(guild_id)
-        if key not in keys:
-            raise KeyError('Key "{}" not found in guild settings!'.format(key))
-
-        guild_setting = self.module_manager.bot.db.get_setting(guild_id, key)
-        if guild_setting is not None:
-            try:
-                default_type = type(self.default_settings[key].value)
-                return tools.simple_eval(default_type, json.loads(guild_setting))
-            except Exception as e:
-                self.module_manager.bot.logger.warning(e)
-
-        return self.default_settings[key].value
-
-    def preview(self, guild_id, key, value):
-        if key not in self.keys(guild_id):
-            raise KeyError('Key "{}" not found in default settings!'.format(key))
-
-        value = json.dumps(value)
-        default_type = type(self.default_settings[key].value)
-        return tools.simple_eval(default_type, json.loads(value))
-
-    def set(self, guild_id, key, value):
-        if key not in self.keys(guild_id):
-            raise KeyError('Key "{}" not found in default settings!'.format(key))
-
-        value = json.dumps(value)
-        try:
-            self.preview(guild_id, key, value)
-        except Exception as e:
-            self.module_manager.bot.logger.warning(e)
-            return False
-
-        self.module_manager.bot.db.set_setting(guild_id, key, value)
-        return True
-
-    def remove(self, guild_id, key):
-        if key not in self.keys(guild_id):
-            raise KeyError('Key "{}" not found in default settings!'.format(key))
-        self.module_manager.bot.db.remove_setting(guild_id, key)
-
-    def categories(self, guild_id):
-        return list(dict.fromkeys(
-            [cat for key in self.keys(guild_id) for cat in self.default_settings[key].categories]
-        ))
-
-    def all_as_dict(self, guild_id):
-        return {
-            key: self.default_settings[key].new_value_dict(self.get(guild_id, key)) for key in self.keys(guild_id)
-        }
-
-
-class ModuleApiPagesManager:
-    def __init__(self, module_manager: ModuleManager):
-        self.module_manager = module_manager
-        self.default_api_pages: Dict[str, Page] = {}
-
-    def initialize(self, modules: List[SparkModule]):
-        pages_keys: Dict[str, str] = {}
-        for module in modules:
-            if not isinstance(module.get_api_pages(), list):
-                raise RuntimeError('api pages of module {} not list'.format(module.get_name()))
-            for api_page in module.get_api_pages():
-                if not isinstance(api_page, Page):
-                    raise RuntimeError('api page {} of module {} is not of type Page'.format(api_page.path,
-                                                                                             module.get_name()))
-                if api_page.path in pages_keys:
-                    raise RuntimeError('duplicate pages path ({}) in modules {} and {}'.format(
-                        api_page.path, module.get_name(), pages_keys[api_page.path]
-                    ))
-                else:
-                    pages_keys[api_page.path] = module.get_name()
-                    self.default_api_pages[api_page.path] = api_page.new(
-                        view_func=self.module_wrapper(api_page.view_func, module)
-                    )
-
-    def module_wrapper(self, func, module):
-        async def _call(guild: discord.Guild, member: discord.Member, *args, **kwargs):
-            activated_modules = self.module_manager.get_activated_modules(guild.id)
-            if module.get_name() not in activated_modules:
-                raise ModuleNotActivatedException('module "{}" not activated'.format(module.get_name()))
-            return await func(self.module_manager.get(module.get_name()), guild, member, *args, **kwargs)
-
-        return _call
-
-    def all(self):
-        return self.default_api_pages.values()

@@ -185,5 +185,15 @@
   "GAMES_CHESS_PIECE_B": "Bishop",
   "GAMES_CHESS_PIECE_R": "Rook",
   "GAMES_CHESS_PIECE_Q": "Queen",
-  "GAMES_CHESS_PIECE_K": "King"
+  "GAMES_CHESS_PIECE_K": "King",
+  "XP_BOOST_AMOUNT_DESCRIPTION": "Amount of XP boost added",
+  "XP_BOOST_DURATION_DESCRIPTION": "Duration of the XP boost in Hours",
+  "INVENTORY_COMMAND": "inventory",
+  "INVENTORY_COMMAND_DESCRIPTION": "manage inventory",
+  "INVENTORY_GET_COMMAND": "get",
+  "INVENTORY_GET_COMMAND_DESCRIPTION": "Show your inventory",
+  "INVENTORY_ADMIN_GIVE_COMMAND": "admin-give",
+  "INVENTORY_ADMIN_GIVE_COMMAND_SUCCESS": "Successfully added \"{}\" of \"{}\"",
+  "INVENTORY_ADMIN_GIVE_COMMAND_DESCRIPTION": "Create and give user item",
+  "INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION": "What item to create"
 }

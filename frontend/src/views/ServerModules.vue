@@ -107,20 +107,19 @@ export default defineComponent({
                 });
             }
             
-        }).catch((e) => {
-            console.log(e);
+        }).catch((error) => {
             modul.error = true;
             modul.loading = false;
 
             if (activate) {
                 Toast.fire({
                     icon: 'error',
-                    title: 'Modul could not be activated'
+                    title: error.response.data.description
                 });
             } else {
                 Toast.fire({
                     icon: 'error',
-                    title: 'Modul could not be deactivated'
+                    title: error.response.data.description
                 });
             }
         });
