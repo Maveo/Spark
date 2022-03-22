@@ -36,31 +36,6 @@ async def get_ranking(module: 'LevelsystemModule',
     return jsonify(res), 200
 
 
-async def profile_image(module: 'LevelsystemModule',
-                        guild: discord.Guild,
-                        member: discord.Member):
-    json = request.get_json()
-    if json is None or 'preview' not in json:
-        img = await module.member_create_profile_image(member)
-        return send_file(
-            img.fp,
-            attachment_filename=img.filename,
-            mimetype='image/png'
-        )
-
-    try:
-        preview = module.bot.module_manager.settings.preview(guild.id, 'PROFILE_IMAGE', json['preview'])
-    except:
-        raise WrongInputException('setting preview not correct')
-
-    img = await module.member_create_profile_image_by_template(member, preview)
-    return send_file(
-        img.fp,
-        attachment_filename=img.filename,
-        mimetype='image/png'
-    )
-
-
 async def ranking_image(module: 'LevelsystemModule',
                         guild: discord.Guild,
                         member: discord.Member):
@@ -139,7 +114,6 @@ async def rank_up_image(module: 'LevelsystemModule',
 
 API_PAGES = [
     Page(path='ranking', view_func=get_ranking, methods=['GET']),
-    Page(path='profile-image', view_func=profile_image, methods=['POST']),
     Page(path='ranking-image', view_func=ranking_image, methods=['POST']),
     Page(path='level-up-image', view_func=level_up_image, methods=['POST']),
     Page(path='rank-up-image', view_func=rank_up_image, methods=['POST']),
