@@ -15,16 +15,25 @@ if TYPE_CHECKING:
 async def get_ranking(module: 'LevelsystemModule',
                       guild: discord.Guild,
                       member: discord.Member):
-    images = []
-    for u in await module.users_get_advanced_infos(guild, await module.get_ranking(guild)):
-        images.append(module.bot.image_creator.create_raw_html(
-            (await module.get_dependency('profile').member_get_profile_image_template(u['member']))(u)
-        ))
+    users = await module.users_get_advanced_infos(guild, await module.get_ranking(guild))
 
-    return jsonify({
-        'images': images,
-        'style': VisitorHtml(module.bot.image_creator).style_html(),
-    }), 200
+    total_amount = len(users)
+    if 'offset' in request.args:
+        users = users[int(request.args['offset']):]
+    if 'amount' in request.args:
+        users = users[:int(request.args['amount'])]
+
+    res = {
+        'images': [module.bot.image_creator.create_raw_html(
+            (await module.member_get_profile_image_template(u['member']))(u)
+        ) for u in users],
+        'total_amount': total_amount
+    }
+
+    if 'style_wanted' in request.args:
+        res['style'] = VisitorHtml(module.bot.image_creator).style_html()
+
+    return jsonify(res), 200
 
 
 async def ranking_image(module: 'LevelsystemModule',
