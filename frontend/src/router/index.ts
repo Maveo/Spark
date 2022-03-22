@@ -106,13 +106,13 @@ const router = createRouter({
     routes
 })
 
-router.beforeResolve((to, from, next) => {
+router.beforeResolve(async (to, from, next) => {
     if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
         store.commit('set_redirect', to.fullPath);
         next('/login');
     } else if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
         if (to.params.id) {
-            store.commit('choose_server', to.params.id);
+            await store.dispatch('choose_server', to.params.id);
             next();
         } else if (to.matched.some(record => record.meta.requiresServer)) {
             next('/choose-server');

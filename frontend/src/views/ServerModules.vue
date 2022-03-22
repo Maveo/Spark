@@ -89,11 +89,11 @@ export default defineComponent({
     },
     set_module(modul: any, activate: boolean) {
         modul.loading = true;
-        api.set_module(modul.name, activate).then((response: AxiosResponse) => {
+        api.set_module(modul.name, activate).then(async (response: AxiosResponse) => {
             modul.error = false;
             modul.loading = false;
 
-            store.commit('update_server');
+            await store.dispatch('update_server');
 
             if (activate) {
                 Toast.fire({

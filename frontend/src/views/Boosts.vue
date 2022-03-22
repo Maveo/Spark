@@ -224,9 +224,9 @@ export default defineComponent({
         });
     },
     boost_user() {
-        api.boost_user(this.boost_username).then((response: AxiosResponse) => {
+        api.boost_user(this.boost_username).then(async (response: AxiosResponse) => {
             console.log(response.data);
-            store.commit("choose_server", store.state.selected_server.id);
+            await store.dispatch("update_server");
         }).catch((e) => {
             if (e.response && e.response.status == 400) {
                 console.log(e.response.data);
@@ -235,9 +235,9 @@ export default defineComponent({
         });
     },
     redeem_promo_code() {
-        api.redeem_promo_code(this.redeem_code).then((response: AxiosResponse) => {
+        api.redeem_promo_code(this.redeem_code).then(async (response: AxiosResponse) => {
             console.log(response.data);
-            store.commit("choose_server", store.state.selected_server.id);
+            await store.dispatch("update_server");
         }).catch((e) => {
             if (e.response && e.response.status == 400) {
                 console.log(e.response.data);
