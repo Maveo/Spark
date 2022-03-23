@@ -1,6 +1,7 @@
 import time
 
 from helpers.exceptions import BoostingYourselfForbiddenException, BoostNotExpiredException
+from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK
 from helpers.spark_module import SparkModule
 import discord
 import discord.commands
@@ -19,6 +20,7 @@ class BoostModule(SparkModule):
     dependencies = ['levelsystem']
 
     boosted_by_prefix = 'boostedby'
+    item_boosted_origin = 'itemboosted'
 
     async def get_boosting_user(self, member, current_time):
         boosting_user = self.bot.db.get_level_users_xp_boosts_by_origin(member.guild.id,
@@ -179,6 +181,31 @@ class BoostModule(SparkModule):
                 description=self.bot.i18n.get('BOOST_DESCRIPTION')
             )
         ]
+
+        async def give_xp_boost(member: discord.Member, amount, options):
+            current_time = time.time()
+            previous_boost = await self.get_boosting_user(member, current_time)
+            if previous_boost is not None:
+                raise BoostNotExpiredException()
+            self.bot.db.add_xp_boost(
+                member.guild.id,
+                member.id,
+                options['amount'],
+                self.item_boosted_origin,
+                current_time + (options['duration'] * 60 * 60)
+            )
+
+        self.bot.module_manager.hooks.add(
+            self,
+            INVENTORY_ITEM_ACTION_HOOK,
+            hook_id='xp-boost',
+            name='XP Boost',
+            options={
+                'amount': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
+                'duration': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
+            },
+            callback=give_xp_boost
+        )
 
     async def create_extended_profile(self, member: discord.Member):
         data = await self.boost_get_infos(member)

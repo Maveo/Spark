@@ -154,9 +154,29 @@
                         </div>
                         <div class="mb-2">   
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text">Useable</span>
-                                <input v-model="create_item_useable" type="number" min="-2" class="form-control form-control-sm font-weight-bold" placeholder="Useable" required>
+                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == -1}" @click="create_item_useable = -1">
+                                    Force use
+                                </button>
+                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 0}" @click="create_item_useable = 0">
+                                    Not Useable
+                                </button>
+                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 1}" @click="create_item_useable = 1">
+                                    Useable Once
+                                </button>
+                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 2}" @click="create_item_useable = 2">
+                                    Infinite use
+                                </button>
                             </div>
+                            <!-- <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                                <input type="radio" class="btn-check" name="btnradio" id="btnradio1" autocomplete="off" checked>
+                                <label class="btn btn-primary" for="btnradio1">Radio 1</label>
+
+                                <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off">
+                                <label class="btn btn-primary" for="btnradio2">Radio 2</label>
+
+                                <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off">
+                                <label class="btn btn-primary" for="btnradio3">Radio 3</label>
+                            </div> -->
                         </div>
                         <div class="mb-2">   
                             <div class="input-group input-group-sm">
@@ -228,7 +248,7 @@ export default defineComponent({
         create_item_rarity: '',
         create_item_always_visible: false,
         create_item_tradable: false,
-        create_item_useable: -2,
+        create_item_useable: -1,
         create_item_expiration: -1,
         create_item_action: '',
         create_item_action_options: ({} as any),

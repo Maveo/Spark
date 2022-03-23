@@ -1,6 +1,6 @@
 import random
 
-from helpers.exceptions import WrongInputException
+from helpers.exceptions import WrongInputException, UnknownException
 from helpers.spark_module import SparkModule
 from .settings import SETTINGS
 from .web import API_PAGES
@@ -55,9 +55,7 @@ class GeneralModule(SparkModule):
                               )):
             try:
                 if not self.bot.module_manager.settings.set(ctx.guild.id, key, value):
-                    return await ctx.respond(embed=discord.Embed(title='',
-                                                                 description=self.bot.i18n.get('UNKNOWN_ERROR'),
-                                                                 color=discord.Color.red()))
+                    raise UnknownException('Setting not found')
                 return await ctx.respond(embed=settings_embed({
                     key: self.bot.module_manager.settings.get(ctx.guild.id, key)
                 }, max_length=1020))
@@ -284,6 +282,11 @@ class GeneralModule(SparkModule):
 
         if isinstance(error, discord.ext.commands.errors.MissingPermissions):
             await ctx.respond(embed=discord.Embed(description=self.get_missing_permission_response(ctx.guild.id),
+                                                  color=discord.Color.red()),
+                              ephemeral=True)
+        elif isinstance(error, UnknownException):
+            await ctx.respond(embed=discord.Embed(title='',
+                                                  description=self.bot.i18n.get('UNKNOWN_ERROR'),
                                                   color=discord.Color.red()),
                               ephemeral=True)
         elif isinstance(error, discord.Forbidden):

@@ -218,18 +218,6 @@ class LevelsystemModule(SparkModule):
             )
         ]
 
-        self.bot.module_manager.hooks.add(
-            self,
-            INVENTORY_ITEM_ACTION_HOOK,
-            hook_id='xp-boost',
-            name='XP Boost',
-            options={
-                'amount': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
-                'duration': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
-            },
-            callback=lambda x: print(x)
-        )
-
     @staticmethod
     def get_lvl(lvl):
         if lvl < 0 and lvl % 1 != 0:

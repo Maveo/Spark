@@ -388,6 +388,12 @@ class Database:
             .join(InventoryRarity).order_by(InventoryRarity.order.asc())
         return session.scalars(stmt).all()
 
+    def get_item_type_by_id(self, guild_id, item_type_id) -> InventoryItemType:
+        session = self.Session()
+        stmt = db.select(InventoryItemType).where(db.and_(InventoryItemType.guild_id == guild_id,
+                                                          InventoryItemType.id == item_type_id))
+        return session.scalars(stmt).first()
+
     def remove_item_type(self, guild_id, item_type_id):
         session = self.Session()
         stmt = db.delete(InventoryItemType).where(db.and_(InventoryItemType.guild_id == guild_id,
@@ -423,6 +429,48 @@ class Database:
             .join(InventoryRarity, InventoryItemType.rarity)\
             .filter(
                 db.and_(UserInventoryItem.guild_id == guild_id,
-                        UserInventoryItem.user_id == user_id)
+                        UserInventoryItem.user_id == user_id,
+                        db.or_(
+                            InventoryItemType.always_visible,
+                            UserInventoryItem.amount != 0
+                        ))
             ).order_by(InventoryRarity.order.asc())
         return query.all()
+
+    def get_user_useable_items(self, guild_id, user_id):
+        session = self.Session()
+        query = session.query(
+            UserInventoryItem, InventoryItemType, InventoryRarity
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
+            .filter(
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    UserInventoryItem.amount >= 1,
+                    InventoryItemType.useable >= 1,
+                    )
+        ).order_by(InventoryRarity.order.asc())
+        return query.all()
+
+    def use_inventory_item(self, guild_id, user_id, item_type_id, amount):
+        session = self.Session()
+        query = session.query(
+            UserInventoryItem, InventoryItemType
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .filter(
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    InventoryItemType.id == item_type_id,
+                    UserInventoryItem.amount >= amount,
+                    db.or_(
+                        InventoryItemType.useable == -1,
+                        InventoryItemType.useable >= 1,
+                    )
+                    )
+        )
+        res = query.first()
+        if res is None:
+            return False
+        if res.InventoryItemType.useable != 2:
+            self.add_user_item(guild_id, user_id, item_type_id, -amount)
+        return True
