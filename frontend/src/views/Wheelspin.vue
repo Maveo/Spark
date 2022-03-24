@@ -141,6 +141,7 @@
       >
         <div v-for="(value, index) in admin_items_probabilities" :key="index">
           <div class="d-flex justify-content-center mb-2">
+            <span class="text-nowrap">ID: {{value.id}}</span>
             <div class="input-group input-group-sm">
               <span class="input-group-text">Item Type</span>
               <select
@@ -275,7 +276,12 @@ export default defineComponent({
     this.update_wheelspin();
 
     if (this.profile.is_admin) {
-      api
+      this.update_admin_wheelspin();
+    }
+  },
+  methods: {
+    update_admin_wheelspin() {
+        api
         .get_item_types()
         .then((response: AxiosResponse) => {
           this.admin_item_types = response.data.item_types;
@@ -300,9 +306,7 @@ export default defineComponent({
           });
           this.admin_items_loading = false;
         });
-    }
-  },
-  methods: {
+    },
     update_wheelspin() {
         this.wheelspin_loading = true;
     api
@@ -350,7 +354,7 @@ export default defineComponent({
             icon: "success",
             text: "Successful",
           });
-          this.admin_items_loading = false;
+          this.update_admin_wheelspin();
           this.update_wheelspin();
         })
         .catch((error) => {
@@ -358,7 +362,7 @@ export default defineComponent({
             icon: "error",
             text: error.response.data.description,
           });
-          this.admin_items_loading = false;
+          this.update_admin_wheelspin();
         });
     },
     setup_wheelspin() {
@@ -467,7 +471,7 @@ export default defineComponent({
             spin.result_slot = i;
           }
         }
-        spin.result_degree = (spin.result_slot - 0.5) * (360/spin.slots.length)
+        spin.result_degree = 360 - filter_degree((spin.result_slot + 0.5) * (360/spin.slots.length));
 
         spin.progress = 0;
         that.can_spin = false;

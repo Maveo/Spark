@@ -106,7 +106,7 @@ class ModuleManager:
         else:
             await self.bot.sync_commands()
 
-    async def deactivate_module(self, guild_id, module_key, sync_as_task=False):
+    async def deactivate_module(self, guild_id, module_key, sync_as_task=False, sync=True):
         if not self.bot.module_manager.is_optional(module_key):
             raise WrongInputException('module "{}" not found!'.format(module_key))
 
@@ -119,6 +119,8 @@ class ModuleManager:
 
         self.bot.logger.info('guild {} deactivates module {}'.format(guild_id, module_key))
         self.bot.db.deactivate_module(guild_id, module_key)
+        if not sync:
+            return
         if sync_as_task:
             self.bot.bot.loop.create_task(self.bot.sync_commands())
         else:

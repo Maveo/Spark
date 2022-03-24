@@ -167,9 +167,32 @@ class InventoryModule(SparkModule):
         self.bot.db.add_rarity(guild.id, name, foreground_color_string, background_color_string)
 
     async def get_rarities(self, guild: discord.Guild):
-        return {r.order:  {'id': r.id,
-                           'name': r.name,
-                           'foreground_color': r.foreground_color,
-                           'background_color': r.background_color,
-                           }
+        return {r.order: {'id': r.id,
+                          'name': r.name,
+                          'foreground_color': r.foreground_color,
+                          'background_color': r.background_color,
+                          }
                 for r in self.bot.db.get_rarities(guild.id)}
+
+    async def create_item_type(self, guild: discord.Guild, item_type):
+        try:
+            actions = self.bot.module_manager.hooks.get(guild.id, INVENTORY_ITEM_ACTION_HOOK)
+            if item_type['item_action'] == '':
+                action_options_json = '{}'
+            elif item_type['item_action'] not in actions:
+                raise WrongInputException('action "{}" not found'.format(item_type['item_action']))
+            else:
+                action_options_json = json.dumps({k: item_type['item_action_options'][k]['value']
+                                                  for k, v in actions[item_type['item_action']]['options'].items()})
+            self.bot.db.add_inventory_item_type(
+                guild.id,
+                item_type['item_name'],
+                item_type['item_rarity'],
+                item_type['item_always_visible'],
+                item_type['item_tradable'],
+                item_type['item_useable'],
+                item_type['item_action'],
+                action_options_json,
+            )
+        except KeyError:
+            raise WrongInputException('missing parameter')

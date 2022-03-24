@@ -1,11 +1,9 @@
-import random
 import time
 
 import discord
 from flask import jsonify, request
 
-from helpers.exceptions import WrongInputException, WheelspinForbiddenException
-from helpers.module_hook_manager import INVENTORY_ADD_ITEM_HOOK
+from helpers.exceptions import WrongInputException
 from helpers.module_pages import has_permissions
 from helpers.tools import make_linear_gradient
 from webserver import Page
@@ -60,32 +58,10 @@ async def can_wheelspin(module: 'WheelspinModule',
 async def spin_wheel(module: 'WheelspinModule',
                      guild: discord.Guild,
                      member: discord.Member):
-    available = module.bot.db.get_wheelspin_available(guild.id, member.id)
-    current_time = time.time()
-    if available is None:
-        module.bot.db.set_wheelspin_available(guild.id, member.id, 0, current_time)
-    else:
-        free_wheelspin = available.last_free + \
-                         (module.bot.module_manager.settings.get(guild.id, 'WHEELSPIN_FREE_RESET_HOURS') * 60 * 60)
-        if free_wheelspin < current_time:
-            module.bot.db.set_wheelspin_available(guild.id, member.id, available.amount, current_time)
-        elif available.amount >= 1:
-            module.bot.db.set_wheelspin_available(guild.id, member.id, available.amount - 1, available.last_free)
-        else:
-            raise WheelspinForbiddenException()
-
-    wheelspin = module.bot.db.get_wheelspin(guild.id)
-
-    result = random.choices(population=wheelspin,
-                            weights=list(map(lambda x: x.WheelspinProbability.probability, wheelspin)))[0]
-
-    hook = module.bot.module_manager.hooks.get_one(guild.id, INVENTORY_ADD_ITEM_HOOK, 'inventory')
-    if hook is not None:
-        await hook['callback'](member, result.WheelspinProbability.item_type_id, result.WheelspinProbability.amount)
 
     return jsonify({
         'msg': 'success',
-        'result': result.WheelspinProbability.id,
+        'result': (await module.spin_wheel(member)).WheelspinProbability.id,
     }), 200
 
 
@@ -105,7 +81,7 @@ async def set_wheelspin(module: 'WheelspinModule',
     json = request.get_json()
     if json is None or 'wheelspin' not in json:
         raise WrongInputException('wheelspin not provided')
-    module.bot.db.set_wheelspin(guild.id, json['wheelspin'])
+    await module.set_wheelspin(guild, json['wheelspin'])
     return jsonify({'msg': 'success'}), 200
 
 

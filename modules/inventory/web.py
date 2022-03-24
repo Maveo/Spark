@@ -131,30 +131,11 @@ async def create_item_type(module: 'InventoryModule',
     json = request.get_json()
     if json is None:
         raise WrongInputException('missing parameters')
-    try:
-        actions = module.bot.module_manager.hooks.get(guild.id, INVENTORY_ITEM_ACTION_HOOK)
-        if json['item_action'] == '':
-            action_options_json = '{}'
-        elif json['item_action'] not in actions:
-            raise WrongInputException('action "{}" not found'.format(json['item_action']))
-        else:
-            action_options_json = jsone.dumps({k: json['item_action_options'][k]['value']
-                                               for k, v in actions[json['item_action']]['options'].items()})
-        module.bot.db.add_inventory_item_type(
-            guild.id,
-            json['item_name'],
-            json['item_rarity'],
-            json['item_always_visible'],
-            json['item_tradable'],
-            json['item_useable'],
-            json['item_action'],
-            action_options_json,
-        )
-        return jsonify({
-            'msg': 'success',
-        }), 200
-    except KeyError:
-        raise WrongInputException('missing parameter')
+
+    await module.create_item_type(guild, json)
+    return jsonify({
+        'msg': 'success',
+    }), 200
 
 
 @has_permissions(administrator=True)

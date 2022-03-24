@@ -516,8 +516,7 @@ class Database:
         query = session.query(WheelspinProbability, InventoryItemType, InventoryRarity) \
             .join(InventoryItemType, WheelspinProbability.item_type) \
             .join(InventoryRarity, InventoryItemType.rarity) \
-            .where(WheelspinProbability.guild_id == guild_id) \
-            .order_by(InventoryRarity.order.asc())
+            .where(WheelspinProbability.guild_id == guild_id)
         return query.all()
 
     def set_wheelspin(self, guild_id, wheelspin):
