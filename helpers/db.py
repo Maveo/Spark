@@ -411,7 +411,7 @@ class Database:
                                                             InventoryItemType.guild_id == guild_id)).update(
                 {
                     InventoryItemType.name: name,
-                    InventoryRarity.id: rarity_id,
+                    InventoryItemType.rarity_id: rarity_id,
                     InventoryItemType.always_visible: always_visible,
                     InventoryItemType.tradable: tradable,
                     InventoryItemType.useable: useable,
