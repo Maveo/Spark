@@ -18,17 +18,13 @@ if TYPE_CHECKING:
 
 
 @has_permissions(administrator=True)
-async def add_rarity(module: 'InventoryModule',
-                     guild: discord.Guild,
-                     member: discord.Member):
+async def edit_rarity(module: 'InventoryModule',
+                      guild: discord.Guild,
+                      member: discord.Member):
     json = request.get_json()
-    if json is None or 'rarity_name' not in json \
-            or 'rarity_foreground_color' not in json or 'rarity_background_color' not in json:
-        raise WrongInputException('name or color not provided')
-    await module.add_rarity(guild,
-                            json['rarity_name'],
-                            json['rarity_foreground_color'],
-                            json['rarity_background_color'])
+    if json is None or 'rarity' not in json:
+        raise WrongInputException('rarity not provided')
+    await module.edit_rarity(guild, json['rarity'])
     return jsonify({'msg': 'success'}), 200
 
 
@@ -160,7 +156,7 @@ async def remove_item_type(module: 'InventoryModule',
 
 
 API_PAGES = [
-    Page(path='add-rarity', view_func=add_rarity, methods=['POST']),
+    Page(path='edit-rarity', view_func=edit_rarity, methods=['POST']),
     Page(path='remove-rarity', view_func=remove_rarity, methods=['POST']),
     Page(path='set-rarity-order', view_func=set_rarity_order, methods=['POST']),
     Page(path='rarities', view_func=get_rarities),

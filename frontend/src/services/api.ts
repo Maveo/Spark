@@ -339,11 +339,9 @@ function get_rarities(): Promise<AxiosResponse> {
     });
 }
 
-function add_rarity(rarity_name: string | null, rarity_foreground_color: string | null, rarity_background_color: string | null): Promise<AxiosResponse> {
-    return axios.post(process.env.VUE_APP_API_BASE_URL + '/add-rarity', {
-        'rarity_name': rarity_name,
-        'rarity_foreground_color': rarity_foreground_color,
-        'rarity_background_color': rarity_background_color,
+function edit_rarity(rarity: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/edit-rarity', {
+        'rarity': rarity,
     },
     {
         params: {
@@ -525,7 +523,7 @@ const api = {
     get_emojis,
     change_emoji_image,
     get_rarities,
-    add_rarity,
+    edit_rarity,
     remove_rarity,
     set_rarity_order,
     get_item_action_options,

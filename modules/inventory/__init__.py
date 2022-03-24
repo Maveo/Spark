@@ -155,16 +155,23 @@ class InventoryModule(SparkModule):
             (self.bot.module_manager.settings.get(guild_id, 'RARITY_IMAGE'))(rarity))
         return discord.File(filename=f"rarity-{rarity['name']}.png", fp=img_buf)
 
-    async def add_rarity(self, guild: discord.Guild, name, foreground_color_string, background_color_string):
-        if len(name) > 20:
-            raise WrongInputException('name can only be 20 characters long')
-
+    async def edit_rarity(self, guild: discord.Guild, rarity):
         try:
-            make_linear_gradient(foreground_color_string)
-            make_linear_gradient(background_color_string)
-        except:
-            raise WrongInputException('wrong format for color')
-        self.bot.db.add_rarity(guild.id, name, foreground_color_string, background_color_string)
+            if len(rarity['name']) > 20:
+                raise WrongInputException('name can only be 20 characters long')
+
+            try:
+                make_linear_gradient(rarity['foreground_color'])
+                make_linear_gradient(rarity['background_color'])
+            except:
+                raise WrongInputException('wrong format for color')
+            self.bot.db.edit_rarity(guild.id,
+                                    rarity['id'] if 'id' in rarity else None,
+                                    rarity['name'],
+                                    rarity['foreground_color'],
+                                    rarity['background_color'])
+        except KeyError:
+            raise WrongInputException('missing parameter')
 
     async def get_rarities(self, guild: discord.Guild):
         return {r.order: {'id': r.id,

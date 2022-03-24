@@ -358,14 +358,23 @@ class Database:
             InventoryRarity).where(InventoryRarity.guild_id == guild_id).order_by(InventoryRarity.order.asc())
         return session.scalars(stmt).all()
 
-    def add_rarity(self, guild_id, name, foreground_color, background_color):
+    def edit_rarity(self, guild_id, rarity_id, name, foreground_color, background_color):
         session = self.Session()
-        stmt = session.query(InventoryRarity, func.count().label("count")).filter(InventoryRarity.guild_id == guild_id)
-        session.add(InventoryRarity(guild_id=guild_id,
-                                    name=name,
-                                    foreground_color=foreground_color,
-                                    background_color=background_color,
-                                    order=stmt.first()[1]))
+        if rarity_id is not None:
+            session.query(InventoryRarity).filter(db.and_(InventoryRarity.id == rarity_id,
+                                                          InventoryRarity.guild_id == guild_id)).update(
+                {
+                    InventoryRarity.name: name,
+                    InventoryRarity.foreground_color: foreground_color,
+                    InventoryRarity.background_color: background_color,
+                })
+        else:
+            stmt = session.query(InventoryRarity, func.count().label("count")).filter(InventoryRarity.guild_id == guild_id)
+            session.add(InventoryRarity(guild_id=guild_id,
+                                        name=name,
+                                        foreground_color=foreground_color,
+                                        background_color=background_color,
+                                        order=stmt.first()[1]))
         session.commit()
 
     def set_rarity_order(self, guild_id, rarity_order):

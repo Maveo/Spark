@@ -36,13 +36,16 @@
                                             </h5>
                                         </div>
                                         <div class="row">
-                                            <button :disabled="index == 0" class="btn btn-info btn-sm col m-1" @click="change_rarity_order(index, -1)">
+                                            <button type="button" @click="edit_rarity(rarity, index)" data-bs-toggle="modal" data-bs-target="#createEditItemRarityModal" class="btn btn-info btn-sm col m-1">
+                                                <i class="fas fa-fw fa-pen"></i>
+                                            </button>
+                                            <button type="button" :disabled="index == 0" class="btn btn-info btn-sm col m-1" @click="change_rarity_order(index, -1)">
                                                 <i class="fas fa-fw fa-arrow-up"></i>
                                             </button>
-                                            <button :disabled="index == Object.keys(rarities).length - 1" class="btn btn-info btn-sm col m-1" @click="change_rarity_order(index, 1)">
+                                            <button type="button" :disabled="index == Object.keys(rarities).length - 1" class="btn btn-info btn-sm col m-1" @click="change_rarity_order(index, 1)">
                                                 <i class="fas fa-fw fa-arrow-down"></i>
                                             </button>
-                                            <button class="btn btn-danger btn-sm col m-1" @click="remove_rarity(rarity)">
+                                            <button type="button" class="btn btn-danger btn-sm col m-1" @click="remove_rarity(rarity)">
                                                 <i class="fas fa-fw fa-trash"></i>
                                             </button>
                                         </div>
@@ -59,28 +62,42 @@
                 </div>
                 <div class="col-lg-4" style="max-width: 400px;">
                     <h4 class="px-2 mb-3">Add Rarity</h4>
-                    <form @submit.prevent="add_rarity()">
-                        <div class="mb-2">   
-                            <div class="input-group">
-                                <input v-model="add_rarity_name" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Name" required>
+
+                    <button @click="create_rarity()" type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createEditItemRarityModal">
+                        Create Item Rarity
+                    </button>
+
+                    <div class="modal fade" id="createEditItemRarityModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content bg-dark p-4">
+                                <h4>Item Rarity</h4>
+                                <form @submit.prevent="edit_rarity_submit()">
+                                    <div class="mb-2">   
+                                        <div class="input-group">
+                                            <input v-model="edit_create_rarity.name" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Name" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">   
+                                        <div class="input-group">
+                                            <input v-model="edit_create_rarity.foreground_color" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Foreground Color" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">   
+                                        <div class="input-group">
+                                            <input v-model="edit_create_rarity.background_color" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Background Color" required>
+                                        </div>
+                                    </div>
+                                    <div class="">
+                                        <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold">
+                                            {{edit_create_rarity_text}}
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <button id="closeCreateEditItemRarityModal" class="d-none" data-bs-dismiss="modal"></button>
                             </div>
                         </div>
-                        <div class="mb-2">   
-                            <div class="input-group">
-                                <input v-model="add_rarity_foreground_color" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Foreground Color" required>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="input-group">
-                                <input v-model="add_rarity_background_color" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Background Color" required>
-                            </div>
-                        </div>
-                        <div class="">
-                            <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold">
-                                Add Rarity
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
             <div class="row mb-3">
@@ -132,6 +149,7 @@
                     <div class="modal fade" id="createEditItemTypeModal" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content bg-dark p-4">
+                                <h4>Item Type</h4>
                                 <form @submit.prevent="edit_item_type_submit()">
                                     <div class="mb-2">   
                                         <div class="input-group input-group-sm">
@@ -239,9 +257,8 @@ export default defineComponent({
         loading_rarities: true,
         rarities: ([] as any),
         changed_rarity_order: false,
-        add_rarity_name: '',
-        add_rarity_foreground_color: '',
-        add_rarity_background_color: '',
+        edit_create_rarity: ({} as any),
+        edit_create_rarity_text: '',
         loading_item_types: true,
         item_types: [],
         item_action_options: ({} as any),
@@ -250,6 +267,7 @@ export default defineComponent({
     }
   },
   mounted() {
+      this.create_rarity();
       this.create_item_type();
       this.update_rarities();
       this.update_item_types();
@@ -284,15 +302,26 @@ export default defineComponent({
             this.loading_rarities = false;
         });
     },
-    add_rarity() {
-        api.add_rarity(this.add_rarity_name, this.add_rarity_foreground_color, this.add_rarity_background_color).then(() => {
+    create_rarity() {
+        this.edit_create_rarity = {
+            name: '',
+            foreground_color: '',
+            background_color: '',
+        };
+        this.edit_create_rarity_text = 'Create Rarity';
+    },
+    edit_rarity(rarity: any, index: number) {
+        this.edit_create_rarity = rarity;
+        this.edit_create_rarity_text = `Edit Rarity (${index}. ${rarity.name})`;
+    },
+    edit_rarity_submit() {
+        document.getElementById('closeCreateEditItemRarityModal')?.click();
+        console.log(this.edit_create_rarity);
+        api.edit_rarity(this.edit_create_rarity).then(() => {
             Toast.fire({
                 icon: 'success',
                 text: 'Successful',
             });
-            this.add_rarity_name = '';
-            this.add_rarity_foreground_color = '';
-            this.add_rarity_background_color = '';
             this.update_rarities();
         }).catch((error) => {
             Toast.fire({
