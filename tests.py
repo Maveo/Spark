@@ -33,13 +33,13 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         inventory: InventoryModule = self.bot.module_manager.get('inventory')
         await inventory.add_rarity(g, 'Epic', '(255,255,255)', '(0,0,0)')
         for i in range(10):
-            await inventory.create_item_type(g, {
-                'item_name': 'Item{}'.format(i + 1),
-                'item_rarity': 1,
-                'item_always_visible': False,
-                'item_tradable': False,
-                'item_useable': 1,
-                'item_action': '',
+            await inventory.edit_item_type(g, {
+                'name': 'Item{}'.format(i + 1),
+                'rarity_id': 1,
+                'always_visible': False,
+                'tradable': False,
+                'useable': 1,
+                'action': '',
             })
         await self.bot.module_manager.activate_module(g.id, 'wheelspin', sync=False)
         wheelspin: WheelspinModule = self.bot.module_manager.get('wheelspin')
