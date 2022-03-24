@@ -8,6 +8,7 @@ import discord.ext.commands
 from discord.utils import get
 
 from helpers import tools
+from helpers.exceptions import UnknownException
 from helpers.spark_module import SparkModule
 from helpers.view_helpers import ViewPaginator, CustomButton
 from .settings import SETTINGS
@@ -80,9 +81,7 @@ class EmojiReactionsModule(SparkModule):
             async def response(dropdown1: CustomDropdown, interaction1: discord.Interaction):
                 emoji = get(ctx.guild.emojis, id=int(dropdown1.values[0]))
                 if not emoji:
-                    return await ctx.edit(embed=discord.Embed(
-                        description=self.bot.i18n.get('UNKNOWN_ERROR'),
-                        color=discord.Color.red()))
+                    raise UnknownException('Emoji not found')
                 await self.add_emoji_reaction_action(ctx.guild, ctx, message, emoji)
 
             options = [
@@ -133,6 +132,7 @@ class EmojiReactionsModule(SparkModule):
 
             return await ctx.respond(embed=embed)
 
+        @bot.has_permissions(administrator=True)
         async def remove_emoji_reaction_autocomplete(ctx: discord.AutocompleteContext):
             reactions = []
             for reaction in self.bot.db.get_emoji_reactions(ctx.interaction.guild.id):
@@ -162,9 +162,7 @@ class EmojiReactionsModule(SparkModule):
             try:
                 reaction_id = int(reaction[4:].split(' ')[0])
             except:
-                return await ctx.respond(embed=discord.Embed(title='',
-                                                             description=self.bot.i18n.get('UNKNOWN_ERROR'),
-                                                             color=discord.Color.red()))
+                raise UnknownException('Reaction ID not found')
             self.bot.db.remove_emoji_reaction(ctx.author.guild.id, reaction_id)
             return await ctx.respond(
                 embed=discord.Embed(title='',
@@ -284,8 +282,7 @@ class EmojiReactionsModule(SparkModule):
                                view=paginator.view())
 
             else:
-                await ctx.edit(
-                    embed=discord.Embed(description=self.bot.i18n.get('UNKNOWN_ERROR'), color=discord.Color.red()))
+                raise UnknownException('emoji action not found')
 
         options = []
 

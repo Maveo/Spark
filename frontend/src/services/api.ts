@@ -328,6 +328,189 @@ function get_emojis(): Promise<AxiosResponse> {
     });
 }
 
+function get_rarities(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/rarities', {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token,
+        }
+    });
+}
+
+function add_rarity(rarity_name: string | null, rarity_foreground_color: string | null, rarity_background_color: string | null): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/add-rarity', {
+        'rarity_name': rarity_name,
+        'rarity_foreground_color': rarity_foreground_color,
+        'rarity_background_color': rarity_background_color,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function remove_rarity(rarity_id: number): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/remove-rarity', {
+        'rarity_id': rarity_id,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function set_rarity_order(rarity_order: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-rarity-order', {
+        'rarity_order': rarity_order,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+
+function get_item_action_options(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/item-action-options', {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token,
+        }
+    });
+}
+
+function get_item_types(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/item-types', {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token,
+        }
+    });
+}
+
+function remove_item_type(item_type_id: number): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/remove-item-type', {
+        'item_type_id': item_type_id,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function create_item_type(
+    item_name: string,
+    item_rarity: number,
+    item_always_visible: boolean,
+    item_tradable: boolean,
+    item_useable: number,
+    item_action: string,
+    item_action_options: any,
+    ): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/create-item-type', {
+        'item_name': item_name,
+        'item_rarity': item_rarity,
+        'item_always_visible': item_always_visible,
+        'item_tradable': item_tradable,
+        'item_useable': item_useable,
+        'item_action': item_action,
+        'item_action_options': item_action_options,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function get_wheelspin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-wheelspin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function can_wheelspin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/can-wheelspin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function get_wheelspin_admin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-wheelspin-admin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function set_wheelspin(wheelspin: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-wheelspin', {
+        'wheelspin': wheelspin,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function spin_wheel(): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/spin-wheel', {},
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+
 const api = {
     get_auth,
     create_session,
@@ -354,7 +537,20 @@ const api = {
     set_presence,
     send_voice_audio,
     get_emojis,
-    change_emoji_image
+    change_emoji_image,
+    get_rarities,
+    add_rarity,
+    remove_rarity,
+    set_rarity_order,
+    get_item_action_options,
+    get_item_types,
+    remove_item_type,
+    create_item_type,
+    can_wheelspin,
+    get_wheelspin,
+    get_wheelspin_admin,
+    set_wheelspin,
+    spin_wheel
 };
 
 export default api;

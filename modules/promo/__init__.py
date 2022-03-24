@@ -5,7 +5,7 @@ import time
 from discord.utils import get
 
 from helpers.exceptions import LevelingBlacklistedUserException, PromotingYourselfForbiddenException, \
-    PromoCodeNotFoundException
+    PromoCodeNotFoundException, UnknownException
 from helpers.spark_module import SparkModule
 from .settings import SETTINGS
 from .web import API_PAGES
@@ -153,9 +153,7 @@ class PromoModule(SparkModule):
         async def promo(ctx: discord.commands.context.ApplicationContext):
             promo_code = await self.create_promo_code(ctx.author)
             if promo_code is None:
-                return await ctx.respond(embed=discord.Embed(title='',
-                                                             description=self.bot.i18n.get('UNKNOWN_ERROR'),
-                                                             color=discord.Color.red()))
+                raise UnknownException('Promo code not found')
 
             await ctx.author.send(
                 embed=discord.Embed(title='',

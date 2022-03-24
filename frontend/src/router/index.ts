@@ -2,7 +2,6 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import store from '@/store'
 import YourProfile from '../views/YourProfile.vue'
 import Boosts from '../views/Boosts.vue'
-import ProfileCard from '../views/ProfileCard.vue'
 import ServerSettings from '../views/ServerSettings.vue'
 import AdminTools from '../views/AdminTools.vue'
 import SuperAdmin from '../views/SuperAdmin.vue'
@@ -11,6 +10,8 @@ import Ranking from '../views/Ranking.vue'
 import ChooseServer from '../views/ChooseServer.vue'
 import PageNotFound from '../views/PageNotFound.vue'
 import Login from '../views/Login.vue'
+import InventorySystem from '../views/InventorySystem.vue'
+import Wheelspin from '../views/Wheelspin.vue'
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -44,9 +45,9 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
-        path: '/profile-card/:id',
-        name: 'ProfileCard',
-        component: ProfileCard,
+        path: '/wheelspin/:id',
+        name: 'Wheelspin',
+        component: Wheelspin,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
@@ -65,6 +66,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/server-modules/:id',
         name: 'ServerModules',
         component: ServerModules,
+        meta: { requiresLogin: true, requiresServer: true }
+    },
+    {
+        path: '/inventory-system/:id',
+        name: 'InventorySystem',
+        component: InventorySystem,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {

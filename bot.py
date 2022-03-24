@@ -252,9 +252,12 @@ class DiscordBot:
             for command in module.commands:
                 command.guild_ids = modules_to_guilds[module_name]
                 self.bot.add_application_command(command)
-
-        await self.bot.sync_commands()
-        self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
+        try:
+            await self.bot.sync_commands()
+            self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
+        except discord.HTTPException:
+            self.logger.error('syncing commands {} failed'.format(modules_to_guilds))
+            await self.sync_commands()
 
     async def _on_ready(self):
         self.logger.info('Bot is running...')
