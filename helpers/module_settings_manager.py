@@ -72,13 +72,12 @@ class ModuleSettingsManager:
         if key not in self.keys(guild_id):
             raise KeyError('Key "{}" not found in default settings!'.format(key))
 
-        value = json.dumps(value)
         try:
             self.preview(guild_id, key, value)
         except Exception as e:
             self.module_manager.bot.logger.warning(e)
             return False
-
+        value = json.dumps(value)
         self.module_manager.bot.db.set_setting(guild_id, key, value)
         return True
 
