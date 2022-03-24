@@ -108,7 +108,7 @@ export default defineComponent({
     }
   },
   methods: {
-    set_presence(activity_name: string | null = null, activity_type: number | null = null, status_type: string | null = null) {
+    set_presence(activity_name: string, activity_type: number, status_type: string) {
         const Toast2 = Swal.mixin({
             toast: true,
             position: 'top-end',
@@ -121,7 +121,7 @@ export default defineComponent({
             iconHtml: '<span class="spinner-border"></span>',
         });
 
-        api.set_presence(activity_name, activity_type, status_type).then(() => {
+        api.set_presence(activity_name, +activity_type, status_type).then(() => {
             Toast.fire({
                 icon: 'success',
                 text: 'Successfull',
