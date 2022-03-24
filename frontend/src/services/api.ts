@@ -420,23 +420,9 @@ function remove_item_type(item_type_id: number): Promise<AxiosResponse> {
     });
 }
 
-function create_item_type(
-    item_name: string,
-    item_rarity: number,
-    item_always_visible: boolean,
-    item_tradable: boolean,
-    item_useable: number,
-    item_action: string,
-    item_action_options: any,
-    ): Promise<AxiosResponse> {
-    return axios.post(process.env.VUE_APP_API_BASE_URL + '/create-item-type', {
-        'item_name': item_name,
-        'item_rarity': item_rarity,
-        'item_always_visible': item_always_visible,
-        'item_tradable': item_tradable,
-        'item_useable': item_useable,
-        'item_action': item_action,
-        'item_action_options': item_action_options,
+function edit_item_type(item_type: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/edit-item-type', {
+        'item_type': item_type,
     },
     {
         params: {
@@ -545,7 +531,7 @@ const api = {
     get_item_action_options,
     get_item_types,
     remove_item_type,
-    create_item_type,
+    edit_item_type,
     can_wheelspin,
     get_wheelspin,
     get_wheelspin_admin,

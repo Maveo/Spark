@@ -174,24 +174,25 @@ class InventoryModule(SparkModule):
                           }
                 for r in self.bot.db.get_rarities(guild.id)}
 
-    async def create_item_type(self, guild: discord.Guild, item_type):
+    async def edit_item_type(self, guild: discord.Guild, item_type):
         try:
             actions = self.bot.module_manager.hooks.get(guild.id, INVENTORY_ITEM_ACTION_HOOK)
-            if item_type['item_action'] == '':
+            if item_type['action'] == '':
                 action_options_json = '{}'
-            elif item_type['item_action'] not in actions:
-                raise WrongInputException('action "{}" not found'.format(item_type['item_action']))
+            elif item_type['action'] not in actions:
+                raise WrongInputException('action "{}" not found'.format(item_type['action']))
             else:
-                action_options_json = json.dumps({k: item_type['item_action_options'][k]['value']
-                                                  for k, v in actions[item_type['item_action']]['options'].items()})
-            self.bot.db.add_inventory_item_type(
+                action_options_json = json.dumps({k: item_type['action_options'][k]['value']
+                                                  for k, v in actions[item_type['action']]['options'].items()})
+            self.bot.db.edit_inventory_item_type(
                 guild.id,
-                item_type['item_name'],
-                item_type['item_rarity'],
-                item_type['item_always_visible'],
-                item_type['item_tradable'],
-                item_type['item_useable'],
-                item_type['item_action'],
+                item_type['id'] if 'id' in item_type else None,
+                item_type['name'],
+                item_type['rarity_id'],
+                item_type['always_visible'],
+                item_type['tradable'],
+                item_type['useable'],
+                item_type['action'],
                 action_options_json,
             )
         except KeyError:

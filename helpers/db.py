@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session, relationship, backref
 from sqlalchemy.sql import func
 from typing import *
 
+from helpers.exceptions import UnknownException
+
 
 class Representable:
     def __repr__(self) -> str:
@@ -369,7 +371,9 @@ class Database:
     def set_rarity_order(self, guild_id, rarity_order):
         session = self.Session()
         for r_order, r_id in rarity_order.items():
-            session.merge(InventoryRarity(guild_id=guild_id, id=r_id, order=r_order))
+            session.query(InventoryRarity).filter(db.and_(InventoryRarity.guild_id == guild_id,
+                                                          InventoryRarity.id == r_id)).update(
+                {InventoryRarity.order: r_order})
         session.commit()
 
     def remove_rarity(self, guild_id, rarity_id):
@@ -390,26 +394,41 @@ class Database:
         session.execute(stmt)
         session.commit()
 
-    def add_inventory_item_type(self,
-                                guild_id,
-                                name,
-                                rarity_id,
-                                always_visible,
-                                tradable,
-                                useable,
-                                action,
-                                action_options
-                                ):
+    def edit_inventory_item_type(self,
+                                 guild_id,
+                                 item_type_id,
+                                 name,
+                                 rarity_id,
+                                 always_visible,
+                                 tradable,
+                                 useable,
+                                 action,
+                                 action_options
+                                 ):
         session = self.Session()
-        session.add(InventoryItemType(guild_id=guild_id,
-                                      name=name,
-                                      rarity_id=rarity_id,
-                                      always_visible=always_visible,
-                                      tradable=tradable,
-                                      useable=useable,
-                                      action=action,
-                                      action_options=action_options
-                                      ))
+        if item_type_id is not None:
+            session.query(InventoryItemType).filter(db.and_(InventoryItemType.id == item_type_id,
+                                                            InventoryItemType.guild_id == guild_id)).update(
+                {
+                    InventoryItemType.name: name,
+                    InventoryRarity.id: rarity_id,
+                    InventoryItemType.always_visible: always_visible,
+                    InventoryItemType.tradable: tradable,
+                    InventoryItemType.useable: useable,
+                    InventoryItemType.action: action,
+                    InventoryItemType.action_options: action_options
+                })
+        else:
+            session.add(InventoryItemType(guild_id=guild_id,
+                                          id=item_type_id,
+                                          name=name,
+                                          rarity_id=rarity_id,
+                                          always_visible=always_visible,
+                                          tradable=tradable,
+                                          useable=useable,
+                                          action=action,
+                                          action_options=action_options
+                                          ))
         session.commit()
 
     def get_item_types(self, guild_id):

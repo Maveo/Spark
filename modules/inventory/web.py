@@ -125,14 +125,14 @@ async def get_item_action_options(module: 'InventoryModule',
 
 
 @has_permissions(administrator=True)
-async def create_item_type(module: 'InventoryModule',
-                           guild: discord.Guild,
-                           member: discord.Member):
+async def edit_item_type(module: 'InventoryModule',
+                         guild: discord.Guild,
+                         member: discord.Member):
     json = request.get_json()
-    if json is None:
+    if json is None or 'item_type' not in json:
         raise WrongInputException('missing parameters')
 
-    await module.create_item_type(guild, json)
+    await module.edit_item_type(guild, json['item_type'])
     return jsonify({
         'msg': 'success',
     }), 200
@@ -167,6 +167,6 @@ API_PAGES = [
     Page(path='rarity-image', view_func=rarity_image, methods=['POST']),
     Page(path='item-action-options', view_func=get_item_action_options),
     Page(path='item-types', view_func=get_item_types),
-    Page(path='create-item-type', view_func=create_item_type, methods=['POST']),
+    Page(path='edit-item-type', view_func=edit_item_type, methods=['POST']),
     Page(path='remove-item-type', view_func=remove_item_type, methods=['POST'])
 ]

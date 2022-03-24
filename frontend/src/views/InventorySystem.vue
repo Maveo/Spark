@@ -108,6 +108,9 @@
                                             </h5>
                                         </div>
                                         <div class="row">
+                                            <button @click="edit_item_type(item)" type="button" class="btn btn-info btn-sm col m-1" data-bs-toggle="modal" data-bs-target="#createEditItemTypeModal">
+                                                <i class="fas fa-fw fa-pen"></i>
+                                            </button>
                                             <button class="btn btn-danger btn-sm col m-1" @click="remove_item_type(item)">
                                                 <i class="fas fa-fw fa-trash"></i>
                                             </button>
@@ -122,78 +125,90 @@
             <div class="row">
                 <div class="col">
                     <h4 class="px-2 mb-3">Create Item Type</h4>
-                    <form @submit.prevent="create_item_type()">
-                        <div class="mb-2">   
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">Name</span>
-                                <input v-model="create_item_name" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Name" required>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">Rarity</span>
-                                <select v-model="create_item_rarity" class="form-select form-select-sm" required>
-                                    <option value="" disabled selected hidden>Choose rarity...</option>
-                                    <option :value="rarity.id" v-for="(rarity, index) in rarities" :key="rarity.id">{{index + 1}}. {{rarity.name}}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="form-check form-check-inline">
-                                <input v-model="create_item_always_visible" class="form-check-input" type="checkbox" id="alwaysVisibleCheckbox">
-                                <label class="form-check-label" for="alwaysVisibleCheckbox">
-                                    Always visible
-                                </label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input v-model="create_item_tradable" class="form-check-input" type="checkbox" value="" id="tradableCheckbox">
-                                <label class="form-check-label" for="tradableCheckbox">
-                                    Tradable
-                                </label>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="input-group input-group-sm">
-                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == -1}" @click="create_item_useable = -1">
-                                    Force use
-                                </button>
-                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 0}" @click="create_item_useable = 0">
-                                    Not Useable
-                                </button>
-                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 1}" @click="create_item_useable = 1">
-                                    Useable Once
-                                </button>
-                                <button type="button" class="btn btn-secondary" :class="{'active': create_item_useable == 2}" @click="create_item_useable = 2">
-                                    Infinite use
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">Action</span>
-                                <select v-model="create_item_action" class="form-select form-select-sm">
-                                    <option value="" selected>No action</option>
-                                    <option :value="action_id" v-for="(action, action_id) in create_item_action_options" :key="action_id">{{action.name}}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <template v-for="(action, action_id) in create_item_action_options" :key="action_id">
-                            <template v-if="create_item_action == action_id">
-                                <div v-for="(option, id) in action.options" :key="id" class="mb-2">   
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">{{option.description}}</span>
-                                        <input v-if="option.type == 'int'" v-model="option.value" type="number" class="form-control form-control-sm font-weight-bold" required>
-                                        <input v-if="option.type == 'str'" v-model="option.value" type="text" class="form-control form-control-sm font-weight-bold" required>
+                    <button @click="create_item_type()" type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createEditItemTypeModal">
+                        Create Item Type
+                    </button>
+
+                    <div class="modal fade" id="createEditItemTypeModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content bg-dark p-4">
+                                <form @submit.prevent="edit_item_type_submit()">
+                                    <div class="mb-2">   
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Name</span>
+                                            <input v-model="edit_create_item_type.name" type="text" class="form-control form-control-sm font-weight-bold" placeholder="Name" required>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
-                        </template>
-                        <div class="">
-                            <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold">
-                                Create Item Type
-                            </button>
+                                    <div class="mb-2">   
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Rarity</span>
+                                            <select v-model="edit_create_item_type.rarity_id" class="form-select form-select-sm" required>
+                                                <option value="" disabled selected hidden>Choose rarity...</option>
+                                                <option :value="rarity.id" v-for="(rarity, index) in rarities" :key="rarity.id">{{index + 1}}. {{rarity.name}}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">   
+                                        <div class="form-check form-check-inline">
+                                            <input v-model="edit_create_item_type.always_visible" class="form-check-input" type="checkbox" id="alwaysVisibleCheckbox">
+                                            <label class="form-check-label" for="alwaysVisibleCheckbox">
+                                                Always visible
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input v-model="edit_create_item_type.tradable" class="form-check-input" type="checkbox" value="" id="tradableCheckbox">
+                                            <label class="form-check-label" for="tradableCheckbox">
+                                                Tradable
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">   
+                                        <div class="input-group input-group-sm">
+                                            <button type="button" class="btn btn-secondary" :class="{'active': edit_create_item_type.useable == -1}" @click="edit_create_item_type.useable = -1">
+                                                Force use
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" :class="{'active': edit_create_item_type.useable == 0}" @click="edit_create_item_type.useable = 0">
+                                                Not Useable
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" :class="{'active': edit_create_item_type.useable == 1}" @click="edit_create_item_type.useable = 1">
+                                                Useable Once
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" :class="{'active': edit_create_item_type.useable == 2}" @click="edit_create_item_type.useable = 2">
+                                                Infinite use
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">   
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">Action</span>
+                                            <select v-model="edit_create_item_type.action" class="form-select form-select-sm">
+                                                <option value="" selected>No action</option>
+                                                <option :value="action_id" v-for="(action, action_id) in item_action_options" :key="action_id">{{action.name}}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <template v-for="(action, action_id) in item_action_options" :key="action_id">
+                                        <template v-if="edit_create_item_type.action == action_id">
+                                            <div v-for="(option, id) in action.options" :key="id" class="mb-2">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text">{{option.description}}</span>
+                                                    <input v-if="option.type == 'int'" v-model="option.value" type="number" class="form-control form-control-sm font-weight-bold" required>
+                                                    <input v-if="option.type == 'str'" v-model="option.value" type="text" class="form-control form-control-sm font-weight-bold" required>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
+                                    <div class="">
+                                        <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold">
+                                            {{edit_create_item_type_text}}
+                                        </button>
+                                    </div>
+                                </form>
+                                
+                                <button id="closeCreateEditItemTypeModal" class="d-none" data-bs-dismiss="modal"></button>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>            
         </div>
@@ -205,6 +220,7 @@ import { defineComponent } from "vue";
 
 import api from '@/services/api';
 import { AxiosResponse } from "axios";
+
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let Swal = require('sweetalert2/src/sweetalert2.js').default;
@@ -228,20 +244,17 @@ export default defineComponent({
         add_rarity_background_color: '',
         loading_item_types: true,
         item_types: [],
-        create_item_name: '',
-        create_item_rarity: '',
-        create_item_always_visible: false,
-        create_item_tradable: false,
-        create_item_useable: -1,
-        create_item_action: '',
-        create_item_action_options: ({} as any),
+        item_action_options: ({} as any),
+        edit_create_item_type: ({} as any),
+        edit_create_item_type_text: ''
     }
   },
   mounted() {
+      this.create_item_type();
       this.update_rarities();
       this.update_item_types();
       api.get_item_action_options().then((response: AxiosResponse) => {
-            this.create_item_action_options = response.data.actions;
+            this.item_action_options = response.data.actions;
         }).catch((error) => {
             Toast.fire({
                 icon: 'error',
@@ -349,6 +362,56 @@ export default defineComponent({
             });
         });
     },
+    create_item_type() {
+        this.edit_create_item_type = {
+            name: '',
+            rarity_id: '',
+            useable: -1,
+            always_visible: false,
+            tradable: false,
+            action: '',
+        };
+        for (let key of Object.keys(this.item_action_options)) {
+            for (let option_key of Object.keys(this.item_action_options[key].options)) {
+                this.item_action_options[key].options[option_key].value = undefined;
+            }
+        }
+        this.edit_create_item_type_text = 'Create Item Type';
+    },
+    edit_item_type(item: any) {
+        console.log(item);
+        this.edit_create_item_type = item;
+        for (let key of Object.keys(this.item_action_options)) {
+            for (let option_key of Object.keys(this.item_action_options[key].options)) {
+                if (key == item.action) {
+                    this.item_action_options[key].options[option_key].value = item.action_options[option_key];
+                } else {
+                    this.item_action_options[key].options[option_key].value = undefined;
+                }
+            }
+        }
+        this.edit_create_item_type_text=`Edit Item (ID: ${item.id})`;
+    },
+    edit_item_type_submit() {
+        document.getElementById('closeCreateEditItemTypeModal')?.click();
+        if (this.edit_create_item_type.action) {
+            this.edit_create_item_type.action_options = this.item_action_options[this.edit_create_item_type.action].options;
+        }
+        api.edit_item_type(
+            this.edit_create_item_type
+        ).then(() => {
+            Toast.fire({
+                icon: 'success',
+                text: 'Successfully created item type',
+            });
+            this.update_item_types();
+        }).catch((error) => {
+            Toast.fire({
+                icon: 'error',
+                text: error.response.data.description,
+            });
+        });
+    },
     remove_item_type(item_type: any) {
         Swal.fire({
             title: "Are you sure?",
@@ -375,32 +438,6 @@ export default defineComponent({
             }
         });
     },
-    create_item_type() {
-        let item_action_options = {};
-        if (this.create_item_action) {
-            item_action_options = this.create_item_action_options[this.create_item_action].options;
-        }
-        api.create_item_type(
-            this.create_item_name,
-            +this.create_item_rarity,
-            this.create_item_always_visible,
-            this.create_item_tradable,
-            this.create_item_useable,
-            this.create_item_action,
-            item_action_options
-        ).then(() => {
-            Toast.fire({
-                icon: 'success',
-                text: 'Successfully created item type',
-            });
-            this.update_item_types();
-        }).catch((error) => {
-            Toast.fire({
-                icon: 'error',
-                text: error.response.data.description,
-            });
-        });
-    }
   }
 });
 </script>
