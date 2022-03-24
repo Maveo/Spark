@@ -31,7 +31,9 @@ class Tests(unittest.IsolatedAsyncioTestCase):
         g.member_join(m)
         await self.bot.module_manager.activate_module(g.id, 'inventory', sync=False)
         inventory: InventoryModule = self.bot.module_manager.get('inventory')
-        await inventory.add_rarity(g, 'Epic', '(255,255,255)', '(0,0,0)')
+        await inventory.edit_rarity(g, {'name': 'Epic',
+                                        'foreground_color': '(255,255,255)',
+                                        'background_color': '(0,0,0)'})
         for i in range(10):
             await inventory.edit_item_type(g, {
                 'name': 'Item{}'.format(i + 1),
