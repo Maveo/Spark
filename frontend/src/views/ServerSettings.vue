@@ -171,7 +171,7 @@
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
-                                        <input :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" :type="(setting.type == 'int' || setting.type == 'float' ? 'number' : 'text')" class="form-control form-control-sm" placeholder="" v-model="setting.value" style="width: 300px;">
+                                        <input :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" type="text" class="form-control form-control-sm" placeholder="" v-model="setting.value" style="width: 300px;">
                                     </div>
                                     <template v-if="setting.loading">
                                         <span class="spinner-border" style="width: 1.5rem; height: 1.5rem; margin-left: 74px;" role="status" aria-hidden="true"></span>

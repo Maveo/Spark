@@ -57,3 +57,7 @@ class PromoCodeNotFoundException(WrongInputException):
 
 class ItemNotUsableException(WrongInputException):
     pass
+
+
+class WheelspinForbiddenException(WrongInputException):
+    pass

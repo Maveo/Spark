@@ -123,13 +123,12 @@ class InventoryItemType(Base):
     always_visible = db.Column(db.Boolean, nullable=False)
     tradable = db.Column(db.Boolean, nullable=False)
     useable = db.Column(db.Integer, nullable=False)
-    expiration = db.Column(db.Integer, nullable=False)
     action = db.Column(db.String, nullable=False)
     action_options = db.Column(db.String, nullable=False)
     __table_args__ = (db.ForeignKeyConstraint((rarity_id,),
                                               [InventoryRarity.id]),
                       {})
-    rarity = relationship(InventoryRarity, backref=backref("children", cascade="all,delete"))
+    rarity = relationship(InventoryRarity, backref=backref("item_types", cascade="all,delete"))
 
 
 class UserInventoryItem(Base):
@@ -141,7 +140,29 @@ class UserInventoryItem(Base):
     __table_args__ = (db.ForeignKeyConstraint((item_type_id,),
                                               [InventoryItemType.id]),
                       {})
-    item_type = relationship(InventoryItemType, backref=backref("children", cascade="all,delete"))
+    item_type = relationship(InventoryItemType, backref=backref("user_items", cascade="all,delete"))
+
+
+class WheelspinProbability(Base):
+    __tablename__ = 'wheelspin_probabilities'
+    id = db.Column(db.Integer, primary_key=True)
+    guild_id = db.Column(db.Integer, nullable=False)
+    item_type_id = db.Column(db.Integer, nullable=False)
+    probability = db.Column(db.Float, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    sound = db.Column(db.Boolean, nullable=False)
+    __table_args__ = (db.ForeignKeyConstraint((item_type_id,),
+                                              [InventoryItemType.id]),
+                      {})
+    item_type = relationship(InventoryItemType, backref=backref("wheelspin_items", cascade="all,delete"))
+
+
+class WheelspinAvailable(Base):
+    __tablename__ = 'wheelspins_available'
+    guild_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Float, nullable=False)
+    last_free = db.Column(db.Integer, nullable=False)
 
 
 class Database:
@@ -356,6 +377,17 @@ class Database:
         stmt = db.delete(InventoryRarity).where(db.and_(InventoryRarity.guild_id == guild_id,
                                                         InventoryRarity.id == rarity_id))
         session.execute(stmt)
+        item_type_ids = session.query(InventoryItemType.id).filter(InventoryItemType.rarity_id == rarity_id).all()
+        item_type_ids = list(map(lambda x: x[0], item_type_ids))
+        stmt = db.delete(InventoryItemType).where(db.and_(InventoryItemType.guild_id == guild_id,
+                                                          InventoryItemType.rarity_id == rarity_id))
+        session.execute(stmt)
+        stmt = db.delete(UserInventoryItem).where(db.and_(UserInventoryItem.guild_id == guild_id,
+                                                          UserInventoryItem.item_type_id.in_(item_type_ids)))
+        session.execute(stmt)
+        stmt = db.delete(WheelspinProbability).where(db.and_(WheelspinProbability.guild_id == guild_id,
+                                                             WheelspinProbability.item_type_id.in_(item_type_ids)))
+        session.execute(stmt)
         session.commit()
 
     def add_inventory_item_type(self,
@@ -365,7 +397,6 @@ class Database:
                                 always_visible,
                                 tradable,
                                 useable,
-                                expiration,
                                 action,
                                 action_options
                                 ):
@@ -376,7 +407,6 @@ class Database:
                                       always_visible=always_visible,
                                       tradable=tradable,
                                       useable=useable,
-                                      expiration=expiration,
                                       action=action,
                                       action_options=action_options
                                       ))
@@ -398,6 +428,12 @@ class Database:
         session = self.Session()
         stmt = db.delete(InventoryItemType).where(db.and_(InventoryItemType.guild_id == guild_id,
                                                           InventoryItemType.id == item_type_id))
+        session.execute(stmt)
+        stmt = db.delete(UserInventoryItem).where(db.and_(UserInventoryItem.guild_id == guild_id,
+                                                          UserInventoryItem.item_type_id == item_type_id))
+        session.execute(stmt)
+        stmt = db.delete(WheelspinProbability).where(db.and_(WheelspinProbability.guild_id == guild_id,
+                                                             WheelspinProbability.item_type_id == item_type_id))
         session.execute(stmt)
         session.commit()
 
@@ -424,17 +460,17 @@ class Database:
     def get_user_items(self, guild_id, user_id):
         session = self.Session()
         query = session.query(
-                 UserInventoryItem, InventoryItemType, InventoryRarity
-            ).join(InventoryItemType, UserInventoryItem.item_type)\
-            .join(InventoryRarity, InventoryItemType.rarity)\
+            UserInventoryItem, InventoryItemType, InventoryRarity
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
             .filter(
-                db.and_(UserInventoryItem.guild_id == guild_id,
-                        UserInventoryItem.user_id == user_id,
-                        db.or_(
-                            InventoryItemType.always_visible,
-                            UserInventoryItem.amount != 0
-                        ))
-            ).order_by(InventoryRarity.order.asc())
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    db.or_(
+                        InventoryItemType.always_visible,
+                        UserInventoryItem.amount != 0
+                    ))
+        ).order_by(InventoryRarity.order.asc())
         return query.all()
 
     def get_user_useable_items(self, guild_id, user_id):
@@ -474,3 +510,35 @@ class Database:
         if res.InventoryItemType.useable != 2:
             self.add_user_item(guild_id, user_id, item_type_id, -amount)
         return True
+
+    def get_wheelspin(self, guild_id):
+        session = self.Session()
+        query = session.query(WheelspinProbability, InventoryItemType, InventoryRarity) \
+            .join(InventoryItemType, WheelspinProbability.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
+            .where(WheelspinProbability.guild_id == guild_id) \
+            .order_by(InventoryRarity.order.asc())
+        return query.all()
+
+    def set_wheelspin(self, guild_id, wheelspin):
+        session = self.Session()
+        stmt = db.delete(WheelspinProbability).where(WheelspinProbability.guild_id == guild_id)
+        session.execute(stmt)
+        objects = list(map(lambda x: WheelspinProbability(guild_id=guild_id,
+                                                          item_type_id=x['item_type_id'],
+                                                          probability=x['probability'],
+                                                          amount=x['amount'],
+                                                          sound=x['sound']), wheelspin))
+        session.bulk_save_objects(objects)
+        session.commit()
+
+    def get_wheelspin_available(self, guild_id, user_id) -> WheelspinAvailable:
+        session = self.Session()
+        stmt = db.select(WheelspinAvailable).where(db.and_(WheelspinAvailable.guild_id == guild_id,
+                                                           WheelspinAvailable.user_id == user_id))
+        return session.scalars(stmt).first()
+
+    def set_wheelspin_available(self, guild_id, user_id, amount, last_free):
+        session = self.Session()
+        session.merge(WheelspinAvailable(guild_id=guild_id, user_id=user_id, amount=amount, last_free=last_free))
+        session.commit()

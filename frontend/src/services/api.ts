@@ -426,7 +426,6 @@ function create_item_type(
     item_always_visible: boolean,
     item_tradable: boolean,
     item_useable: number,
-    item_expiration: number,
     item_action: string,
     item_action_options: any,
     ): Promise<AxiosResponse> {
@@ -436,10 +435,71 @@ function create_item_type(
         'item_always_visible': item_always_visible,
         'item_tradable': item_tradable,
         'item_useable': item_useable,
-        'item_expiration': item_expiration,
         'item_action': item_action,
         'item_action_options': item_action_options,
     },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function get_wheelspin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-wheelspin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function can_wheelspin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/can-wheelspin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function get_wheelspin_admin(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-wheelspin-admin',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function set_wheelspin(wheelspin: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-wheelspin', {
+        'wheelspin': wheelspin,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function spin_wheel(): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/spin-wheel', {},
     {
         params: {
             'guild_id': store.state.selected_server.id,
@@ -485,7 +545,12 @@ const api = {
     get_item_action_options,
     get_item_types,
     remove_item_type,
-    create_item_type
+    create_item_type,
+    can_wheelspin,
+    get_wheelspin,
+    get_wheelspin_admin,
+    set_wheelspin,
+    spin_wheel
 };
 
 export default api;

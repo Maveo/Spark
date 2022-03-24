@@ -7,13 +7,15 @@ if TYPE_CHECKING:
 
 
 INVENTORY_ITEM_ACTION_HOOK = 'inventory-item-action'
+INVENTORY_ADD_ITEM_HOOK = 'inventory-add-item'
 
 
 class ModuleHookManager:
     def __init__(self, module_manager: 'ModuleManager'):
         self.module_manager = module_manager
         self.hooks: Dict[str, Dict[str, Dict[str, Dict]]] = {
-            INVENTORY_ITEM_ACTION_HOOK: {}
+            INVENTORY_ITEM_ACTION_HOOK: {},
+            INVENTORY_ADD_ITEM_HOOK: {}
         }
 
     def add(self, module: 'SparkModule', hook: str, hook_id: str, **kwargs):
@@ -28,3 +30,10 @@ class ModuleHookManager:
                 for module in self.module_manager.get_activated_modules(guild_id)
                 if module in self.hooks[key]
                 for hook_id, hook in self.hooks[key][module].items()}
+
+    def get_one(self, guild_id, key: str, hook_id: str) -> Dict:
+        for module in self.module_manager.get_activated_modules(guild_id):
+            if module in self.hooks[key]:
+                for xhook_id, hook in self.hooks[key][module].items():
+                    if xhook_id == hook_id:
+                        return hook

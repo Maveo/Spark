@@ -188,6 +188,7 @@
   "GAMES_CHESS_PIECE_K": "King",
   "XP_BOOST_AMOUNT_DESCRIPTION": "Amount of XP boost added",
   "XP_BOOST_DURATION_DESCRIPTION": "Duration of the XP boost in Hours",
+  "LEVEL_GIVE_AMOUNT_DESCRIPTION": "Amount of Level to give",
   "INVENTORY_COMMAND": "inventory",
   "INVENTORY_COMMAND_DESCRIPTION": "manage inventory",
   "INVENTORY_GET_COMMAND": "get",
@@ -201,5 +202,6 @@
   "INVENTORY_ADMIN_GIVE_COMMAND": "admin-give",
   "INVENTORY_ADMIN_GIVE_COMMAND_SUCCESS": "Successfully added \"{}\" of \"{}\"",
   "INVENTORY_ADMIN_GIVE_COMMAND_DESCRIPTION": "Create and give user item",
-  "INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION": "What item to create"
+  "INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION": "What item to create",
+  "GIVE_WHEELSPINS_AMOUNT_DESCRIPTION": "How many wheelspins to give"
 }

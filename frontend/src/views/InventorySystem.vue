@@ -170,12 +170,6 @@
                         </div>
                         <div class="mb-2">   
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text">Expires after x Hours</span>
-                                <input v-model="create_item_expiration" type="number" min="-1" class="form-control form-control-sm font-weight-bold" placeholder="-1" required>
-                            </div>
-                        </div>
-                        <div class="mb-2">   
-                            <div class="input-group input-group-sm">
                                 <span class="input-group-text">Action</span>
                                 <select v-model="create_item_action" class="form-select form-select-sm">
                                     <option value="" selected>No action</option>
@@ -239,7 +233,6 @@ export default defineComponent({
         create_item_always_visible: false,
         create_item_tradable: false,
         create_item_useable: -1,
-        create_item_expiration: -1,
         create_item_action: '',
         create_item_action_options: ({} as any),
     }
@@ -393,7 +386,6 @@ export default defineComponent({
             this.create_item_always_visible,
             this.create_item_tradable,
             this.create_item_useable,
-            this.create_item_expiration,
             this.create_item_action,
             item_action_options
         ).then(() => {

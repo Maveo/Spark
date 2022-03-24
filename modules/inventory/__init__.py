@@ -4,7 +4,7 @@ import discord
 import discord.commands
 
 from helpers.exceptions import WrongInputException, UnknownException, ItemNotUsableException
-from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK
+from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK, INVENTORY_ADD_ITEM_HOOK
 from helpers.spark_module import SparkModule
 from helpers.tools import make_linear_gradient, autocomplete_match
 from .settings import SETTINGS
@@ -24,7 +24,7 @@ class InventoryModule(SparkModule):
         async def get_inventory(ctx: discord.commands.context.ApplicationContext):
             embed = discord.Embed(title=bot.i18n.get('INVENTORY_TITLE').format(ctx.author.display_name),
                                   description='',
-                                  color=discord.Color.yellow())
+                                  color=discord.Color.gold())
             prev_rarity = None
             items_in_rarity = []
             for item in self.bot.db.get_user_items(ctx.author.guild.id, ctx.author.id):
@@ -125,6 +125,8 @@ class InventoryModule(SparkModule):
         self.commands = [
             inventory
         ]
+
+        self.bot.module_manager.hooks.add(self, INVENTORY_ADD_ITEM_HOOK, 'inventory', callback=self.give_item)
 
     async def give_item(self, member: discord.Member, item_type_id, amount):
         item_type = self.bot.db.get_item_type_by_id(member.guild.id, item_type_id)

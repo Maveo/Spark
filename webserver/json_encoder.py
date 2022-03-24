@@ -5,7 +5,7 @@ import discord
 from flask.json import JSONEncoder
 from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message, Permissions
 
-from helpers.db import InventoryItemType
+from helpers.db import InventoryItemType, WheelspinProbability
 from helpers.dummys import RoleDummy, MemberDummy
 from datetime import datetime
 from imagestack import ImageStackResolveString
@@ -105,9 +105,17 @@ def create_json_encoder(bot: 'DiscordBot'):
                     'always_visible': o.always_visible,
                     'tradable': o.tradable,
                     'useable': o.useable,
-                    'expiration': o.expiration,
                     'action': o.action,
                     'action_options': json.loads(o.action_options),
+                }
+
+            if isinstance(o, WheelspinProbability):
+                return {
+                    'id': o.id,
+                    'item_type_id': o.item_type_id,
+                    'probability': o.probability,
+                    'amount': o.amount,
+                    'sound': o.sound,
                 }
 
             return JSONEncoder.default(self, o)

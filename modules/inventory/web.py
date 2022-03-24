@@ -147,7 +147,6 @@ async def create_item_type(module: 'InventoryModule',
             json['item_always_visible'],
             json['item_tradable'],
             json['item_useable'],
-            json['item_expiration'],
             json['item_action'],
             action_options_json,
         )
