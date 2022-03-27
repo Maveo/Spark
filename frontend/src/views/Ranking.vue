@@ -6,15 +6,12 @@
             <span class="text-gray4">View the ranking of you and your Friends</span>
         </div>
 
-        <div class="d-flex text-white bg-gray2" onscroll="console.log('test')">
+        <div class="d-flex text-white bg-gray2">
             
-            <div class="d-flex flex-column justify-content-between">
+            <div class="d-flex flex-column justify-content-between w-100">
                 
-                <div class="row profile-cards-loading" v-for="(image, index) in shown_ranking_images" :key="index">
-                    <div class="js-tilt new-js-tilt w-100 mb-2">
-                        <iframe class="invisible position-absolute" @load="on_iframe_load($event)" scrolling="no" :srcdoc="`<html><head><style>html,body{margin:0}${ranking_style}</style></head><body>${image}</body></html>`">
-                        </iframe>
-                    </div>
+                <div class="row profile-cards-loading" v-for="(image, index) in ranking_images" :key="index">
+                    <svg class="js-tilt new-js-tilt position-absolute invisible mb-2 p-0" style="width: 600px; height: 100%;" v-html="image"></svg>
                 </div>
 
                 <div v-if="loading" class="row justify-content-center">
@@ -44,7 +41,6 @@ export default defineComponent({
         loading: true,
         loading_counter: 0,
         ranking_images: ([] as Array<any>),
-        shown_ranking_images: ([] as Array<any>),
         ranking_style: '',
         lazy_subscription: (undefined as any),
         total_amount: 0
@@ -56,7 +52,7 @@ export default defineComponent({
             return;
         }
         const shown_ranking_divs = document.getElementsByClassName('profile-cards-loading');
-        if (shown_ranking_divs.length > 0 && this.in_viewport(shown_ranking_divs[shown_ranking_divs.length - 2])) {
+        if (shown_ranking_divs.length > 1 && this.in_viewport(shown_ranking_divs[shown_ranking_divs.length - 2])) {
             this.load_next_ranking_batch();
         }
     },
@@ -69,29 +65,6 @@ export default defineComponent({
             rect.right <= (window.innerWidth || document.documentElement.clientWidth)
         );
     },
-    on_iframe_load(event: any) {
-        const iframe = event.target ? event.target : event.path[0];
-        iframe.width  = iframe.contentWindow.document.body.scrollWidth;
-        iframe.height = iframe.contentWindow.document.body.scrollHeight;
-        iframe.classList.remove('invisible');
-        iframe.classList.remove('position-absolute');
-        this.load_next_iframe();
-    },
-    load_next_iframe() {
-        if (this.ranking_images.length > this.shown_ranking_images.length) {
-            this.shown_ranking_images.push(this.ranking_images[this.shown_ranking_images.length]);
-            ($('.new-js-tilt') as any).tilt({
-                scale: 1.05,
-                perspective: 1000,
-                maxTilt: 15,
-            });
-            ($('.new-js-tilt') as any).removeClass('new-js-tilt');
-        } else if (this.shown_ranking_images.length < this.total_amount) {
-            this.lazy_check();
-        } else {
-            this.loading = false;
-        }
-    },
     load_next_ranking_batch() {
         const olc = this.loading_counter;
         this.loading_counter += 5;
@@ -102,9 +75,21 @@ export default defineComponent({
             if (!this.ranking_style) {
                 this.ranking_style = response.data.style;
             }
-            this.load_next_iframe();
+            if (this.ranking_images.length >= this.total_amount) {
+                this.loading = false;
+            } else {
+                this.lazy_check();
+            }
         });
     }
+  },
+  updated() {
+    ($('.new-js-tilt') as any).tilt({
+        scale: 1.05,
+        perspective: 1000,
+        maxTilt: 15,
+    });
+    ($('.new-js-tilt') as any).removeClass('new-js-tilt position-absolute invisible');
   },
   mounted() {
     const main_container = document.getElementById('mainSiteContainer');
@@ -113,7 +98,6 @@ export default defineComponent({
     }
     this.loading_counter = 0;
     this.ranking_images = [];
-    this.shown_ranking_images = [];
     this.load_next_ranking_batch();
   },
   beforeUnmount() {
@@ -123,9 +107,3 @@ export default defineComponent({
   },
 });
 </script>
-
-<style scoped>
-.js-tilt:hover iframe {
-    z-index: -1;
-}
-</style>
