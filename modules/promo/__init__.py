@@ -149,7 +149,6 @@ class PromoModule(SparkModule):
 
         self.guild_promo_codes = {}
 
-        @bot.has_permissions(administrator=True)
         async def promo(ctx: discord.commands.context.ApplicationContext):
             promo_code = await self.create_promo_code(ctx.author)
             if promo_code is None:
