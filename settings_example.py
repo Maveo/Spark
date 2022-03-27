@@ -21,6 +21,7 @@ GLOBAL_SETTINGS = {
     'SAVE_EMOJIS': True,
     'EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
     'FONTS': [
-        os.path.join(current_dir, 'fonts', 'Product_Sans.ttf')
+        os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
+        os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf')
     ],
 }
