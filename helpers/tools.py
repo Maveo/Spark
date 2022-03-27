@@ -21,6 +21,18 @@ def make_linear_gradient(color_string: str) -> Tuple:
     return tuple([int(x) for x in spl[0][1:].split(',')]), tuple([int(x) for x in spl[1].split(')')[0].split(',')])
 
 
+def svg_color_definition_with_id(color1: Tuple, color2: Tuple, cid: str):
+    return '<linearGradient id="{}">\n' \
+           '<stop offset="0%" stop-color="rgb({}, {}, {})" />\n' \
+            '<stop offset="100%" stop-color="rgb({}, {}, {})" />\n' \
+           '</linearGradient>'.format(cid, color1[0], color1[1], color1[2], color2[0], color2[1], color2[2])
+
+
+def html_color(color1: Tuple, color2: Tuple):
+    return 'linear-gradient(to right, rgb({}, {}, {}), rgb({}, {}, {}));'.format(
+        color1[0], color1[1], color1[2], color2[0], color2[1], color2[2])
+
+
 def decapitalize(s):
     if not s:
         return s

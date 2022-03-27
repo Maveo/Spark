@@ -5,7 +5,7 @@ from flask import jsonify, request
 
 from helpers.exceptions import WrongInputException
 from helpers.module_pages import has_permissions
-from helpers.tools import make_linear_gradient
+from helpers.tools import make_linear_gradient, svg_color_definition_with_id, html_color
 from webserver import Page
 
 from typing import TYPE_CHECKING
@@ -27,11 +27,15 @@ async def get_wheelspin(module: 'WheelspinModule',
             'id': x.WheelspinProbability.id,
             'name': x.InventoryItemType.name,
             'foreground_color_id': foreground_color_id,
-            'foreground_color_svg': foreground_color.svg_color_definition_with_id(foreground_color_id),
-            'foreground_color_html': foreground_color.html_color(),
+            'foreground_color_svg': svg_color_definition_with_id(foreground_color[0],
+                                                                 foreground_color[1],
+                                                                 foreground_color_id),
+            'foreground_color_html': html_color(foreground_color[0], foreground_color[1]),
             'background_color_id': background_color_id,
-            'background_color_svg': background_color.svg_color_definition_with_id(background_color_id),
-            'background_color_html': background_color.html_color(),
+            'background_color_svg': svg_color_definition_with_id(background_color[0],
+                                                                 background_color[1],
+                                                                 background_color_id),
+            'background_color_html': html_color(background_color[0], background_color[1]),
             'sound': x.WheelspinProbability.sound
         })
     return jsonify({
