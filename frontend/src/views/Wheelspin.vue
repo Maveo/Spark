@@ -440,7 +440,7 @@ export default defineComponent({
         result_degree: 0,
         duration: 1000,
         // only use full rotations or else the result is not correct
-        rotations: 5,
+        rotations: 10,
         degree: 0,
         obj: null,
       };
