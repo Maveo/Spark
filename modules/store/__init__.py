@@ -3,10 +3,11 @@ from .settings import SETTINGS
 from .web import API_PAGES
 
 
-class ExampleModule(SparkModule):
-    name = 'example'
-    title = 'Example Module'
-    description = 'A module used as an example'
+class StoreModule(SparkModule):
+    name = 'store'
+    title = 'Store'
+    description = 'Module allowing to sell and buy'
+    dependencies = ['inventory']
     api_pages = API_PAGES
     settings = SETTINGS
 

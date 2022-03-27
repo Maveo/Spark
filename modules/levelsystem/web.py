@@ -1,6 +1,5 @@
 import discord
 from flask import jsonify, request, send_file
-from imagestack import VisitorHtml
 
 from helpers.dummys import RoleDummy
 from helpers.exceptions import WrongInputException
@@ -24,14 +23,14 @@ async def get_ranking(module: 'LevelsystemModule',
         users = users[:int(request.args['amount'])]
 
     res = {
-        'images': [module.bot.image_creator.create_raw_html(
-            (await module.get_dependency('profile').member_get_profile_image_template(u['member']))(u)
+        'images': [await module.bot.image_creator.create_inner_svg(
+            (await module.get_dependency('profile').member_get_profile_image_template(u['member']))(**u)
         ) for u in users],
         'total_amount': total_amount
     }
 
     if 'style_wanted' in request.args:
-        res['style'] = VisitorHtml(module.bot.image_creator).style_html()
+        res['style'] = await module.bot.image_creator.create_style()
 
     return jsonify(res), 200
 
@@ -90,9 +89,10 @@ async def rank_up_image(module: 'LevelsystemModule',
                         guild: discord.Guild,
                         member: discord.Member):
     json = request.get_json()
-    role = RoleDummy()
+    role1 = RoleDummy()
+    role2 = RoleDummy(color=(255, 0, 0))
     if json is None or 'preview' not in json:
-        img = await module.member_create_rank_up_image(member, 42, 69, role, role)
+        img = await module.member_create_rank_up_image(member, 42, 69, role1, role2)
         return send_file(
             img.fp,
             attachment_filename=img.filename,
@@ -104,7 +104,7 @@ async def rank_up_image(module: 'LevelsystemModule',
     except:
         raise WrongInputException('setting preview not correct')
 
-    img = await module.member_create_rank_up_image_by_template(member, 42, 69, role, role, preview)
+    img = await module.member_create_rank_up_image_by_template(member, 42, 69, role1, role2, preview)
     return send_file(
         img.fp,
         attachment_filename=img.filename,

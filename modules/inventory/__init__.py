@@ -147,12 +147,12 @@ class InventoryModule(SparkModule):
         return item_type.name
 
     async def create_rarity_image_by_template(self, rarity, template):
-        img_buf = await self.bot.image_creator.create(template(rarity))
+        img_buf = await self.bot.image_creator.create_bytes(template(**rarity))
         return discord.File(filename=f"rarity-{rarity['name']}.png", fp=img_buf)
 
     async def create_rarity_image(self, guild_id, rarity):
-        img_buf = await self.bot.image_creator.create(
-            (self.bot.module_manager.settings.get(guild_id, 'RARITY_IMAGE'))(rarity))
+        img_buf = await self.bot.image_creator.create_bytes((self.bot.module_manager.settings.get(
+            guild_id, 'RARITY_IMAGE'))(**rarity))
         return discord.File(filename=f"rarity-{rarity['name']}.png", fp=img_buf)
 
     async def edit_rarity(self, guild: discord.Guild, rarity):

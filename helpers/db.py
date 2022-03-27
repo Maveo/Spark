@@ -4,8 +4,6 @@ from sqlalchemy.orm import sessionmaker, scoped_session, relationship, backref
 from sqlalchemy.sql import func
 from typing import *
 
-from helpers.exceptions import UnknownException
-
 
 class Representable:
     def __repr__(self) -> str:
@@ -165,6 +163,19 @@ class WheelspinAvailable(Base):
     user_id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     last_free = db.Column(db.Integer, nullable=False)
+
+
+class StoreItems(Base):
+    __tablename__ = 'store_items'
+    id = db.Column(db.Integer, primary_key=True)
+    guild_id = db.Column(db.Integer, nullable=False)
+    from_item_id = db.Column(db.Integer, nullable=False)
+    from_item_amount = db.Column(db.Float, nullable=False)
+    to_item_id = db.Column(db.Integer, nullable=False)
+    to_item_amount = db.Column(db.Float, nullable=False)
+    __table_args__ = (db.ForeignKeyConstraint((from_item_id, to_item_id,),
+                                              [InventoryItemType.id, InventoryItemType.id]),
+                      {})
 
 
 class Database:
@@ -568,4 +579,17 @@ class Database:
     def set_wheelspin_available(self, guild_id, user_id, amount, last_free):
         session = self.Session()
         session.merge(WheelspinAvailable(guild_id=guild_id, user_id=user_id, amount=amount, last_free=last_free))
+        session.commit()
+
+    def set_store(self, guild_id, store):
+        session = self.Session()
+        stmt = db.delete(StoreItems).where(StoreItems.guild_id == guild_id)
+        session.execute(stmt)
+        objects = list(map(lambda x: StoreItems(guild_id=guild_id,
+                                                from_item_id=x['from_item_id'],
+                                                from_item_amount=x['from_item_amount'],
+                                                to_item_id=x['to_item_id'],
+                                                to_item_amount=x['to_item_amount']
+                                                ), store))
+        session.bulk_save_objects(objects)
         session.commit()

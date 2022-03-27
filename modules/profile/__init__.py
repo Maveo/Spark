@@ -38,8 +38,8 @@ class ProfileModule(SparkModule):
         ]
 
     async def member_create_profile_image_by_template(self, member, template):
-        img_buf = await self.bot.image_creator.create(template(
-            await self.bot.module_manager.create_extended_profile(member)
+        img_buf = await self.bot.image_creator.create_bytes(template(
+            **(await self.bot.module_manager.create_extended_profile(member))
         ))
         return discord.File(filename="member.png", fp=img_buf)
 

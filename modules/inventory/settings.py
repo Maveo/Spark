@@ -1,20 +1,20 @@
-from imagestack import ImageStackResolveString
+from imagestack_svg.imageresolve import ImageStackResolveString
 
 from helpers.settings_manager import Setting
 
-rarity_image = ImageStackResolveString('''ImageStack([
-    TextLayer(
-        pos=(0, 0),
-        font='regular',
-        font_size=22,
-        text=Variable('name'),
-        background_color=Variable('background_color'),
-        color=Variable('foreground_color'),
-        background_padding=(5, 5),
-        border_radius=15,
-    )
-])''')
-
+rarity_image = ImageStackResolveString('''<defs>
+<linearGradient id="bgcolor">
+	<stop offset="0%" stop-color="rgb{{background_color[0]}}" />
+	<stop offset="100%" stop-color="rgb{{background_color[1]}}" />
+</linearGradient>
+<linearGradient id="fgcolor">
+	<stop offset="0%" stop-color="rgb{{foreground_color[0]}}" />
+	<stop offset="100%" stop-color="rgb{{foreground_color[1]}}" />
+</linearGradient>
+</defs>
+<rect width="250" height="40" rx="10" ry="10" fill="url(#bgcolor)" />
+<text x="125" y="27" text-anchor="middle" font-family="Product Sans" font-weight="bold" font-size="25" fill="url(#fgcolor)" >{{ name}}</text>
+''')
 
 SETTINGS = {
     'RARITY_IMAGE': Setting(

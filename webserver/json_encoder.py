@@ -8,7 +8,7 @@ from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceC
 from helpers.db import InventoryItemType, WheelspinProbability
 from helpers.dummys import RoleDummy, MemberDummy
 from datetime import datetime
-from imagestack import ImageStackResolveString
+from imagestack_svg.imageresolve import ImageStackResolveString
 
 from helpers.spark_module import SparkModule
 

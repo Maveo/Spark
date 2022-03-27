@@ -3,7 +3,6 @@ import re
 from typing import *
 import discord
 from discord.utils import get
-from imagestack import LinearGradientColor, ImageStackStringParser, SingleColor
 
 
 def autocomplete_match(s: str, li: List[str]):
@@ -11,15 +10,36 @@ def autocomplete_match(s: str, li: List[str]):
     return filter(lambda s2: sl in s2.lower(), li)
 
 
-def make_linear_gradient(color_string: str) -> LinearGradientColor:
-    stack_color = ImageStackStringParser(color_string).build()
-    if not isinstance(stack_color, LinearGradientColor):
-        stack_color = LinearGradientColor(SingleColor(stack_color), SingleColor(stack_color))
-    return stack_color
+def make_linear_gradient(color_string: str) -> Tuple:
+    if color_string.startswith('LinearGradientColor'):
+        color_string = color_string[20:-1]
+    color_string = ''.join(color_string.split())
+    spl = color_string.split('),(')
+    if len(spl) == 1:
+        t = tuple([int(x) for x in spl[0][1:-1].split(',')])
+        return t, t
+    return tuple([int(x) for x in spl[0][1:].split(',')]), tuple([int(x) for x in spl[1].split(')')[0].split(',')])
+
+
+def decapitalize(s):
+    if not s:
+        return s
+    return s[0].lower() + s[1:]
 
 
 def underscore_to_camelcase(word):
-    return ''.join(x.capitalize() or '_' for x in word.split('_'))
+    return ''.join(x.capitalize() for x in word.split('_'))
+
+
+def underscore_to_spaces(word):
+    return ' '.join(x for x in word.split('_'))
+
+
+def camelcase_to_underscore(word):
+    found = re.findall('[A-Z][^A-Z]*', word)
+    if len(found) == 0:
+        return decapitalize(word)
+    return '_'.join(decapitalize(x) for x in found)
 
 
 async def give_role(guild, member: discord.Member, role_id):

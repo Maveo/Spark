@@ -6,7 +6,7 @@ from io import BytesIO
 import discord
 from discord import PCMAudio, ActivityType, Status, Activity
 from flask import jsonify, request, send_file
-from imagestack import is_emoji, from_char
+from imagestack_svg.helpers import is_emoji, from_char
 
 from helpers.exceptions import WrongInputException, MethodNotAvailableException
 from helpers.module_pages import has_permissions

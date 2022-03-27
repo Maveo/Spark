@@ -290,7 +290,7 @@ class LevelsystemModule(SparkModule):
                     'color': member.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create_bytes(template(**data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_level_up_image(self, member, old_lvl, new_lvl):
@@ -309,7 +309,7 @@ class LevelsystemModule(SparkModule):
                     'new_color': new_role.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create_bytes(template(**data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
@@ -335,7 +335,7 @@ class LevelsystemModule(SparkModule):
     async def create_ranking_image_by_template(self, member, ranked_users, template):
         data_obj = await self.users_get_advanced_infos(member.guild, ranked_users)
 
-        img_buf = await self.bot.image_creator.create(template(data_obj), max_size=(-1, 8000))
+        img_buf = await self.bot.image_creator.create_bytes(template(users=data_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):

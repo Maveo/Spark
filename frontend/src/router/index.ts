@@ -12,6 +12,7 @@ import PageNotFound from '../views/PageNotFound.vue'
 import Login from '../views/Login.vue'
 import InventorySystem from '../views/InventorySystem.vue'
 import Wheelspin from '../views/Wheelspin.vue'
+import Store from '../views/Store.vue'
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -48,6 +49,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/wheelspin/:id',
         name: 'Wheelspin',
         component: Wheelspin,
+        meta: { requiresLogin: true, requiresServer: true }
+    },
+    {
+        path: '/store/:id',
+        name: 'Store',
+        component: Store,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {

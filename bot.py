@@ -13,7 +13,8 @@ from helpers.db import Database
 import discord
 import discord.commands
 import discord.ext.commands
-import imagestack
+from imagestack_svg.imagecreator import ImageCreator
+from imagestack_svg.loaders import FontLoader, EmojiLoader
 
 from helpers.i18n_manager import I18nManager
 from helpers.module_manager import ModuleManager
@@ -73,7 +74,7 @@ class DiscordBot:
                  current_dir='',
                  interval_time=-1,
                  description='',
-                 image_creator: imagestack.ImageCreator = None,
+                 image_creator: ImageCreator = None,
                  super_admins=None,
                  logging_level=logging.WARNING
                  ):
@@ -295,11 +296,13 @@ def main():
         interval_time=global_settings['INTERVAL_TIME'],
         description=global_settings['DESCRIPTION'],
         super_admins=global_settings['SUPER_ADMINS'],
-        image_creator=imagestack.ImageCreator(fonts=global_settings['FONTS'],
-                                              load_memory=global_settings['IMAGES_LOAD_MEMORY'],
-                                              download_emojis=global_settings['DOWNLOAD_EMOJIS'],
-                                              save_downloaded_emojis=global_settings['SAVE_EMOJIS'],
-                                              emoji_path=global_settings['EMOJIS_PATH']),
+        image_creator=ImageCreator(font_loader=FontLoader(
+                                       global_settings['FONTS']),
+                                   emoji_loader=EmojiLoader(
+                                       emoji_path=global_settings['EMOJIS_PATH'],
+                                       download_emojis=global_settings['DOWNLOAD_EMOJIS'],
+                                       save_downloaded_emojis=global_settings['SAVE_EMOJIS']
+                                   )),
         logging_level=global_settings['LOGGING_LEVEL']
     )
 

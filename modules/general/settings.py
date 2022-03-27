@@ -1,44 +1,14 @@
-from imagestack import ImageStackResolveString
+from imagestack_svg.imageresolve import ImageStackResolveString
 
 from helpers.settings_manager import Setting
 
 
-welcome_image = ImageStackResolveString('''ImageStack([
-    WebImageLayer(
-        url="https://raw.githubusercontent.com/skillor/Spark/v1.3.1/images/welcome_template.png"
-    ),
-    WebImageLayer(
-        pos=(85, 35),
-        resize=(60, 60),
-        url=Variable('guild_icon_url'),
-    ),
-    RectangleLayer(
-        pos=(85, 35),
-        size=(60, 60),
-        color=(48, 50, 55),
-        radius=-30,
-    ),
-    WebImageLayer(
-        pos=(15, 130),
-        resize=(80, 80),
-        url=Variable('avatar_url'),
-    ),
-    RectangleLayer(
-        pos=(15, 130),
-        size=(80, 80),
-        color=(48, 50, 55),
-        radius=-40,
-    ),
-    TextLayer(
-        pos=(110, 170),
-        align_y='center',
-        font='bold',
-        font_size=42,
-        text=Variable('name'),
-        color=(255, 255, 255),
-        max_size=(460, 50)
-    ),
-])''')
+welcome_image = ImageStackResolveString('''<image x="0" y="0" width="600" height="324" xlink:href="{{'https://raw.githubusercontent.com/skillor/Spark/v1.3.1/images/welcome_template.png' | web_image}}"/>
+<image x="85" y="35" width="60" height="60" xlink:href="{{ guild_icon_url | web_image}}"/>
+<path fill-rule="evenodd" fill="rgb(48, 50, 55)" d="m85,35 l60,0 l0,60 l-60,0 l0,-60 m30,0 a30,30 0 0 0 -30 30 a30,30 0 0 0 30 30 a30,30 0 0 0 30 -30 a30,30 0 0 0 -30 -30" />
+<image x="15" y="130" width="80" height="80" xlink:href="{{ avatar_url | web_image}}"/>
+<path fill-rule="evenodd" fill="rgb(48, 50, 55)" d="m15,130 l80,0 l0,80 l-80,0 l0,-80 m40,0 a40,40 0 0 0 -40 40 a40,40 0 0 0 40 40 a40,40 0 0 0 40 -40 a40,40 0 0 0 -40 -40" />
+<text x="110" y="185" font-family="Product Sans" font-weight="bold" font-size="42" fill="rgb(255, 255, 255)">{{ name }}</text>''')
 
 SETTINGS = {
     'MISSING_PERMISSIONS_RESPONSES': Setting(

@@ -231,7 +231,7 @@ class GeneralModule(SparkModule):
             'avatar_url': str(member.display_avatar.with_format('png')),
             'guild_icon_url': guild_icon_url
         }
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create_bytes(template(**data_obj))
         return discord.File(filename="welcome.png", fp=img_buf)
 
     async def member_create_welcome_image(self, member):
