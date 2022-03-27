@@ -906,7 +906,7 @@ class ChessView(discord.ui.View):
 
     def __init__(self, callback: Callable[['ChessButton', discord.Interaction], Coroutine],
                  x_rows=4, y_cols=4, x_offset=0, y_offset=0):
-        super().__init__()
+        super().__init__(timeout=None)
 
         for x in range(x_rows):
             for y in range(y_cols):
@@ -1106,7 +1106,7 @@ class ChessViewHolder:
             Queen(False)
         ]
 
-        self.promotion_view = discord.ui.View()
+        self.promotion_view = discord.ui.View(timeout=None)
         for i in range(len(self.promotion_list)):
             piece = self.promotion_list[i]
             child = ChessButton(i, 0, (0, i), self.on_promotion_piece(type(piece)), True)

@@ -87,7 +87,7 @@ class TicTacToeView(discord.ui.View):
     Tie = 2
 
     def __init__(self, bot: 'DiscordBot'):
-        super().__init__()
+        super().__init__(timeout=None)
         self.current_player = self.X
         self.X_players = []
         self.O_players = []
@@ -150,4 +150,4 @@ class TicTacToeViewHolder:
         self.bot = bot
 
     async def start(self):
-        await self.ctx.respond(self.bot.i18n.get('GAMES_TIC_TAC_TOE_START'), view=TicTacToeView(self.bot))
+        message = await self.ctx.respond(self.bot.i18n.get('GAMES_TIC_TAC_TOE_START'), view=TicTacToeView(self.bot))
