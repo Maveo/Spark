@@ -61,13 +61,13 @@ class TicTacToeButton(discord.ui.Button["TicTacToeView"]):
         if winner is not None:
             if winner == view.X:
                 content = self.bot.i18n.get('GAMES_TIC_TAC_TOE_WON').format(
-                    view.X_label, ', '.join(map(lambda x: x.display_name, view.X_players)))
+                    view.X_label, ', '.join(map(lambda x: x.mention, view.X_players)))
             elif winner == view.O:
                 content = self.bot.i18n.get('GAMES_TIC_TAC_TOE_WON').format(
-                    view.O_label, ', '.join(map(lambda x: x.display_name, view.X_players)))
+                    view.O_label, ', '.join(map(lambda x: x.mention, view.X_players)))
             else:
                 content = self.bot.i18n.get('GAMES_TIC_TAC_TOE_TIE').format(
-                    ', '.join(map(lambda x: x.display_name, view.O_players + view.X_players)))
+                    ', '.join(map(lambda x: x.mention, view.O_players + view.X_players)))
 
             for child in view.children:
                 child.disabled = True
@@ -89,8 +89,8 @@ class TicTacToeView(discord.ui.View):
     def __init__(self, bot: 'DiscordBot'):
         super().__init__(timeout=None)
         self.current_player = self.X
-        self.X_players = []
-        self.O_players = []
+        self.X_players: List[discord.Member] = []
+        self.O_players: List[discord.Member] = []
         self.board = [
             [0, 0, 0],
             [0, 0, 0],
