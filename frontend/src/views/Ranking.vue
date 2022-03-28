@@ -77,9 +77,8 @@ export default defineComponent({
             }
             if (this.ranking_images.length >= this.total_amount) {
                 this.loading = false;
-            } else {
-                this.lazy_check();
             }
+            this.lazy_check();
         });
     }
   },
