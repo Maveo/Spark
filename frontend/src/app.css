@@ -633,3 +633,27 @@ div.swal2-popup {
 .emoji-admin-tools.emoji-gold {
     background: url("./assets/icons/admin-tools-gold.svg") no-repeat;
 }
+
+.emoji-server-modules {
+    background: url("./assets/icons/server-modules.svg") no-repeat;
+}
+
+.emoji-server-modules.emoji-gold {
+    background: url("./assets/icons/server-modules-gold.svg") no-repeat;
+}
+
+.emoji-inventory-system {
+    background: url("./assets/icons/inventory-system.svg") no-repeat;
+}
+
+.emoji-inventory-system.emoji-gold {
+    background: url("./assets/icons/inventory-system-gold.svg") no-repeat;
+}
+
+.emoji-store {
+    background: url("./assets/icons/store.svg") no-repeat;
+}
+
+.emoji-store.emoji-gold {
+    background: url("./assets/icons/store-gold.svg") no-repeat;
+}
