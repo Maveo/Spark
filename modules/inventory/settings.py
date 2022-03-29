@@ -42,7 +42,7 @@ inventory_image = ImageStackResolveString('''<defs>
 <rect x="{{ ((loop.index + 1) % 2) * 620 + 120 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 160 }}" width="360" height="50" fill="url(#bgcolor{{ loop.index }})" rx="15" ry="15" />
 <text x="{{ ((loop.index + 1) % 2) * 620 + 300 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 194 }}" text-anchor="middle" font-size="30" font-family="Product Sans" fill="url(#fgcolor{{ loop.index }})">{{ item.rarity_name }}</text>
 <rect x="{{ ((loop.index + 1) % 2) * 620 + 490 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 160 }}" width="170" height="50" fill="#303237" rx="15" ry="15" />
-<text x="{{ ((loop.index + 1) % 2) * 620 + 575 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 194 }}" text-anchor="middle" font-size="30" font-family="Product Sans" fill="#ffffff">{{ "{:,}".format(item.item_amount) }}</text>
+<text x="{{ ((loop.index + 1) % 2) * 620 + 575 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 194 }}" text-anchor="middle" font-size="30" font-family="Product Sans" fill="#ffffff">{{ "{:,g}".format(item.item_amount) }}</text>
 {% endfor %}''')
 
 SETTINGS = {
