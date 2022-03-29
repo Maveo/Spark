@@ -287,10 +287,10 @@ async def set_presence(module: 'GeneralModule',
 async def get_emojis(module: 'GeneralModule',
                      guild: discord.Guild,
                      member: discord.Member):
-    emojis = module.bot.image_creator.get_downloaded_emojis()
+    emojis = module.bot.image_creator.emoji_loader.get_downloaded_emojis()
     send_emojis = []
     for e in emojis:
-        with open(os.path.join(module.bot.image_creator.emoji_path, e['path']), 'rb') as f:
+        with open(os.path.join(module.bot.image_creator.emoji_loader.emoji_path, e['path']), 'rb') as f:
             send_emojis.append({'emoji': e['emoji'], 'base64': base64.b64encode(f.read()).decode()})
 
     return jsonify({
