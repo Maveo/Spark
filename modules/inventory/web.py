@@ -155,7 +155,18 @@ async def remove_item_type(module: 'InventoryModule',
     return jsonify({'msg': 'success'}), 200
 
 
+async def get_inventory(module: 'InventoryModule',
+                        guild: discord.Guild,
+                        member: discord.Member):
+    return jsonify({
+        'msg': 'success',
+        'inventory': dict(map(lambda x: (x.UserInventoryItem.item_type_id, x.UserInventoryItem.amount),
+                              module.bot.db.get_user_items(guild.id, member.id)))
+    }), 200
+
+
 API_PAGES = [
+    Page(path='inventory', view_func=get_inventory),
     Page(path='edit-rarity', view_func=edit_rarity, methods=['POST']),
     Page(path='remove-rarity', view_func=remove_rarity, methods=['POST']),
     Page(path='set-rarity-order', view_func=set_rarity_order, methods=['POST']),

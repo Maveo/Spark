@@ -18,7 +18,7 @@
               :style="'background-image: ' + item.background_color_html"
             >
               <h2
-                class="item-text"
+                class="background-text"
                 :style="'background-image: ' + item.foreground_color_html"
               >
                 {{ item.name }}
@@ -634,15 +634,5 @@ export default defineComponent({
 .list-complete-enter-from,
 .list-complete-leave-to {
   opacity: 0;
-}
-
-.item-text {
-  display: inline-block;
-  text-align: left;
-  background-size: 100%;
-  -webkit-background-clip: text;
-  -moz-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  -moz-text-fill-color: transparent;
 }
 </style>

@@ -61,3 +61,7 @@ class ItemNotUsableException(WrongInputException):
 
 class WheelspinForbiddenException(WrongInputException):
     pass
+
+
+class NoMoneyException(WrongInputException):
+    pass

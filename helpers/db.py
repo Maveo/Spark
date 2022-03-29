@@ -1,6 +1,6 @@
 import sqlalchemy as db
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, scoped_session, relationship, backref
+from sqlalchemy.orm import sessionmaker, scoped_session, relationship, backref, aliased
 from sqlalchemy.sql import func
 from typing import *
 
@@ -412,6 +412,11 @@ class Database:
         stmt = db.delete(WheelspinProbability).where(db.and_(WheelspinProbability.guild_id == guild_id,
                                                              WheelspinProbability.item_type_id.in_(item_type_ids)))
         session.execute(stmt)
+        stmt = db.delete(StoreItems).where(db.and_(StoreItems.guild_id == guild_id,
+                                                   db.or_(StoreItems.from_item_id.in_(item_type_ids),
+                                                          StoreItems.to_item_id.in_(item_type_ids)
+                                                          )))
+        session.execute(stmt)
         session.commit()
 
     def edit_inventory_item_type(self,
@@ -473,6 +478,11 @@ class Database:
         session.execute(stmt)
         stmt = db.delete(WheelspinProbability).where(db.and_(WheelspinProbability.guild_id == guild_id,
                                                              WheelspinProbability.item_type_id == item_type_id))
+        session.execute(stmt)
+        stmt = db.delete(StoreItems).where(db.and_(StoreItems.guild_id == guild_id,
+                                                   db.or_(StoreItems.from_item_id == item_type_id,
+                                                          StoreItems.to_item_id == item_type_id
+                                                          )))
         session.execute(stmt)
         session.commit()
 
@@ -593,3 +603,26 @@ class Database:
                                                 ), store))
         session.bulk_save_objects(objects)
         session.commit()
+
+    def get_store(self, guild_id):
+        from_item_type = aliased(InventoryItemType)
+        from_item_rarity = aliased(InventoryRarity)
+        to_item_type = aliased(InventoryItemType)
+        to_item_rarity = aliased(InventoryRarity)
+        session = self.Session()
+        query = session.query(StoreItems,
+                              from_item_type,
+                              from_item_rarity,
+                              to_item_type,
+                              to_item_rarity) \
+            .where(StoreItems.guild_id == guild_id) \
+            .join(from_item_type, from_item_type.id == StoreItems.from_item_id) \
+            .join(from_item_rarity, from_item_rarity.id == from_item_type.rarity_id) \
+            .join(to_item_type, to_item_type.id == StoreItems.to_item_id) \
+            .join(to_item_rarity, to_item_rarity.id == to_item_type.rarity_id)
+        return query.all()
+
+    def get_offer(self, guild_id, offer_id) -> StoreItems:
+        session = self.Session()
+        stmt = db.select(StoreItems).where(db.and_(StoreItems.guild_id == guild_id, StoreItems.id == offer_id))
+        return session.scalars(stmt).first()

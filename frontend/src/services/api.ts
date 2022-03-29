@@ -494,6 +494,61 @@ function spin_wheel(): Promise<AxiosResponse> {
     });
 }
 
+function set_store(item_store: any): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-store', {
+        store: item_store
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+
+function get_store(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-store',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function buy_offer(offer_id: number, amount: number): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/buy-offer',
+    {
+        offer_id: offer_id,
+        amount: amount,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function get_inventory(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/inventory',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
 
 const api = {
     get_auth,
@@ -534,7 +589,11 @@ const api = {
     get_wheelspin,
     get_wheelspin_admin,
     set_wheelspin,
-    spin_wheel
+    spin_wheel,
+    set_store,
+    get_store,
+    buy_offer,
+    get_inventory
 };
 
 export default api;
