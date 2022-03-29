@@ -54,7 +54,7 @@ SETTINGS = {
         preview_call='rarity-image'
     ),
     'INVENTORY_IMAGE': Setting(
-        value=rarity_image,
+        value=inventory_image,
         description='The image for the inventory',
         categories=['Image', 'Inventory'],
         itype='text',
