@@ -309,11 +309,11 @@ async def change_emoji(module: 'GeneralModule',
     if not is_emoji(request.form['emoji']):
         raise WrongInputException('emoji is wrong')
 
-    if not module.bot.image_creator.save_downloaded_emojis:
+    if not module.bot.image_creator.emoji_loader.save_downloaded_emojis:
         raise MethodNotAvailableException('cannot save emojis')
 
     emoji_id = from_char(request.form['emoji'])
-    request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_path,
+    request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_loader.emoji_path,
                                                   emoji_id + '.png'))
     module.bot.logger.info('saved new image for emoji {}'.format(emoji_id))
 
