@@ -193,6 +193,8 @@
   "INVENTORY_COMMAND_DESCRIPTION": "manage inventory",
   "INVENTORY_GET_COMMAND": "get",
   "INVENTORY_GET_COMMAND_DESCRIPTION": "Show your inventory",
+  "INVENTORY_LIST_COMMAND": "list",
+  "INVENTORY_LIST_COMMAND_DESCRIPTION": "Show your inventory as a simple list",
   "INVENTORY_USE_COMMAND": "use",
   "INVENTORY_USE_COMMAND_DESCRIPTION": "Use an item",
   "INVENTORY_USE_ITEM_OPTION": "the item you want to use",

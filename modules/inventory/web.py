@@ -102,6 +102,34 @@ async def rarity_image(module: 'InventoryModule',
     )
 
 
+async def inventory_image(module: 'InventoryModule',
+                          guild: discord.Guild,
+                          member: discord.Member):
+    json = request.get_json()
+
+    inventory = await module.get_inventory(member)
+
+    if json is None or 'preview' not in json:
+        img = await module.create_inventory_image(guild.id, inventory)
+        return send_file(
+            img.fp,
+            attachment_filename=img.filename,
+            mimetype='image/png'
+        )
+
+    try:
+        preview = module.bot.module_manager.settings.preview(guild.id, 'RARITY_IMAGE', json['preview'])
+    except:
+        raise WrongInputException('setting preview not correct')
+
+    img = await module.create_inventory_image_by_template(inventory, preview)
+    return send_file(
+        img.fp,
+        attachment_filename=img.filename,
+        mimetype='image/png'
+    )
+
+
 @has_permissions(administrator=True)
 async def get_item_action_options(module: 'InventoryModule',
                                   guild: discord.Guild,
@@ -172,6 +200,7 @@ API_PAGES = [
     Page(path='set-rarity-order', view_func=set_rarity_order, methods=['POST']),
     Page(path='rarities', view_func=get_rarities),
     Page(path='rarity-image', view_func=rarity_image, methods=['POST']),
+    Page(path='inventory-image', view_func=inventory_image, methods=['POST']),
     Page(path='item-action-options', view_func=get_item_action_options),
     Page(path='item-types', view_func=get_item_types),
     Page(path='edit-item-type', view_func=edit_item_type, methods=['POST']),

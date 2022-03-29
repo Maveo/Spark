@@ -22,6 +22,11 @@ class InventoryModule(SparkModule):
         super().__init__(bot)
 
         async def get_inventory(ctx: discord.commands.context.ApplicationContext):
+            return await ctx.respond(file=await self.create_inventory_image(
+                ctx.author.guild.id, await self.get_inventory(ctx.author)),
+                                     ephemeral=True)
+
+        async def list_inventory(ctx: discord.commands.context.ApplicationContext):
             embed = discord.Embed(title=bot.i18n.get('INVENTORY_TITLE').format(ctx.author.display_name),
                                   description='',
                                   color=discord.Color.gold())
@@ -41,7 +46,7 @@ class InventoryModule(SparkModule):
                                 value='\n'.join(items_in_rarity),
                                 inline=False)
 
-            return await ctx.respond(embed=embed)
+            return await ctx.respond(embed=embed, ephemeral=True)
 
         async def use_item_autocomplete(ctx: discord.AutocompleteContext):
             return autocomplete_match(ctx.value, list(map(
@@ -68,7 +73,7 @@ class InventoryModule(SparkModule):
             return await ctx.respond(
                 embed=discord.Embed(title='',
                                     description=self.bot.i18n.get('INVENTORY_USE_ITEM_SUCCESSFUL').format(res),
-                                    color=discord.Color.green()))
+                                    color=discord.Color.green()), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
         async def admin_item_type_autocomplete(ctx: discord.AutocompleteContext):
@@ -109,6 +114,13 @@ class InventoryModule(SparkModule):
         ))
 
         inventory.subcommands.append(discord.SlashCommand(
+            func=list_inventory,
+            name=self.bot.i18n.get('INVENTORY_LIST_COMMAND'),
+            description=self.bot.i18n.get('INVENTORY_LIST_COMMAND_DESCRIPTION'),
+            parent=inventory
+        ))
+
+        inventory.subcommands.append(discord.SlashCommand(
             func=use_item,
             name=self.bot.i18n.get('INVENTORY_USE_COMMAND'),
             description=self.bot.i18n.get('INVENTORY_USE_COMMAND_DESCRIPTION'),
@@ -127,6 +139,15 @@ class InventoryModule(SparkModule):
         ]
 
         self.bot.module_manager.hooks.add(self, INVENTORY_ADD_ITEM_HOOK, 'inventory', callback=self.give_item)
+
+    async def get_inventory(self, member: discord.Member):
+        return list(map(lambda item: {
+                'item_name': item.InventoryItemType.name,
+                'item_amount': item.UserInventoryItem.amount,
+                'rarity_name': item.InventoryRarity.name,
+                'rarity_foreground_color': make_linear_gradient(item.InventoryRarity.foreground_color),
+                'rarity_background_color': make_linear_gradient(item.InventoryRarity.background_color)
+            }, self.bot.db.get_user_items(member.guild.id, member.id)))
 
     async def give_item(self, member: discord.Member, item_type_id, amount):
         item_type = self.bot.db.get_item_type_by_id(member.guild.id, item_type_id)
@@ -151,9 +172,16 @@ class InventoryModule(SparkModule):
         return discord.File(filename=f"rarity-{rarity['name']}.png", fp=img_buf)
 
     async def create_rarity_image(self, guild_id, rarity):
-        img_buf = await self.bot.image_creator.create_bytes((self.bot.module_manager.settings.get(
-            guild_id, 'RARITY_IMAGE'))(**rarity))
-        return discord.File(filename=f"rarity-{rarity['name']}.png", fp=img_buf)
+        return await self.create_rarity_image_by_template(
+            rarity, self.bot.module_manager.settings.get(guild_id, 'RARITY_IMAGE'))
+
+    async def create_inventory_image_by_template(self, inventory, template):
+        img_buf = await self.bot.image_creator.create_bytes(template(items=inventory))
+        return discord.File(filename='inventory.png', fp=img_buf)
+
+    async def create_inventory_image(self, guild_id, inventory):
+        return await self.create_inventory_image_by_template(
+            inventory, self.bot.module_manager.settings.get(guild_id, 'INVENTORY_IMAGE'))
 
     async def edit_rarity(self, guild: discord.Guild, rarity):
         try:
