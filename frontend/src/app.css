@@ -113,11 +113,22 @@
     /* overflow-y: hidden; */
 }
 
-.spark-sidebar-container {
-    /* min-height: 100%; */
+.spark-fixed-sidebar {
+    position: fixed;
+    left: 0;
+	top: 0;
+    overflow-y: scroll;
+    width: inherit;
+    height: inherit;
     background-color: #303237;
-    width: 325px;
     padding: 1rem;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.spark-sidebar-container {
+    width: 325px;
+    height: 100vh;
     transition: width 0.5s;
 }
 
@@ -128,6 +139,9 @@ img.sidebar-server-image {
 
 .spark-sidebar-container.sidebar-collapsed {
     width: 59px;
+}
+
+.spark-sidebar-container.sidebar-collapsed .spark-fixed-sidebar {
     padding-left: 0;
     padding-right: 0;
 }
