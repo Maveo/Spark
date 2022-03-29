@@ -17,7 +17,9 @@
     "@sweetalert2/theme-dark": "^5.0.10",
     "axios": "^0.26.1",
     "bootstrap": "^5.1.3",
+    "canvas-confetti": "^1.5.1",
     "core-js": "^3.8.3",
+    "howler": "^2.2.3",
     "jquery": "^3.6.0",
     "rxjs": "^7.5.5",
     "sweetalert2": "^11.4.6",
@@ -32,6 +34,8 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@types/canvas-confetti": "^1.4.2",
+    "@types/howler": "^2.2.6",
     "@types/jquery": "^3.5.14",
     "@typescript-eslint/eslint-plugin": "^5.4.0",
     "@typescript-eslint/parser": "^5.4.0",

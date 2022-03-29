@@ -45,8 +45,11 @@
 
             <spark-sidebar-link :route="'/your-profile/' + selected_server.id" title="Your Profile" emoji="profile"></spark-sidebar-link>
             <spark-sidebar-link v-if="selected_server.active_modules.includes('boost') || selected_server.active_modules.includes('promo')" :route="'/boosts/' + selected_server.id" title="Boosts" emoji="boosts"></spark-sidebar-link>
+            <spark-sidebar-link v-if="selected_server.active_modules.includes('wheelspin')" :route="'/wheelspin/' + selected_server.id" title="Wheelspin" emoji="wheelspin"></spark-sidebar-link>
+            <spark-sidebar-link v-if="selected_server.active_modules.includes('store')" :route="'/store/' + selected_server.id" title="Store" emoji="wheelspin"></spark-sidebar-link>
         </ul>
         <ul class="nav nav-pills flex-column justify-content-start">
+            <spark-sidebar-link v-if="profile.is_admin && selected_server.active_modules.includes('inventory')" :route="'/inventory-system/' + selected_server.id" title="Inventory System" emoji="server-settings"></spark-sidebar-link>
             <spark-sidebar-link v-if="profile.is_admin" :route="'/admin-tools/' + selected_server.id" title="Admin Tools" emoji="admin-tools"></spark-sidebar-link>
             <spark-sidebar-link v-if="profile.is_admin" :route="'/server-modules/' + selected_server.id" title="Server Modules" emoji="server-settings"></spark-sidebar-link>
             <spark-sidebar-link v-if="profile.is_admin" :route="'/server-settings/' + selected_server.id" title="Server Settings" emoji="server-settings"></spark-sidebar-link>

@@ -1,6 +1,7 @@
 import time
 
 from helpers import tools
+from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK
 from helpers.spark_module import SparkModule
 import discord
 import discord.commands
@@ -14,6 +15,8 @@ class LevelsystemModule(SparkModule):
     name = 'levelsystem'
     title = 'Levelsystem'
     description = 'Module for leveling'
+    dependencies = ['profile']
+
     settings = SETTINGS
     api_pages = API_PAGES
 
@@ -118,14 +121,14 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def blacklist_user(ctx: discord.commands.context.ApplicationContext,
-                            member: discord.commands.Option(
-                                discord.Member,
-                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
-                            ),
-                            blacklist: discord.commands.Option(
-                                bool,
-                                description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
-                            )):
+                                 member: discord.commands.Option(
+                                     discord.Member,
+                                     description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
+                                 ),
+                                 blacklist: discord.commands.Option(
+                                     bool,
+                                     description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
+                                 )):
 
             await self.check_level_user(member)
             self.bot.db.update_level_user(member.guild.id, member.id, {
@@ -154,22 +157,6 @@ class LevelsystemModule(SparkModule):
                 title=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_TITLE'),
                 description='\n'.join(description),
                 color=discord.Color.green()))
-
-        async def profile(ctx: discord.commands.context.ApplicationContext,
-                          member: discord.commands.Option(
-                              discord.Member,
-                              description=bot.i18n.get('LEVELSYSTEM_PROFILE_MEMBER_OPTION'),
-                              default=None
-                          )):
-            if member is None:
-                member = ctx.author
-            if not await self.leveling_allowed(member):
-                return await ctx.respond(embed=discord.Embed(title='',
-                                                             description=self.bot.i18n.get('BOT_NOT_ALLOWED_LEVELING'),
-                                                             color=discord.Color.red()))
-            await ctx.defer()
-
-            await ctx.respond(file=await self.member_create_profile_image(member))
 
         async def leaderboard(ctx: discord.commands.context.ApplicationContext):
             await ctx.defer()
@@ -225,16 +212,55 @@ class LevelsystemModule(SparkModule):
         self.commands = [
             levelsystem,
             discord.SlashCommand(
-                func=profile,
-                name=self.bot.i18n.get('LEVELSYSTEM_PROFILE_COMMAND'),
-                description=self.bot.i18n.get('LEVELSYSTEM_PROFILE_COMMAND_DESCRIPTION'),
-            ),
-            discord.SlashCommand(
                 func=leaderboard,
                 name=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND'),
                 description=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND_DESCRIPTION'),
             )
         ]
+
+        async def give_xp_boost(member: discord.Member, amount, options):
+            current_time = time.time()
+            self.bot.db.add_xp_boost(
+                member.guild.id,
+                member.id,
+                amount * options['amount'],
+                'itemboosted',
+                current_time + (options['duration'] * 60 * 60)
+            )
+
+        self.bot.module_manager.hooks.add(
+            self,
+            INVENTORY_ITEM_ACTION_HOOK,
+            hook_id='xp-boost',
+            name='XP Boost',
+            options={
+                'amount': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
+                'duration': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
+            },
+            callback=give_xp_boost
+        )
+
+        async def add_level(member: discord.Member, amount, options):
+            if not await self.leveling_allowed(member):
+                return
+            await self.check_level_user(member)
+            level_user = self.bot.db.get_level_user(member.guild.id, member.id)
+            if level_user.blacklisted:
+                return
+            old_level = level_user.level
+            level_user.level += amount * options['amount']
+            await self.member_set_lvl(member, level_user.level, old_level)
+
+        self.bot.module_manager.hooks.add(
+            self,
+            INVENTORY_ITEM_ACTION_HOOK,
+            hook_id='level-add',
+            name='Level Add',
+            options={
+                'amount': {'type': int, 'description': self.bot.i18n.get('LEVEL_GIVE_AMOUNT_DESCRIPTION')},
+            },
+            callback=add_level
+        )
 
     @staticmethod
     def get_lvl(lvl):
@@ -255,21 +281,6 @@ class LevelsystemModule(SparkModule):
     def lvl_get_xp(lvl):
         return int((abs(lvl) % 1) * LevelsystemModule.max_xp_for(lvl))
 
-    async def member_create_profile_image_by_template(self, member, template):
-        await self.check_level_user(member)
-
-        img_buf = await self.bot.image_creator.create(template(
-            await self.get_advanced_level_user_infos(member)
-        ))
-        return discord.File(filename="member.png", fp=img_buf)
-
-    async def member_get_profile_image_template(self, member):
-        return self.bot.module_manager.settings.get(member.guild.id, 'PROFILE_IMAGE')
-
-    async def member_create_profile_image(self, member):
-        return await self.member_create_profile_image_by_template(
-            member, await self.member_get_profile_image_template(member))
-
     async def member_create_level_up_image_by_template(self, member, old_lvl, new_lvl, template):
         name = member.display_name
 
@@ -279,7 +290,7 @@ class LevelsystemModule(SparkModule):
                     'color': member.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create_bytes(template(**data_obj))
         return discord.File(filename="lvlup.png", fp=img_buf)
 
     async def member_create_level_up_image(self, member, old_lvl, new_lvl):
@@ -298,7 +309,7 @@ class LevelsystemModule(SparkModule):
                     'new_color': new_role.color.to_rgb(),
                     'name': name}
 
-        img_buf = await self.bot.image_creator.create(template(data_obj))
+        img_buf = await self.bot.image_creator.create_bytes(template(**data_obj))
         return discord.File(filename="rankup.png", fp=img_buf)
 
     async def member_create_rank_up_image(self, member, old_lvl, new_lvl, old_role, new_role):
@@ -324,7 +335,7 @@ class LevelsystemModule(SparkModule):
     async def create_ranking_image_by_template(self, member, ranked_users, template):
         data_obj = await self.users_get_advanced_infos(member.guild, ranked_users)
 
-        img_buf = await self.bot.image_creator.create(template(data_obj), max_size=(-1, 8000))
+        img_buf = await self.bot.image_creator.create_bytes(template(users=data_obj), max_size=(-1, 8000))
         return discord.File(filename="ranking.png", fp=img_buf)
 
     async def create_ranking_image(self, member, ranked_users):
@@ -511,7 +522,9 @@ class LevelsystemModule(SparkModule):
 
     async def create_extended_profile(self, member: discord.Member):
         await self.check_level_user(member)
-        user = self.bot.db.get_level_user(member.guild.id, member.id)
+
+        user = await self.get_advanced_level_user_infos(member)
+
         xp_origins = self.bot.db.get_xp_origin(member.guild.id, member.id)
         text_msg_xp = 0
         voice_xp = 0
@@ -524,11 +537,10 @@ class LevelsystemModule(SparkModule):
             elif origin[0].origin.startswith(self.boost_origin_prefix):
                 boost_xp += origin[1]
 
-        return {
-            'level': self.get_lvl(user.level),
-            'total_xp': text_msg_xp + voice_xp + boost_xp,
-            'blacklisted': user.blacklisted,
-            'text_msg_xp': text_msg_xp,
-            'voice_xp': voice_xp,
-            'boost_xp': boost_xp,
-        }
+        user['level'] = user['lvl']
+        user['total_xp'] = text_msg_xp + voice_xp + boost_xp
+        user['text_msg_xp'] = text_msg_xp
+        user['voice_xp'] = voice_xp
+        user['boost_xp'] = boost_xp
+        del user['member']
+        return user

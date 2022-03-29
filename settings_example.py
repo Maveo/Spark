@@ -20,11 +20,8 @@ GLOBAL_SETTINGS = {
     'DOWNLOAD_EMOJIS': True,
     'SAVE_EMOJIS': True,
     'EMOJIS_PATH': os.path.join(current_dir, 'images', 'emojis'),
-    'FONTS': {
-        'regular': os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
-        'bold': os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf'),
-    },
-    'IMAGES_LOAD_MEMORY': [
-        # DirectoryImageLoader(prefix='emojis', directory=os.path.join(current_dir, 'images', 'emojis'))
+    'FONTS': [
+        os.path.join(current_dir, 'fonts', 'Product_Sans_Regular.ttf'),
+        os.path.join(current_dir, 'fonts', 'Product_Sans_Bold.ttf')
     ],
 }

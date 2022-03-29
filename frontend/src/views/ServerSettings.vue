@@ -171,7 +171,7 @@
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
-                                        <input :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" :type="(setting.type == 'int' || setting.type == 'float' ? 'number' : 'text')" class="form-control form-control-sm" placeholder="" v-model="setting.value" style="width: 300px;">
+                                        <input :disabled="setting.loading" v-bind:class="{'is-invalid': setting.error}" type="text" class="form-control form-control-sm" placeholder="" v-model="setting.value" style="width: 300px;">
                                     </div>
                                     <template v-if="setting.loading">
                                         <span class="spinner-border" style="width: 1.5rem; height: 1.5rem; margin-left: 74px;" role="status" aria-hidden="true"></span>
@@ -263,14 +263,14 @@ export default defineComponent({
             if (reset.isConfirmed) {
                 console.log('resetting', key);
                 (this.settings as any)[key].loading = true;
-                api.reset_setting(key).then((response: AxiosResponse) => {
+                api.reset_setting(key).then(async (response: AxiosResponse) => {
                     (this.settings as any)[key].value = response.data.value;
                     (this.settings as any)[key].error = false;
                     (this.settings as any)[key].loading = false;
 
                     this.refresh_preview((this.settings as any)[key]);
 
-                    store.commit('update_profile');
+                    await store.dispatch('update_profile');
 
                     Toast.fire({
                         icon: 'success',
@@ -282,7 +282,7 @@ export default defineComponent({
     },
     save_setting(key: string, value: any, show_toast = true, refresh_preview = true, subject: Subject<boolean> | null = null, update_profile = true) {
         (this.settings as any)[key].loading = true;
-        api.set_setting(key, value).then((response: AxiosResponse) => {
+        api.set_setting(key, value).then(async (response: AxiosResponse) => {
             (this.settings as any)[key].value = response.data.value;
             (this.settings as any)[key].error = false;
             (this.settings as any)[key].loading = false;
@@ -298,7 +298,7 @@ export default defineComponent({
             }
 
             if (update_profile) {
-                store.commit('update_profile');
+                await store.dispatch('update_profile');
             }
 
             if (show_toast) {

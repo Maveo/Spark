@@ -6,7 +6,7 @@ from io import BytesIO
 import discord
 from discord import PCMAudio, ActivityType, Status, Activity
 from flask import jsonify, request, send_file
-from imagestack import is_emoji, from_char
+from imagestack_svg.helpers import is_emoji, from_char
 
 from helpers.exceptions import WrongInputException, MethodNotAvailableException
 from helpers.module_pages import has_permissions
@@ -287,10 +287,10 @@ async def set_presence(module: 'GeneralModule',
 async def get_emojis(module: 'GeneralModule',
                      guild: discord.Guild,
                      member: discord.Member):
-    emojis = module.bot.image_creator.get_downloaded_emojis()
+    emojis = module.bot.image_creator.emoji_loader.get_downloaded_emojis()
     send_emojis = []
     for e in emojis:
-        with open(os.path.join(module.bot.image_creator.emoji_path, e['path']), 'rb') as f:
+        with open(os.path.join(module.bot.image_creator.emoji_loader.emoji_path, e['path']), 'rb') as f:
             send_emojis.append({'emoji': e['emoji'], 'base64': base64.b64encode(f.read()).decode()})
 
     return jsonify({
@@ -309,11 +309,11 @@ async def change_emoji(module: 'GeneralModule',
     if not is_emoji(request.form['emoji']):
         raise WrongInputException('emoji is wrong')
 
-    if not module.bot.image_creator.save_downloaded_emojis:
+    if not module.bot.image_creator.emoji_loader.save_downloaded_emojis:
         raise MethodNotAvailableException('cannot save emojis')
 
     emoji_id = from_char(request.form['emoji'])
-    request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_path,
+    request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_loader.emoji_path,
                                                   emoji_id + '.png'))
     module.bot.logger.info('saved new image for emoji {}'.format(emoji_id))
 

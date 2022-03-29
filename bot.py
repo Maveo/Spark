@@ -13,7 +13,8 @@ from helpers.db import Database
 import discord
 import discord.commands
 import discord.ext.commands
-import imagestack
+from imagestack_svg.imagecreator import ImageCreator
+from imagestack_svg.loaders import FontLoader, EmojiLoader
 
 from helpers.i18n_manager import I18nManager
 from helpers.module_manager import ModuleManager
@@ -73,7 +74,7 @@ class DiscordBot:
                  current_dir='',
                  interval_time=-1,
                  description='',
-                 image_creator: imagestack.ImageCreator = None,
+                 image_creator: ImageCreator = None,
                  super_admins=None,
                  logging_level=logging.WARNING
                  ):
@@ -252,12 +253,18 @@ class DiscordBot:
             for command in module.commands:
                 command.guild_ids = modules_to_guilds[module_name]
                 self.bot.add_application_command(command)
-
-        await self.bot.sync_commands()
-        self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
+        try:
+            await self.bot.sync_commands()
+            self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
+        except discord.HTTPException:
+            self.logger.error('syncing commands {} failed'.format(modules_to_guilds))
+            await self.sync_commands()
 
     async def _on_ready(self):
         self.logger.info('Bot is running...')
+
+        for guild in self.bot.guilds:
+            await self.module_manager.fix_dependencies(guild.id)
 
         self.bot.loop.create_task(self._interval_loop())
         await self.sync_commands()
@@ -289,11 +296,13 @@ def main():
         interval_time=global_settings['INTERVAL_TIME'],
         description=global_settings['DESCRIPTION'],
         super_admins=global_settings['SUPER_ADMINS'],
-        image_creator=imagestack.ImageCreator(fonts=global_settings['FONTS'],
-                                              load_memory=global_settings['IMAGES_LOAD_MEMORY'],
-                                              download_emojis=global_settings['DOWNLOAD_EMOJIS'],
-                                              save_downloaded_emojis=global_settings['SAVE_EMOJIS'],
-                                              emoji_path=global_settings['EMOJIS_PATH']),
+        image_creator=ImageCreator(font_loader=FontLoader(
+                                       global_settings['FONTS']),
+                                   emoji_loader=EmojiLoader(
+                                       emoji_path=global_settings['EMOJIS_PATH'],
+                                       download_emojis=global_settings['DOWNLOAD_EMOJIS'],
+                                       save_downloaded_emojis=global_settings['SAVE_EMOJIS']
+                                   )),
         logging_level=global_settings['LOGGING_LEVEL']
     )
 

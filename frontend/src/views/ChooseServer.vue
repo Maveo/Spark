@@ -67,9 +67,9 @@ export default defineComponent({
       });
   },
   methods: {
-    choose_server(server: any) {
+    async choose_server(server: any) {
       console.log("choose server: " + server);
-      store.commit("choose_server", server.id);
+      await store.dispatch("choose_server", server.id);
       router.push({ path: `/your-profile/${server.id}` });
     },
   },

@@ -2,40 +2,8 @@ import { createStore } from 'vuex'
 import createPersistedState from 'vuex-persistedstate'
 import router from '@/router';
 import api from '@/services/api';
-import { AxiosError, AxiosResponse } from 'axios';
 import { ProfileModel } from '@/models/profile.model';
 import { ServerModel } from '@/models/server.model';
-
-
-function update_profile(state: any) {
-    api.get_profile().then((response: AxiosResponse) => {
-        state.profile.assign(response.data);
-        state.global_loading = false;
-
-    }).catch((e: AxiosError) => {
-        if (e.response) {
-            console.log(e.response);
-        }
-        state.global_loading = false;
-        state.persistant.token = '';
-        router.push('/login');
-    });
-}
-
-function update_server(state: any, id: string) {
-    api.get_guild(id).then((response: AxiosResponse) => {
-
-        state.selected_server.assign(response.data);
-        update_profile(state);
-    }).catch((e: AxiosError) => {
-        if (e.response) {
-            console.log(e.response);
-        }
-        state.global_loading = false;
-        state.persistant.token = '';
-        router.push('/login');
-    });
-}
 
 
 export default createStore({
@@ -59,15 +27,32 @@ export default createStore({
             state.persistant.token = '';
             state.global_loading = false;
         },
-        update_profile(state) {
-            update_profile(state);
+        set_profile(state, profile) {
+            state.profile.assign(profile);
         },
-        update_server(state) {
-            update_server(state, state.selected_server.id);
+        set_selected_server(state, server) {
+            state.selected_server.assign(server);
         },
-        choose_server(state, id: string) {
-            state.global_loading = true;
-            update_server(state, id);
+        set_global_loading(state, loading) {
+            state.global_loading = loading;
+        }
+    },
+    actions: {
+        async update_profile({ commit }) {
+            const profile_response = await api.get_profile();
+            commit('set_profile', profile_response.data);
+        },
+        async update_server({ commit, dispatch, state }) {
+            const response = await api.get_guild(state.selected_server.id);
+            commit('set_selected_server', response.data);
+            await dispatch('update_profile');
+        },
+        async choose_server({ commit, dispatch }, id: string) {
+            commit('set_global_loading', true);
+            const response = await api.get_guild(id);
+            commit('set_selected_server', response.data);
+            await dispatch('update_profile');
+            commit('set_global_loading', false);
         },
     },
     plugins: [createPersistedState({

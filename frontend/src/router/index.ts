@@ -2,7 +2,6 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import store from '@/store'
 import YourProfile from '../views/YourProfile.vue'
 import Boosts from '../views/Boosts.vue'
-import ProfileCard from '../views/ProfileCard.vue'
 import ServerSettings from '../views/ServerSettings.vue'
 import AdminTools from '../views/AdminTools.vue'
 import SuperAdmin from '../views/SuperAdmin.vue'
@@ -11,6 +10,9 @@ import Ranking from '../views/Ranking.vue'
 import ChooseServer from '../views/ChooseServer.vue'
 import PageNotFound from '../views/PageNotFound.vue'
 import Login from '../views/Login.vue'
+import InventorySystem from '../views/InventorySystem.vue'
+import Wheelspin from '../views/Wheelspin.vue'
+import Store from '../views/Store.vue'
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -44,9 +46,15 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
-        path: '/profile-card/:id',
-        name: 'ProfileCard',
-        component: ProfileCard,
+        path: '/wheelspin/:id',
+        name: 'Wheelspin',
+        component: Wheelspin,
+        meta: { requiresLogin: true, requiresServer: true }
+    },
+    {
+        path: '/store/:id',
+        name: 'Store',
+        component: Store,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
@@ -65,6 +73,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/server-modules/:id',
         name: 'ServerModules',
         component: ServerModules,
+        meta: { requiresLogin: true, requiresServer: true }
+    },
+    {
+        path: '/inventory-system/:id',
+        name: 'InventorySystem',
+        component: InventorySystem,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {
@@ -106,13 +120,13 @@ const router = createRouter({
     routes
 })
 
-router.beforeResolve((to, from, next) => {
+router.beforeResolve(async (to, from, next) => {
     if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
         store.commit('set_redirect', to.fullPath);
         next('/login');
     } else if ((to.matched.some(record => record.meta.requiresServer) || to.matched.some(record => record.meta.serverOptional)) && !store.state.selected_server.id) {
         if (to.params.id) {
-            store.commit('choose_server', to.params.id);
+            await store.dispatch('choose_server', to.params.id);
             next();
         } else if (to.matched.some(record => record.meta.requiresServer)) {
             next('/choose-server');

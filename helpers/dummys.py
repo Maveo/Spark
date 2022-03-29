@@ -16,6 +16,8 @@ class RoleDummy:
         self.name = name
         if color is None:
             color = ColorDummy()
+        if not isinstance(color, ColorDummy):
+            color = ColorDummy(color)
         self.color = color
 
 
