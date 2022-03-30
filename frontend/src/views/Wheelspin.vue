@@ -195,7 +195,24 @@
               </label>
             </div>
             <button
+              :disabled="admin_items_loading || index == 0"
+              type="button"
+              class="btn btn-sm btn-info ms-2"
+              @click="change_admin_items_probabilities_order(index, -1)"
+            >
+              <i class="fas fa-fw fa-arrow-up"></i>
+            </button>
+            <button
+              :disabled="admin_items_loading || index == admin_items_probabilities.length - 1"
+              type="button"
+              class="btn btn-sm btn-info ms-2"
+              @click="change_admin_items_probabilities_order(index, 1)"
+            >
+              <i class="fas fa-fw fa-arrow-down"></i>
+            </button>
+            <button
               :disabled="admin_items_loading"
+              type="button"
               class="btn btn-sm btn-danger ms-2"
               @click="admin_items_probabilities.splice(index, 1)"
             >
@@ -343,6 +360,11 @@ export default defineComponent({
           });
           this.wheelspin_loading = false;
         });
+    },
+    change_admin_items_probabilities_order(index: number, change: number) {
+        let t = this.admin_items_probabilities[index];
+        this.admin_items_probabilities[index] = this.admin_items_probabilities[index + change];
+        this.admin_items_probabilities[index + change] = t;
     },
     set_probabilities() {
       this.admin_items_loading = true;
