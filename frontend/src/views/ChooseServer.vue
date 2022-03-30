@@ -17,18 +17,17 @@
         v-for="server in servers"
         :key="server.id"
         @click="choose_server(server)"
-        class="view-main-card mb-3 me-3"
+        class="view-main-card mb-3 me-3 p-3"
       >
         <div class="d-flex">
           <div class="d-xl-block">
             <img
-              class="rounded-circle"
+              class="rounded-circle server-icon-width"
               v-lazy="{src: server.icon_url ? server.icon_url : 'https://cdn.discordapp.com/embed/avatars/1.png', loading: 'https://cdn.discordapp.com/embed/avatars/1.png'}"
-              style="max-width: 100px"
             />
           </div>
           <div class="ps-3 d-flex flex-column justify-content-center">
-            <h4>{{ server.name }}</h4>
+            <h4 class="server-font-size">{{ server.name }}</h4>
           </div>
         </div>
       </button>
@@ -76,3 +75,29 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.server-icon-width {
+  max-width: 100px;
+}
+
+@media only screen and (max-width: 576px) {
+  .server-icon-width {
+    max-width: 70px;
+  }
+
+  .server-font-size {
+    font-size: 1.2rem;
+  }
+}
+
+@media only screen and (max-width: 400px) {
+  .server-icon-width {
+    max-width: 40px;
+  }
+
+    .server-font-size {
+    font-size: 0.9rem;
+  }
+}
+</style>
