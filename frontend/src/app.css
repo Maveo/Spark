@@ -273,7 +273,7 @@ img.sidebar-server-image {
 .view-main-card {
     background-color: var(--grey1);
     border-radius: 1rem;
-    /* padding: 2.5rem; */
+    padding: 2.5rem;
     color: white !important;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
