@@ -509,16 +509,9 @@ class LevelsystemModule(SparkModule):
             self.bot.logger.info('{} joined {}'.format(member, after.channel))
 
     async def interval_update(self, current_time, guild: discord.Guild):
-        for member in guild.members:
-
-            last_joined = current_time
-            if member.voice is None or member.voice.channel is None:
-                last_joined = None
-
-            if self.bot.db.get_level_user(member.guild.id, member.id) is None and last_joined is None:
-                return
-
-            await self.voice_xp(member, current_time, last_joined)
+        for voice_channel in guild.voice_channels:
+            for member in voice_channel.members:
+                await self.voice_xp(member, current_time, current_time)
 
     async def create_extended_profile(self, member: discord.Member):
         await self.check_level_user(member)
