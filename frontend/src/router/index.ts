@@ -5,6 +5,7 @@ import Boosts from '../views/Boosts.vue'
 import ServerSettings from '../views/ServerSettings.vue'
 import AdminTools from '../views/AdminTools.vue'
 import SuperAdmin from '../views/SuperAdmin.vue'
+import Help from '../views/Help.vue'
 import ServerModules from '../views/ServerModules.vue'
 import Ranking from '../views/Ranking.vue'
 import ChooseServer from '../views/ChooseServer.vue'
@@ -92,6 +93,12 @@ const routes: Array<RouteRecordRaw> = [
         name: 'SuperAdmin',
         component: SuperAdmin,
         meta: { requiresLogin: true, serverOptional: true }
+    },
+    {
+        path: '/help/:id?',
+        name: 'Help',
+        component: Help,
+        meta: { serverOptional: true }
     },
     {
         path: '/choose-server',

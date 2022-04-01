@@ -70,7 +70,7 @@
                     <h6 class="dropdown-header text-gray2">Signed in as<br />{{profile.member.name}}</h6>
                     <div class="dropdown-divider"></div>
                     <router-link v-if="profile.is_super_admin" class="dropdown-item text-white" :to="'/super-admin/' + selected_server.id">Super Admin</router-link>
-                    <a class="dropdown-item text-white" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Help</a>
+                    <router-link class="dropdown-item text-white" :to="'/help/' + selected_server.id">Help</router-link>
                     <a class="dropdown-item text-white" href="https://github.com/Maveo/Spark">GitHub</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item text-danger"  href="#" @click="logout">Logout</a>
