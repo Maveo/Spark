@@ -9,7 +9,7 @@
 
     <!-- Main Site Container -->
     <div class="d-flex flex-column flex-grow-1">
-      <div id="mainSiteContainer" class="py-5 px-0 p-lg-5 overflow-auto">
+      <div class="py-5 px-0 p-lg-5 overflow-auto">
         <router-view v-slot="{ Component }">
           <transition name="route" mode="out-in">
             <component :is="Component"></component>

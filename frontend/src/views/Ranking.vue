@@ -42,7 +42,8 @@ export default defineComponent({
         loading_counter: 0,
         ranking_images: ([] as Array<any>),
         ranking_style: '',
-        lazy_subscription: (undefined as any),
+        lazy_scroll_subscription: (undefined as any),
+        lazy_zoom_subscription: (undefined as any),
         total_amount: 0
     }
   },
@@ -91,18 +92,15 @@ export default defineComponent({
     ($('.new-js-tilt') as any).removeClass('new-js-tilt position-absolute invisible');
   },
   mounted() {
-    const main_container = document.getElementById('mainSiteContainer');
-    if (main_container) {
-        this.lazy_subscription = fromEvent((document.getElementById('mainSiteContainer') as any), 'scroll').pipe(debounceTime(100)).subscribe(this.lazy_check);
-    }
+    this.lazy_scroll_subscription = fromEvent(window, 'scroll').pipe(debounceTime(100)).subscribe(this.lazy_check);
+    this.lazy_zoom_subscription = fromEvent(window, 'resize').pipe(debounceTime(100)).subscribe(this.lazy_check);
     this.loading_counter = 0;
     this.ranking_images = [];
     this.load_next_ranking_batch();
   },
   beforeUnmount() {
-    if (this.lazy_subscription) {
-        this.lazy_subscription.unsubscribe();
-    }
+    this.lazy_scroll_subscription.unsubscribe();
+    this.lazy_zoom_subscription.unsubscribe();
   },
 });
 </script>
