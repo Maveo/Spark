@@ -18,7 +18,7 @@ profile_image = ImageStackResolveString('''<defs>
 <path fill-rule="evenodd" fill="rgb(48, 50, 55)" d="m15,15 l120,0 l0,120 l-120,0 l0,-120 m60,0 a60,60 0 0 0 -60 60 a60,60 0 0 0 60 60 a60,60 0 0 0 60 -60 a60,60 0 0 0 -60 -60" />
 <image id="userEmoji" x="147" y="15" width="40" height="40" xlink:href="{{ member.top_role.name[0] | emoji }}"/>
 <rect x="150" y="115" width="430" height="20" rx="10" ry="10" fill="rgb(87, 87, 87)" />
-<rect x="150" y="115" width="{{ xp_percentage * 430 }}" height="20" rx="10" ry="10" fill="url(#color2)" />
+<rect x="150" y="115" width="{{ xp_percentage * 410 + 20 }}" height="20" rx="10" ry="10" fill="url(#color2)" />
 <text x="200" y="48" font-family="Product Sans" font-size="35" fill="rgb{{ color }}">{{ name }}</text>
 <text id="userTitle" x="150" y="76" font-family="Product Sans" font-size="20" fill="white"></text>
 <text x="150" y="108" font-family="Product Sans" font-size="22" fill="rgb(103, 103, 103)">Lvl.</text>
