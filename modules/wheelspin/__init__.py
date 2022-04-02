@@ -23,7 +23,7 @@ class WheelspinModule(SparkModule):
 
         self.commands = []
 
-        async def give_wheelspins(member: discord.Member, amount, options):
+        async def give_wheelspins(member: discord.Member, amount, equipped, options):
             available = self.bot.db.get_wheelspin_available(member.guild.id, member.id)
             amount = options['amount'] * amount
             if available is None:
@@ -38,7 +38,7 @@ class WheelspinModule(SparkModule):
             hook_id='give-wheelspin',
             name='Give Wheelspin',
             options={
-                'amount': {'type': int, 'description': self.bot.i18n.get('GIVE_WHEELSPINS_AMOUNT_DESCRIPTION')},
+                'amount': {'type': 'float', 'description': self.bot.i18n.get('GIVE_WHEELSPINS_AMOUNT_DESCRIPTION')},
             },
             callback=give_wheelspins
         )

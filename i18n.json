@@ -199,11 +199,21 @@
   "INVENTORY_USE_COMMAND_DESCRIPTION": "Use an item",
   "INVENTORY_USE_ITEM_OPTION": "the item you want to use",
   "INVENTORY_USE_ITEM_SUCCESSFUL": "Item **{}** was used successfully",
+  "INVENTORY_EQUIP_COMMAND": "equip",
+  "INVENTORY_EQUIP_COMMAND_DESCRIPTION": "Equip an item",
+  "INVENTORY_EQUIP_ITEM_OPTION": "the item you want to equip",
+  "INVENTORY_EQUIP_ITEM_SUCCESSFUL": "Item **{}** was equipped successfully",
+  "INVENTORY_UNEQUIP_COMMAND": "unequip",
+  "INVENTORY_UNEQUIP_COMMAND_DESCRIPTION": "Unequip an item",
+  "INVENTORY_UNEQUIP_ITEM_OPTION": "the item you want to enequip",
+  "INVENTORY_UNEQUIP_ITEM_SUCCESSFUL": "Item **{}** was unequipped successfully",
   "INVENTORY_TITLE": "Inventory of {}",
   "INVENTORY_ITEM": "{} (x{:g})",
   "INVENTORY_ADMIN_GIVE_COMMAND": "admin-give",
   "INVENTORY_ADMIN_GIVE_COMMAND_SUCCESS": "Successfully added \"{}\" of \"{}\"",
   "INVENTORY_ADMIN_GIVE_COMMAND_DESCRIPTION": "Create and give user item",
   "INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION": "What item to create",
-  "GIVE_WHEELSPINS_AMOUNT_DESCRIPTION": "How many wheelspins to give"
+  "GIVE_WHEELSPINS_AMOUNT_DESCRIPTION": "How many wheelspins to give",
+  "CUSTOM_PROFILE_CARD_TEMPLATE_DESCRIPTION": "Custom Profile Card",
+  "CUSTOM_PROFILE_CARD_EXPIRES_DESCRIPTION": "Expires after X hours (-1 for never)"
 }

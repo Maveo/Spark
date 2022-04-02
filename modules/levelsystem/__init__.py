@@ -218,7 +218,7 @@ class LevelsystemModule(SparkModule):
             )
         ]
 
-        async def give_xp_boost(member: discord.Member, amount, options):
+        async def give_xp_boost(member: discord.Member, amount, equipped, options):
             current_time = time.time()
             self.bot.db.add_xp_boost(
                 member.guild.id,
@@ -234,13 +234,13 @@ class LevelsystemModule(SparkModule):
             hook_id='xp-boost',
             name='XP Boost',
             options={
-                'amount': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
-                'duration': {'type': int, 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
+                'amount': {'type': 'float', 'description': self.bot.i18n.get('XP_BOOST_AMOUNT_DESCRIPTION')},
+                'duration': {'type': 'float', 'description': self.bot.i18n.get('XP_BOOST_DURATION_DESCRIPTION')},
             },
             callback=give_xp_boost
         )
 
-        async def add_level(member: discord.Member, amount, options):
+        async def add_level(member: discord.Member, amount, equipped, options):
             if not await self.leveling_allowed(member):
                 return
             await self.check_level_user(member)
@@ -257,7 +257,7 @@ class LevelsystemModule(SparkModule):
             hook_id='level-add',
             name='Level Add',
             options={
-                'amount': {'type': int, 'description': self.bot.i18n.get('LEVEL_GIVE_AMOUNT_DESCRIPTION')},
+                'amount': {'type': 'float', 'description': self.bot.i18n.get('LEVEL_GIVE_AMOUNT_DESCRIPTION')},
             },
             callback=add_level
         )

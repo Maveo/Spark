@@ -4,6 +4,9 @@ import logging
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 GLOBAL_SETTINGS = {
+    'DATABASE_URL': '{protocol}://{hostname}/{path}'.format(protocol='sqlite',
+                                                            hostname='',
+                                                            path=os.path.join(current_dir, 'dbs', 'bot.db')),
     'APPLICATION_ID': '',
     'APPLICATION_SECRET': '',
     'ACTIVATE_WEBSERVER': True,

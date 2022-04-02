@@ -139,7 +139,7 @@ async def get_item_action_options(module: 'InventoryModule',
         'actions': {action_id: {
             'name': action['name'],
             'options': {k: {
-                'type': v['type'].__name__,
+                'type': v['type'],
                 'description': v['description']
             }
                 for k, v in action['options'].items()}}

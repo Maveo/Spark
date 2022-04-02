@@ -203,7 +203,9 @@ def main(token=None):
             await merge(self)
 
     b = MDiscordBot(
-        Database(path=new_db_file),
+        Database('{protocol}://{hostname}/{path}'.format(protocol='sqlite',
+                                                         hostname='',
+                                                         path=new_db_file)),
         current_dir=os.path.join(current_dir, '..')
     )
 

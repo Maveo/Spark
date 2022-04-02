@@ -14,7 +14,7 @@ class Tests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         cls.bot = DiscordBot(
-            Database(''),
+            Database('sqlite:///'),
             I18nManager(data={})
         )
 
@@ -40,8 +40,9 @@ class Tests(unittest.IsolatedAsyncioTestCase):
                 'rarity_id': 1,
                 'always_visible': False,
                 'tradable': False,
+                'equippable': False,
                 'useable': 1,
-                'action': '',
+                'actions': [],
             })
         await self.bot.module_manager.activate_module(g.id, 'wheelspin', sync=False)
         wheelspin: WheelspinModule = self.bot.module_manager.get('wheelspin')

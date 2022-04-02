@@ -55,6 +55,11 @@ class PromoCodeNotFoundException(WrongInputException):
         super().__init__(*args, **kwargs)
 
 
+class ItemNotFoundException(WrongInputException):
+    def __init__(self, *args, **kwargs):
+        self.description = 'item not found'
+        super().__init__(*args, **kwargs)
+
 class ItemNotUsableException(WrongInputException):
     pass
 

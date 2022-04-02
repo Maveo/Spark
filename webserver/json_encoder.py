@@ -104,9 +104,9 @@ def create_json_encoder(bot: 'DiscordBot'):
                     'rarity_id': o.rarity_id,
                     'always_visible': o.always_visible,
                     'tradable': o.tradable,
+                    'equippable': o.equippable,
                     'useable': o.useable,
-                    'action': o.action,
-                    'action_options': json.loads(o.action_options),
+                    'actions': json.loads(o.actions),
                 }
 
             if isinstance(o, WheelspinProbability):

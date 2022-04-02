@@ -3,8 +3,9 @@ import json
 import discord
 import discord.commands
 
-from helpers.exceptions import WrongInputException, UnknownException, ItemNotUsableException
-from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK, INVENTORY_ADD_ITEM_HOOK
+from helpers.exceptions import WrongInputException, UnknownException, ItemNotUsableException, ItemNotFoundException
+from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK, INVENTORY_ADD_ITEM_HOOK, \
+    INVENTORY_EQUIPPED_ITEMS_HOOK
 from helpers.spark_module import SparkModule
 from helpers.tools import make_linear_gradient, autocomplete_match
 from .settings import SETTINGS
@@ -68,11 +69,65 @@ class InventoryModule(SparkModule):
             try:
                 item_type_id = int(item[4:].split(' ')[0])
             except:
-                raise UnknownException('Item not found')
+                raise ItemNotFoundException()
             res = await self.use_item(ctx.author, item_type_id, 1)
             return await ctx.respond(
                 embed=discord.Embed(title='',
                                     description=self.bot.i18n.get('INVENTORY_USE_ITEM_SUCCESSFUL').format(res),
+                                    color=discord.Color.green()), ephemeral=True)
+
+        async def equip_item_autocomplete(ctx: discord.AutocompleteContext):
+            return autocomplete_match(ctx.value, list(map(
+                lambda item: 'ID: {} Rarity: {} Name: {} Amount: {:g}'.format(
+                    item.InventoryItemType.id,
+                    item.InventoryRarity.name,
+                    item.InventoryItemType.name,
+                    item.UserInventoryItem.amount
+                ),
+                self.bot.db.get_user_equippable_items(ctx.interaction.guild.id, ctx.interaction.user.id))))
+
+        async def equip_item(ctx: discord.commands.context.ApplicationContext,
+                             item: discord.commands.Option(
+                                 str,
+                                 description=bot.i18n.get('INVENTORY_EQUIP_ITEM_OPTION'),
+                                 autocomplete=equip_item_autocomplete
+                             )
+                             ):
+            try:
+                item_type_id = int(item[4:].split(' ')[0])
+            except:
+                raise ItemNotFoundException()
+            res = await self.use_item(ctx.author, item_type_id, 1)
+            return await ctx.respond(
+                embed=discord.Embed(title='',
+                                    description=self.bot.i18n.get('INVENTORY_EQUIP_ITEM_SUCCESSFUL').format(res),
+                                    color=discord.Color.green()), ephemeral=True)
+
+        async def unequip_item_autocomplete(ctx: discord.AutocompleteContext):
+            return autocomplete_match(ctx.value, list(map(
+                lambda item: 'ID: {} Rarity: {} Name: {} Amount: {:g}'.format(
+                    item.InventoryItemType.id,
+                    item.InventoryRarity.name,
+                    item.InventoryItemType.name,
+                    item.UserInventoryItem.amount
+                ),
+                self.bot.db.get_user_equipped_items(ctx.interaction.guild.id, ctx.interaction.user.id))))
+
+        async def unequip_item(ctx: discord.commands.context.ApplicationContext,
+                               item: discord.commands.Option(
+                                   str,
+                                   description=bot.i18n.get('INVENTORY_UNEQUIP_ITEM_OPTION'),
+                                   autocomplete=unequip_item_autocomplete
+                               )
+                               ):
+            try:
+                item_type_id = int(item[4:].split(' ')[0])
+            except:
+                raise ItemNotFoundException()
+            res = await self.use_item(ctx.author, item_type_id, 1)
+            return await ctx.respond(
+                embed=discord.Embed(title='',
+                                    description=self.bot.i18n.get('INVENTORY_UNEQUIP_ITEM_SUCCESSFUL').format(res),
                                     color=discord.Color.green()), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
@@ -93,7 +148,7 @@ class InventoryModule(SparkModule):
             try:
                 item_type_id = int(item_type[4:].split(' ')[0])
             except:
-                raise UnknownException('Item not found')
+                raise ItemNotFoundException()
             await self.give_item(member, item_type_id, amount)
             return await ctx.respond(
                 embed=discord.Embed(title='',
@@ -128,6 +183,20 @@ class InventoryModule(SparkModule):
         ))
 
         inventory.subcommands.append(discord.SlashCommand(
+            func=equip_item,
+            name=self.bot.i18n.get('INVENTORY_EQUIP_COMMAND'),
+            description=self.bot.i18n.get('INVENTORY_EQUIP_COMMAND_DESCRIPTION'),
+            parent=inventory
+        ))
+
+        inventory.subcommands.append(discord.SlashCommand(
+            func=unequip_item,
+            name=self.bot.i18n.get('INVENTORY_UNEQUIP_COMMAND'),
+            description=self.bot.i18n.get('INVENTORY_UNEQUIP_COMMAND_DESCRIPTION'),
+            parent=inventory
+        ))
+
+        inventory.subcommands.append(discord.SlashCommand(
             func=admin_give_item,
             name=self.bot.i18n.get('INVENTORY_ADMIN_GIVE_COMMAND'),
             description=self.bot.i18n.get('INVENTORY_ADMIN_GIVE_COMMAND_DESCRIPTION'),
@@ -139,15 +208,26 @@ class InventoryModule(SparkModule):
         ]
 
         self.bot.module_manager.hooks.add(self, INVENTORY_ADD_ITEM_HOOK, 'inventory', callback=self.give_item)
+        self.bot.module_manager.hooks.add(self, INVENTORY_EQUIPPED_ITEMS_HOOK, 'inventory',
+                                          callback=self.equipped_items)
+
+    async def equipped_items(self, member: discord.Member, item_action: str):
+        actions = []
+        for item in self.bot.db.get_user_equipped_items_by_action(member.guild.id, member.id, item_action):
+            iactions = json.loads(item.InventoryItemType.actions)
+            for action in iactions:
+                if action['action'] == item_action:
+                    actions.append(action['action_options'])
+        return actions
 
     async def get_inventory(self, member: discord.Member):
         return list(map(lambda item: {
-                'item_name': item.InventoryItemType.name,
-                'item_amount': item.UserInventoryItem.amount,
-                'rarity_name': item.InventoryRarity.name,
-                'rarity_foreground_color': make_linear_gradient(item.InventoryRarity.foreground_color),
-                'rarity_background_color': make_linear_gradient(item.InventoryRarity.background_color)
-            }, self.bot.db.get_user_items(member.guild.id, member.id)))
+            'item_name': item.InventoryItemType.name,
+            'item_amount': item.UserInventoryItem.amount,
+            'rarity_name': item.InventoryRarity.name,
+            'rarity_foreground_color': make_linear_gradient(item.InventoryRarity.foreground_color),
+            'rarity_background_color': make_linear_gradient(item.InventoryRarity.background_color)
+        }, self.bot.db.get_user_items(member.guild.id, member.id)))
 
     async def give_item(self, member: discord.Member, item_type_id, amount):
         item_type = self.bot.db.get_item_type_by_id(member.guild.id, item_type_id)
@@ -156,15 +236,20 @@ class InventoryModule(SparkModule):
             await self.use_item(member, item_type_id, amount)
 
     async def use_item(self, member: discord.Member, item_type_id, amount):
-        if not self.bot.db.use_inventory_item(member.guild.id, member.id, item_type_id, amount):
+        success, item = self.bot.db.use_inventory_item(member.guild.id, member.id, item_type_id, amount)
+        if not success:
             raise ItemNotUsableException('item not useable')
-        item_type = self.bot.db.get_item_type_by_id(member.guild.id, item_type_id)
-        if item_type.action != '':
+        item_type = item.InventoryItemType
+        loaded_actions = json.loads(item_type.actions)
+        for action in loaded_actions:
             hooks = self.bot.module_manager.hooks.get(member.guild.id, INVENTORY_ITEM_ACTION_HOOK)
-            if item_type.action not in hooks:
+            if action['action'] not in hooks:
                 raise UnknownException('Item action not found')
 
-            await hooks[item_type.action]['callback'](member, amount, json.loads(item_type.action_options))
+            await hooks[action['action']]['callback'](member,
+                                                      amount,
+                                                      item.UserInventoryItem.equipped,
+                                                      action['action_options'])
         return item_type.name
 
     async def create_rarity_image_by_template(self, rarity, template):
@@ -212,13 +297,16 @@ class InventoryModule(SparkModule):
     async def edit_item_type(self, guild: discord.Guild, item_type):
         try:
             actions = self.bot.module_manager.hooks.get(guild.id, INVENTORY_ITEM_ACTION_HOOK)
-            if item_type['action'] == '':
-                action_options_json = '{}'
-            elif item_type['action'] not in actions:
-                raise WrongInputException('action "{}" not found'.format(item_type['action']))
-            else:
-                action_options_json = json.dumps({k: item_type['action_options'][k]['value']
-                                                  for k, v in actions[item_type['action']]['options'].items()})
+            item_actions = []
+            for item_action in item_type['actions']:
+                if item_action['action'] not in actions:
+                    raise WrongInputException('action "{}" not found'.format(item_type['action']))
+
+                item_actions.append({'action': item_action['action'], 'action_options': {
+                    k: item_action['action_options'][k]['value']
+                    for k, v in actions[item_action['action']]['options'].items()}
+                })
+
             self.bot.db.edit_inventory_item_type(
                 guild.id,
                 item_type['id'] if 'id' in item_type else None,
@@ -226,9 +314,9 @@ class InventoryModule(SparkModule):
                 item_type['rarity_id'],
                 item_type['always_visible'],
                 item_type['tradable'],
+                item_type['equippable'],
                 item_type['useable'],
-                item_type['action'],
-                action_options_json,
+                json.dumps(item_actions)
             )
         except KeyError:
             raise WrongInputException('missing parameter')

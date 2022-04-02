@@ -179,6 +179,12 @@
                                                 Tradable
                                             </label>
                                         </div>
+                                        <div class="form-check form-check-inline">
+                                            <input v-model="edit_create_item_type.equippable" class="form-check-input" type="checkbox" value="" id="equippableCheckbox">
+                                            <label class="form-check-label" for="equippableCheckbox">
+                                                Equippable
+                                            </label>
+                                        </div>
                                     </div>
                                     <div class="mb-2">   
                                         <div class="input-group input-group-sm">
@@ -196,26 +202,38 @@
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="mb-2">   
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text">Action</span>
-                                            <select v-model="edit_create_item_type.action" class="form-select form-select-sm">
-                                                <option value="" selected>No action</option>
-                                                <option :value="action_id" v-for="(action, action_id) in item_action_options" :key="action_id">{{action.name}}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <template v-for="(action, action_id) in item_action_options" :key="action_id">
-                                        <template v-if="edit_create_item_type.action == action_id">
-                                            <div v-for="(option, id) in action.options" :key="id" class="mb-2">
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text">{{option.description}}</span>
-                                                    <input v-if="option.type == 'int'" v-model="option.value" type="number" class="form-control form-control-sm font-weight-bold" required>
-                                                    <input v-if="option.type == 'str'" v-model="option.value" type="text" class="form-control form-control-sm font-weight-bold" required>
-                                                </div>
+                                    <template v-for="(action, index) in edit_create_item_type.actions" :key="index">
+                                        <div class="mb-2 d-flex">   
+                                            <div class="input-group input-group-sm me-1">
+                                                <span class="input-group-text">Action</span>
+                                                <select v-model="action.action" class="form-select form-select-sm" required>
+                                                    <option value="" selected>Choose action...</option>
+                                                    <option :value="action_id" v-for="(iaction, action_id) in action.action_options" :key="action_id">{{iaction.name}}</option>
+                                                </select>
                                             </div>
+                                            <button type="button" class="btn btn-danger btn-sm" @click="edit_create_item_type.actions.splice(index, 1)">
+                                                <i class="fas fa-fw fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        <template v-for="(iaction, action_id) in action.action_options" :key="action_id">
+                                            <template v-if="action.action == action_id">
+                                                <div v-for="(option, id) in iaction.options" :key="id" class="mb-2">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-text">{{option.description}}</span>
+                                                        <input v-if="option.type == 'int'" v-model="option.value" type="number" class="form-control form-control-sm font-weight-bold" required>
+                                                        <input v-if="option.type == 'float'" v-model="option.value" type="number" step="0.0001" class="form-control form-control-sm font-weight-bold" required>
+                                                        <input v-else-if="option.type == 'str'" v-model="option.value" type="text" class="form-control form-control-sm font-weight-bold" required>
+                                                        <textarea v-else-if="option.type == 'text'" v-model="option.value" type="text" rows="4" class="form-control form-control-sm font-weight-bold" required />
+                                                    </div>
+                                                </div>
+                                            </template>
                                         </template>
                                     </template>
+                                    <div class="mb-2">
+                                        <button type="button" class="btn btn-success btn-sm font-weight-bold" @click="add_edit_create_item_type_action()">
+                                            Add action
+                                        </button>
+                                    </div>
                                     <div class="">
                                         <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold">
                                             {{edit_create_item_type_text}}
@@ -398,33 +416,33 @@ export default defineComponent({
             useable: -1,
             always_visible: false,
             tradable: false,
-            action: '',
+            equippable: false,
+            actions: [],
         };
-        for (let key of Object.keys(this.item_action_options)) {
-            for (let option_key of Object.keys(this.item_action_options[key].options)) {
-                this.item_action_options[key].options[option_key].value = undefined;
-            }
-        }
         this.edit_create_item_type_text = 'Create Item Type';
     },
     edit_item_type(item: any) {
         console.log(item);
         this.edit_create_item_type = item;
-        for (let key of Object.keys(this.item_action_options)) {
-            for (let option_key of Object.keys(this.item_action_options[key].options)) {
-                if (key == item.action) {
-                    this.item_action_options[key].options[option_key].value = item.action_options[option_key];
-                } else {
-                    this.item_action_options[key].options[option_key].value = undefined;
-                }
+        for (let action of this.edit_create_item_type.actions) {
+            let new_action_options = JSON.parse(JSON.stringify(this.item_action_options));
+            for (let option_key of Object.keys(action.action_options)) {
+                new_action_options[action.action].options[option_key].value = action.action_options[option_key];
             }
+            action.action_options = new_action_options;
         }
         this.edit_create_item_type_text=`Edit Item (ID: ${item.id})`;
     },
+    add_edit_create_item_type_action() {
+        this.edit_create_item_type.actions.push({
+            action: '',
+            action_options: JSON.parse(JSON.stringify(this.item_action_options))
+        });
+    },
     edit_item_type_submit() {
         document.getElementById('closeCreateEditItemTypeModal')?.click();
-        if (this.edit_create_item_type.action) {
-            this.edit_create_item_type.action_options = this.item_action_options[this.edit_create_item_type.action].options;
+        for (let action of this.edit_create_item_type.actions) {
+            action.action_options = action.action_options[action.action].options;
         }
         api.edit_item_type(
             this.edit_create_item_type

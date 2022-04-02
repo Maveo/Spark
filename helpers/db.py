@@ -122,9 +122,9 @@ class InventoryItemType(Base):
     rarity_id = db.Column(db.Integer, nullable=False)
     always_visible = db.Column(db.Boolean, nullable=False)
     tradable = db.Column(db.Boolean, nullable=False)
+    equippable = db.Column(db.Boolean, nullable=False)
     useable = db.Column(db.Integer, nullable=False)
-    action = db.Column(db.String, nullable=False)
-    action_options = db.Column(db.String, nullable=False)
+    actions = db.Column(db.String, nullable=False)
     __table_args__ = (db.ForeignKeyConstraint((rarity_id,),
                                               [InventoryRarity.id]),
                       {})
@@ -137,6 +137,7 @@ class UserInventoryItem(Base):
     user_id = db.Column(db.Integer, primary_key=True)
     item_type_id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
+    equipped = db.Column(db.Boolean, nullable=False)
     __table_args__ = (db.ForeignKeyConstraint((item_type_id,),
                                               [InventoryItemType.id]),
                       {})
@@ -179,8 +180,8 @@ class StoreItems(Base):
 
 
 class Database:
-    def __init__(self, path, logger=None, protocol='sqlite', hostname=''):
-        engine = db.create_engine('{}://{}/{}'.format(protocol, hostname, path))
+    def __init__(self, db_url, logger=None):
+        engine = db.create_engine(db_url)
         Base.metadata.create_all(engine)
 
         self.logger = logger
@@ -380,7 +381,8 @@ class Database:
                     InventoryRarity.background_color: background_color,
                 })
         else:
-            stmt = session.query(InventoryRarity, func.count().label("count")).filter(InventoryRarity.guild_id == guild_id)
+            stmt = session.query(InventoryRarity, func.count().label("count")).filter(
+                InventoryRarity.guild_id == guild_id)
             session.add(InventoryRarity(guild_id=guild_id,
                                         name=name,
                                         foreground_color=foreground_color,
@@ -426,9 +428,9 @@ class Database:
                                  rarity_id,
                                  always_visible,
                                  tradable,
+                                 equippable,
                                  useable,
-                                 action,
-                                 action_options
+                                 actions,
                                  ):
         session = self.Session()
         if item_type_id is not None:
@@ -439,9 +441,9 @@ class Database:
                     InventoryItemType.rarity_id: rarity_id,
                     InventoryItemType.always_visible: always_visible,
                     InventoryItemType.tradable: tradable,
+                    InventoryItemType.equippable: equippable,
                     InventoryItemType.useable: useable,
-                    InventoryItemType.action: action,
-                    InventoryItemType.action_options: action_options
+                    InventoryItemType.actions: actions,
                 })
         else:
             session.add(InventoryItemType(guild_id=guild_id,
@@ -450,9 +452,9 @@ class Database:
                                           rarity_id=rarity_id,
                                           always_visible=always_visible,
                                           tradable=tradable,
+                                          equippable=equippable,
                                           useable=useable,
-                                          action=action,
-                                          action_options=action_options
+                                          actions=actions,
                                           ))
         session.commit()
 
@@ -496,14 +498,25 @@ class Database:
             return 0
         return res.amount
 
-    def add_user_item(self, guild_id, user_id, item_type_id, amount):
+    def add_user_item(self, guild_id, user_id, item_type_id, amount, equipped=False):
         amount += self.get_user_item_amount(guild_id, user_id, item_type_id)
         session = self.Session()
         session.merge(UserInventoryItem(guild_id=guild_id,
                                         user_id=user_id,
                                         item_type_id=item_type_id,
-                                        amount=amount
+                                        amount=amount,
+                                        equipped=equipped,
                                         ))
+        session.commit()
+
+    def equip_user_item(self, guild_id, user_id, item_type_id, equip):
+        session = self.Session()
+        session.query(UserInventoryItem).filter(db.and_(UserInventoryItem.guild_id == guild_id,
+                                                        UserInventoryItem.user_id == user_id,
+                                                        UserInventoryItem.item_type_id == item_type_id)).update(
+            {
+                UserInventoryItem.equipped: equip
+            })
         session.commit()
 
     def get_user_items(self, guild_id, user_id):
@@ -533,6 +546,7 @@ class Database:
                     UserInventoryItem.user_id == user_id,
                     UserInventoryItem.amount >= 1,
                     InventoryItemType.useable >= 1,
+                    InventoryItemType.equippable == db.false()
                     )
         ).order_by(InventoryRarity.order.asc())
         return query.all()
@@ -555,10 +569,67 @@ class Database:
         )
         res = query.first()
         if res is None:
-            return False
+            return False, None
         if res.InventoryItemType.useable != 2:
             self.add_user_item(guild_id, user_id, item_type_id, -amount)
-        return True
+
+        if res.InventoryItemType.equippable:
+            res.UserInventoryItem.equipped = not res.UserInventoryItem.equipped
+            self.equip_user_item(guild_id, user_id, item_type_id, res.UserInventoryItem.equipped)
+
+        return True, res
+
+    def get_user_equippable_items(self, guild_id, user_id):
+        session = self.Session()
+        query = session.query(
+            UserInventoryItem, InventoryItemType, InventoryRarity
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
+            .filter(
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    UserInventoryItem.amount >= 1,
+                    UserInventoryItem.equipped == db.false(),
+                    InventoryItemType.useable >= 1,
+                    InventoryItemType.equippable == db.true()
+                    )
+        ).order_by(InventoryRarity.order.asc())
+        return query.all()
+
+    def get_user_equipped_items(self, guild_id, user_id):
+        session = self.Session()
+        query = session.query(
+            UserInventoryItem, InventoryItemType, InventoryRarity
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
+            .filter(
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    UserInventoryItem.amount >= 1,
+                    UserInventoryItem.equipped == db.true(),
+                    InventoryItemType.useable >= 1,
+                    InventoryItemType.equippable == db.true()
+                    )
+        ).order_by(InventoryRarity.order.asc())
+        return query.all()
+
+    def get_user_equipped_items_by_action(self, guild_id, user_id, action):
+        session = self.Session()
+        query = session.query(
+            UserInventoryItem, InventoryItemType, InventoryRarity
+        ).join(InventoryItemType, UserInventoryItem.item_type) \
+            .join(InventoryRarity, InventoryItemType.rarity) \
+            .filter(
+            db.and_(UserInventoryItem.guild_id == guild_id,
+                    UserInventoryItem.user_id == user_id,
+                    UserInventoryItem.amount >= 1,
+                    UserInventoryItem.equipped == db.true(),
+                    InventoryItemType.actions.contains(f"\"action\": \"{action}\""),
+                    InventoryItemType.useable >= 1,
+                    InventoryItemType.equippable == db.true()
+                    )
+        ).order_by(InventoryRarity.order.asc())
+        return query.all()
 
     def get_wheelspin(self, guild_id):
         session = self.Session()

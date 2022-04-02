@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 INVENTORY_ITEM_ACTION_HOOK = 'inventory-item-action'
 INVENTORY_ADD_ITEM_HOOK = 'inventory-add-item'
+INVENTORY_EQUIPPED_ITEMS_HOOK = 'inventory-equipped-items'
 
 
 class ModuleHookManager:
@@ -15,6 +16,7 @@ class ModuleHookManager:
         self.module_manager = module_manager
         self.hooks: Dict[str, Dict[str, Dict[str, Dict]]] = {
             INVENTORY_ITEM_ACTION_HOOK: {},
+            INVENTORY_EQUIPPED_ITEMS_HOOK: {},
             INVENTORY_ADD_ITEM_HOOK: {}
         }
 
