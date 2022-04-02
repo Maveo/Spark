@@ -38,7 +38,7 @@ inventory_image = ImageStackResolveString('''<defs>
 <rect x="50" y="230" width="1300" height="{{ (((items | length + 1) / 2) | int) * 220 + 30 }}" fill="#393b41" rx="50" ry="50" />
 {% for item in items %}
 <rect x="{{ ((loop.index + 1) % 2) * 620 + 100 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 50 }}" width="580" height="180" fill="#454951" rx="30" ry="30" />
-<text x="{{ ((loop.index + 1) % 2) * 620 + 390 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 120 }}" text-anchor="middle" width="580" height="180" fill="#ffffff" font-size="50" font-family="Product Sans" font-weight="bold">{{item.item_name}}</text>
+<text x="{{ ((loop.index + 1) % 2) * 620 + 390 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 120 }}" text-anchor="middle" width="580" height="180" fill="#ffffff" font-size="50" font-family="Product Sans" font-weight="bold">{% if item.item_equipped %}✔️ {% endif %}{{item.item_name}}</text>
 <rect x="{{ ((loop.index + 1) % 2) * 620 + 120 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 160 }}" width="360" height="50" fill="url(#bgcolor{{ loop.index }})" rx="15" ry="15" />
 <text x="{{ ((loop.index + 1) % 2) * 620 + 300 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 194 }}" text-anchor="middle" font-size="30" font-family="Product Sans" fill="url(#fgcolor{{ loop.index }})">{{ item.rarity_name }}</text>
 <rect x="{{ ((loop.index + 1) % 2) * 620 + 490 }}" y="{{ ((loop.index + 1) / 2) | int * 220 + 160 }}" width="170" height="50" fill="#303237" rx="15" ry="15" />

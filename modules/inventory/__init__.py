@@ -222,6 +222,7 @@ class InventoryModule(SparkModule):
 
     async def get_inventory(self, member: discord.Member):
         return list(map(lambda item: {
+            'item_equipped': item.UserInventoryItem.equipped,
             'item_name': item.InventoryItemType.name,
             'item_amount': item.UserInventoryItem.amount,
             'rarity_name': item.InventoryRarity.name,
