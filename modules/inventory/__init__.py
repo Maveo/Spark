@@ -222,9 +222,10 @@ class InventoryModule(SparkModule):
 
     async def get_inventory(self, member: discord.Member):
         return list(map(lambda item: {
-            'item_equipped': item.UserInventoryItem.equipped,
             'item_name': item.InventoryItemType.name,
             'item_amount': item.UserInventoryItem.amount,
+            'item_equipped': item.UserInventoryItem.equipped,
+            'item_equippable': item.InventoryItemType.equippable,
             'rarity_name': item.InventoryRarity.name,
             'rarity_foreground_color': make_linear_gradient(item.InventoryRarity.foreground_color),
             'rarity_background_color': make_linear_gradient(item.InventoryRarity.background_color)
