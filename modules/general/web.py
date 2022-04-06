@@ -313,6 +313,7 @@ async def change_emoji(module: 'GeneralModule',
         raise MethodNotAvailableException('cannot save emojis')
 
     emoji_id = from_char(request.form['emoji'])
+    module.bot.image_creator.emoji_loader.cached_images.clear()
     request.files['emoji_file'].save(os.path.join(module.bot.image_creator.emoji_loader.emoji_path,
                                                   emoji_id + '.png'))
     module.bot.logger.info('saved new image for emoji {}'.format(emoji_id))
