@@ -72,34 +72,34 @@ These modules contain their respective commands and settings.
 
 These Settings are applied globally and **cannot be changed without restarting** the application
 
+- **DATABASE_URL**
+
+  The url for the database of spark (e.g. ```mongodb://example.com:27017/```)
 - **APPLICATION_ID**
 
   This is the Application-ID for your Discord Developer Application
 - **APPLICATION_SECRET**
 
   This is the Oauth2-Application-Secret for your Discord Developer Application
+- **ACTIVATE_WEBSERVER**
+
+  If the webserver should be activated
 - **OAUTH2_REDIRECT_URI**
 
   This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2)
   You also need to set this up in the Discord Developer Settings
+- **WEBSERVER_SECRET**
+
+  A secret to encrypt the webserver sessions
 - **WEBSERVER_PORT**
 
   This is the Port for the Webserver
 - **TOKEN** 
 
   This is the Token of your Discord Bot
-- **COMMAND_PREFIX**
+- **INTERVAL_TIME**
 
-  This is the Command Prefix for the Discord Bot
-- **PRINT_LOGGING**
-
-   Enable/disable log printing to the console
-- **USE_SLASH_COMMANDS**
-
-   Configures if [discord-py-slash-commands](https://github.com/eunwoo1104/discord-py-slash-command "Visit their GitHub page") should be used to interact with the [Discord Slash Commands API](https://discord.com/developers/docs/interactions/slash-commands "Official Discord documentation")
-- **UPDATE_VOICE_XP_INTERVAL**
-
-   The interval in which users automatically recieve their xp for being in a voice channel (in seconds | use -1 for no update interval)
+   The interval in which the modules do their scheduled update (in seconds | use -1 for no update interval)
 - **DOWNLOAD_EMOJIS**
 
   If emojis should be acquired from [emojipedia](https://emojipedia.org/).
