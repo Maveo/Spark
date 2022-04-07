@@ -195,7 +195,7 @@ export default defineComponent({
   },
   methods: {
     inventory_amount(id: number) {
-        return (id in this.inventory) ? this.inventory[id] : 0;
+        return (id in this.inventory) ? this.inventory[id]['item_amount'] : 0;
     },
     update_store(loading = true) {
       if (loading) this.loading = true;

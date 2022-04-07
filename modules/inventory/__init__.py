@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 import discord
 import discord.commands
@@ -24,7 +25,7 @@ class InventoryModule(SparkModule):
 
         async def get_inventory(ctx: discord.commands.context.ApplicationContext):
             return await ctx.respond(file=await self.create_inventory_image(
-                ctx.author.guild.id, await self.get_inventory(ctx.author)),
+                ctx.author.guild.id, (await self.get_inventory(ctx.author)).values()),
                                      ephemeral=True)
 
         async def list_inventory(ctx: discord.commands.context.ApplicationContext):
@@ -154,7 +155,7 @@ class InventoryModule(SparkModule):
                 embed=discord.Embed(title='',
                                     description=self.bot.i18n.get('INVENTORY_ADMIN_GIVE_COMMAND_SUCCESS')
                                     .format(amount, item_type),
-                                    color=discord.Color.green()))
+                                    color=discord.Color.green()), ephemeral=True)
 
         inventory = discord.SlashCommandGroup(
             name=self.bot.i18n.get('INVENTORY_COMMAND'),
@@ -220,16 +221,17 @@ class InventoryModule(SparkModule):
                     actions.append(action['action_options'])
         return actions
 
-    async def get_inventory(self, member: discord.Member):
-        return list(map(lambda item: {
+    async def get_inventory(self, member: discord.Member) -> Dict:
+        return dict(map(lambda item: (item.UserInventoryItem.item_type_id, {
             'item_name': item.InventoryItemType.name,
             'item_amount': item.UserInventoryItem.amount,
+            'item_useable': item.InventoryItemType.useable,
             'item_equipped': item.UserInventoryItem.equipped,
             'item_equippable': item.InventoryItemType.equippable,
             'rarity_name': item.InventoryRarity.name,
             'rarity_foreground_color': make_linear_gradient(item.InventoryRarity.foreground_color),
             'rarity_background_color': make_linear_gradient(item.InventoryRarity.background_color)
-        }, self.bot.db.get_user_items(member.guild.id, member.id)))
+        }), self.bot.db.get_user_items(member.guild.id, member.id)))
 
     async def give_item(self, member: discord.Member, item_type_id, amount):
         item_type = self.bot.db.get_item_type_by_id(member.guild.id, item_type_id)

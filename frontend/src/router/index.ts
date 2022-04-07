@@ -14,6 +14,7 @@ import Login from '../views/Login.vue'
 import InventorySystem from '../views/InventorySystem.vue'
 import Wheelspin from '../views/Wheelspin.vue'
 import Store from '../views/Store.vue'
+import Inventory from '../views/Inventory.vue'
 
 
 const routes: Array<RouteRecordRaw> = [
@@ -56,6 +57,12 @@ const routes: Array<RouteRecordRaw> = [
         path: '/store/:id',
         name: 'Store',
         component: Store,
+        meta: { requiresLogin: true, requiresServer: true }
+    },
+    {
+        path: '/inventory/:id',
+        name: 'Inventory',
+        component: Inventory,
         meta: { requiresLogin: true, requiresServer: true }
     },
     {

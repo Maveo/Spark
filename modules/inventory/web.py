@@ -188,13 +188,25 @@ async def get_inventory(module: 'InventoryModule',
                         member: discord.Member):
     return jsonify({
         'msg': 'success',
-        'inventory': dict(map(lambda x: (x.UserInventoryItem.item_type_id, x.UserInventoryItem.amount),
-                              module.bot.db.get_user_items(guild.id, member.id)))
+        'inventory': await module.get_inventory(member)
+    }), 200
+
+
+async def use_item(module: 'InventoryModule',
+                   guild: discord.Guild,
+                   member: discord.Member):
+    json = request.get_json()
+    if json is None or 'item_type_id' not in json or 'amount' not in json:
+        raise WrongInputException('item_type_id or amount not provided')
+    await module.use_item(member, json['item_type_id'], json['amount'])
+    return jsonify({
+        'msg': 'success',
     }), 200
 
 
 API_PAGES = [
     Page(path='inventory', view_func=get_inventory),
+    Page(path='use-item', view_func=use_item, methods=['POST']),
     Page(path='edit-rarity', view_func=edit_rarity, methods=['POST']),
     Page(path='remove-rarity', view_func=remove_rarity, methods=['POST']),
     Page(path='set-rarity-order', view_func=set_rarity_order, methods=['POST']),

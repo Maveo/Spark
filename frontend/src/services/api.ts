@@ -549,6 +549,22 @@ function get_inventory(): Promise<AxiosResponse> {
     });
 }
 
+function use_item(item_type_id: number, amount: number): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/use-item',
+    {
+        item_type_id: item_type_id,
+        amount: amount,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
 
 const api = {
     get_auth,
@@ -593,7 +609,8 @@ const api = {
     set_store,
     get_store,
     buy_offer,
-    get_inventory
+    get_inventory,
+    use_item
 };
 
 export default api;
