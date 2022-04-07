@@ -4,6 +4,7 @@ import router from '@/router';
 import api from '@/services/api';
 import { ProfileModel } from '@/models/profile.model';
 import { ServerModel } from '@/models/server.model';
+import { AxiosError } from 'axios';
 
 
 export default createStore({
@@ -49,10 +50,17 @@ export default createStore({
         },
         async choose_server({ commit, dispatch }, id: string) {
             commit('set_global_loading', true);
-            const response = await api.get_guild(id);
-            commit('set_selected_server', response.data);
-            await dispatch('update_profile');
-            commit('set_global_loading', false);
+            try {
+                const response = await api.get_guild(id);
+                commit('set_selected_server', response.data);
+                await dispatch('update_profile');
+                commit('set_global_loading', false);
+            } catch(error: any){
+                if (error.response.status == 401) {
+                    router.push('login');
+                    commit('logout');
+                }
+            }
         },
     },
     plugins: [createPersistedState({

@@ -62,8 +62,8 @@ export default defineComponent({
         if (e.response) {
           console.log(e.response);
         }
-        store.commit("logout");
-        router.push("/login");
+        store.commit('logout');
+        router.push('login');
       });
   },
   methods: {
