@@ -262,6 +262,7 @@
 
   "STORE_PAY": "Bezahle",
   "STORE_BUY": "Kaufe",
+  "STORE_TO_GET": "um zu erhalten",
   "INVENTORY_YOU_HAVE": "im Besitz x{}",
 
   "STORE_TITLE": "Einkaufsladen",

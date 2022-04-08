@@ -21,7 +21,7 @@
                 </h2>
             </div>
             ({{ $filters.i18n('INVENTORY_YOU_HAVE', [inventory_amount(offer.from_item_type.id)]) }})
-            <h4 class="my-2">to get</h4>
+            <h4 class="my-2">{{ $filters.i18n('STORE_TO_GET') }}</h4>
             <div class="spark-rounded" :style="'background-image: ' + offer.to_background_color_html">
                 <h2 class="m-0 px-2 text-nowrap background-text" :style="'background-image: ' + offer.to_foreground_color_html">
                    x{{offer.to_item_amount}} {{offer.to_item_type.name}}

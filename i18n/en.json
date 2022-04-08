@@ -262,6 +262,7 @@
 
   "STORE_PAY": "Pay",
   "STORE_BUY": "Buy",
+  "STORE_TO_GET": "to get",
   "INVENTORY_YOU_HAVE": "you have x{}",
 
   "STORE_TITLE": "Store",
