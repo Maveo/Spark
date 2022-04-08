@@ -18,7 +18,7 @@
   "BOOSTED_BY": "Von *{}* läuft in **{}** Tagen **{}** Stunden ab",
   "BOOSTING_NO_ONE": "Du schiebst gerade niemanden!\nBenutze **\"schub {benutzer}\"** um die Schiebung zu starten!",
   "BOOSTING_USER": "Du schiebst **{}**!\nSchiebung läuft in **{}** Tagen **{}** Stunden ab!",
-  "BOOSTING_CURRENTLY": "Zurzeit schieben:",
+  "BOOSTING_CURRENTLY": "Zurzeit am schieben:",
   "DAYS_AND_HOURS": "{} Tage und {} Stunden",
   "BOOST_AGAIN_IN": "Schiebe erneut in {} Tagen und {} Stunden",
   "BOOST": "Schieben",
