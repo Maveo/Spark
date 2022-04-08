@@ -252,6 +252,14 @@ class DiscordBot:
         for module_name, module in self.module_manager.items():
             for command in module.commands:
                 command.guild_ids = modules_to_guilds[module_name]
+                if len(command.name) > 32:
+                    self.logger.warning('Command "{}" has a longer name than 32!'.format(command.name))
+                if hasattr(command, 'subcommands'):
+                    for subcommand in command.subcommands:
+                        if len(subcommand.name) > 32:
+                            self.logger.warning(
+                                'Subcommand "{}" of "{}" has a longer name than 32!'.format(subcommand.name,
+                                                                                            command.name))
                 self.bot.add_application_command(command)
         try:
             await self.bot.sync_commands()
