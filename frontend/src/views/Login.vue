@@ -27,7 +27,7 @@
                             <i v-if="!loading" class="fab fa-fw fa-discord"></i>
                             <span v-if="loading" class="spinner-border spinner-border-sm mb-1 me-2" role="status" aria-hidden="true"></span>
                         </div>
-                        Sign In with Discord
+                        {{ $filters.i18n('SIGN_IN_DISCORD') }}
                     </button>
                 </div>
 

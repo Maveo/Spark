@@ -2,6 +2,10 @@ import axios, { AxiosResponse, ResponseType } from 'axios';
 import { Subject } from 'rxjs';
 import store from '@/store';
 
+function get_i18n(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/i18n');
+}
+
 function get_auth(): Promise<AxiosResponse> {
     return axios.get(process.env.VUE_APP_API_BASE_URL + '/get-auth');
 }
@@ -567,6 +571,7 @@ function use_item(item_type_id: number, amount: number): Promise<AxiosResponse> 
 
 
 const api = {
+    get_i18n,
     get_auth,
     create_session,
     get_profile,

@@ -2,25 +2,25 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Admin Tools</h2>
-            <span class="text-gray4">Admins have fun!</span>
+            <h2>{{ $filters.i18n('ADMIN_TOOLS_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('ADMIN_TOOLS_SUBTITLE') }}</span>
         </div>
 
         <div class="view-main-card">
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
-                        <h5 class="mb-0">Nickname:</h5>
+                        <h5 class="mb-0">{{ $filters.i18n('NICKNAME') }}:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="set_nickname(nickname)">
                         <div class="me-3 flex-grow-1 d-flex justify-content-end">
-                            <input type="text" class="form-control form-control-sm" style="max-width: 200px;" placeholder="Nickname" v-model="nickname" required>
+                            <input type="text" class="form-control form-control-sm" style="max-width: 200px;" :placeholder="$filters.i18n('NICKNAME')" v-model="nickname" required>
                         </div>
                         <button type="button" class="btn btn-dark btn-sm" style="height: 31px;" @click="set_nickname(null)">
                             <i class="fas fa-fw fa-undo-alt"></i>
                         </button>
                         <button class="btn btn-info btn-sm ms-2 text-nowrap" type="submit">
-                            Send
+                            {{ $filters.i18n('SEND') }}
                         </button>
                     </form>
                 </div>
@@ -29,11 +29,11 @@
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
-                        <h5 class="mb-0">Audio:</h5>
+                        <h5 class="mb-0">{{ $filters.i18n('AUDIO') }}:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_voice_audio()">
                         <select class="me-2 form-select form-select-sm" v-model="selected_voice_channel" style="max-width: 180px;" required>
-                            <option value="0" hidden>Loading channels...</option>
+                            <option value="0" hidden>{{ $filters.i18n('LOADING_CHANNELS') }}</option>
                             <option v-for="option in voice_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
@@ -44,7 +44,7 @@
                             </div>
                         </div>
                         <button class="btn btn-info btn-sm text-nowrap" type="submit">
-                            Stream
+                            {{ $filters.i18n('SEND') }}
                         </button>
                     </form>
                 </div>
@@ -53,14 +53,14 @@
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
-                        <h5 class="mb-0">Invites:</h5>
+                        <h5 class="mb-0">{{ $filters.i18n('INVITES') }}:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center">
                         <button class="me-2 btn btn-info btn-sm text-nowrap" @click="create_invite()">
-                            Create Invite Link
+                            {{ $filters.i18n('CREATE_INVITE_LINK') }}
                         </button>
                         <button class="btn btn-info btn-sm text-nowrap" @click="get_invites()">
-                            Get Invite Links
+                            {{ $filters.i18n('GET_INVITE_LINKS') }}
                         </button>
                     </div>
                 </div>
@@ -69,20 +69,20 @@
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
-                        <h5 class="mb-0">Send:</h5>
+                        <h5 class="mb-0">{{ $filters.i18n('SEND_MESSAGE') }}:</h5>
                     </div>
                     <form class="my-2 d-flex align-items-center flex-grow-1" @submit.prevent="send_msg_channel()">
                         <select class="me-2 form-select form-select-sm" v-model="selected_send_channel" style="max-width: 180px;" required>
-                            <option value="0" hidden>Loading channels...</option>
+                            <option value="0" hidden>{{ $filters.i18n('LOADING_CHANNELS') }}</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
                         </select>
                         <div class="me-3 flex-grow-1">
-                            <input type="text" class="form-control form-control-sm" placeholder="Message" v-model="send_message" required>
+                            <input type="text" class="form-control form-control-sm" :placeholder="$filters.i18n('MESSAGE')" v-model="send_message" required>
                         </div>
                         <button class="btn btn-info btn-sm text-nowrap" type="submit">
-                            Send
+                            {{ $filters.i18n('SEND') }}
                         </button>
                     </form>
                 </div>
@@ -91,18 +91,18 @@
             <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="me-3">
-                        <h5 class="mb-0">Watch:</h5>
+                        <h5 class="mb-0">{{ $filters.i18n('WATCH') }}:</h5>
                     </div>
                     <div class="my-2 d-flex align-items-center justify-content-end flex-grow-1">
                         <select @change="refresh_watch_channel(true)" class="me-2 form-select form-select-sm" v-model="selected_watch_channel" style="max-width: 180px;" required>
-                            <option value="0" hidden>Loading channels...</option>
+                            <option value="0" hidden>{{ $filters.i18n('LOADING_CHANNELS') }}</option>
                             <option v-for="option in text_channel_options" :key="option.id" :value="option.id">
                                 {{ option.name}}
                             </option>
                         </select>
                         <a @click="refresh_watch_channel()" class="btn btn-toggle btn-nofocus text-white collapsed" data-bs-toggle="collapse" data-bs-target="#collapseWatch" aria-expanded="false">
                             <i class="fas fa-fw toggle-icon"></i>
-                            Click to watch
+                            {{ $filters.i18n('CLICK_TO_WATCH') }}
                         </a>
                     </div>
                 </div>
@@ -111,7 +111,7 @@
                         <textarea disabled v-model="watch_content" class="w-100 bg-dark text-white p-3" style="border: none;" rows="10" spellcheck="false" ref="watchTextarea"></textarea>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="autoRefresh" @change="set_auto_refresh()" v-model="watch_auto_refresh">
-                            <label class="form-check-label" for="autoRefresh">Auto Refresh</label>
+                            <label class="form-check-label" for="autoRefresh">{{ $filters.i18n('AUTO_REFRESH') }}</label>
                         </div>
                     </div>
                 </div>
@@ -122,7 +122,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, inject } from "vue";
 
 import api from '@/services/api';
 
@@ -149,6 +149,7 @@ export default defineComponent({
   name: "Admin Tools",
   data() {
     return {
+        filters: inject('filters') as any,
         selected_send_channel: '0',
         selected_watch_channel: '0',
         text_channel_options: [],
@@ -185,7 +186,7 @@ export default defineComponent({
   methods: {
     create_invite() {
         Swal.fire({
-            title: 'Create Invite Link',
+            title: this.filters.i18n('CREATE_INVITE_LINK'),
             html: `<h4>Options:</h4>
             <ul class="text-left">
                 <li><p><strong>search_channel</strong>(str) &ndash; Search for a Textchannel for which this invite will be created.</p></li>
@@ -225,7 +226,7 @@ export default defineComponent({
         }).then((result: any) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Invite Link',
+                    title: this.filters.i18n('INVITE_LINK'),
                     html: `<input type="text" onclick="event.target.select();event.target.setSelectionRange(0,99999);navigator.clipboard.writeText(event.target.value);" class="form-control" value="${result.value.data.invite_link.url}">`,
                 });
             }
@@ -235,7 +236,7 @@ export default defineComponent({
     get_invites() {
         api.get_invite_links().then((response: AxiosResponse) => {
             Swal.fire({
-                title: 'Invite Links',
+                title: this.filters.i18n('INVITE_LINKS'),
                 grow: 'row',
                 html: `<pre class="text-left bg-white">${JSON.stringify(response.data.invite_links, undefined, 2)}</pre>`,
             });
@@ -248,7 +249,7 @@ export default defineComponent({
     },
     send_msg_channel() {
         Toast2.fire({
-            title: 'Loading...',
+            title: this.filters.i18n('LOADING'),
             iconHtml: '<span class="spinner-border"></span>',
         });
 
@@ -256,7 +257,7 @@ export default defineComponent({
             this.send_message = '';
             Toast.fire({
                 icon: 'success',
-                text: 'Successfull',
+                text: this.filters.i18n('SUCCESSFUL'),
             });
         }).catch((error) => {
             Toast.fire({
@@ -302,7 +303,7 @@ export default defineComponent({
     },
     set_nickname(nickname: string | null) {
         Toast2.fire({
-            title: 'Loading...',
+            title: this.filters.i18n('LOADING'),
             iconHtml: '<span class="spinner-border"></span>',
         });
 
@@ -310,7 +311,7 @@ export default defineComponent({
             this.nickname = '';
             Toast.fire({
                 icon: 'success',
-                text: 'Successfull',
+                text: this.filters.i18n('SUCCESSFUL'),
             });
         }).catch((error) => {
             Toast.fire({
@@ -344,14 +345,14 @@ export default defineComponent({
         });
 
         Toast3.fire({
-            title: 'Loading...',
+            title: this.filters.i18n('LOADING'),
             iconHtml: '<span class="spinner-border"></span>',
         });
 
         api.send_voice_audio(this.selected_voice_channel, (this.$refs.audioFile as any).files[0], loadingSubject).then(() => {
             Toast.fire({
                 icon: 'success',
-                text: 'Successfull',
+                text: this.filters.i18n('SUCCESSFUL'),
             });
         }).catch((error) => {
             Toast.fire({

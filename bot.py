@@ -285,8 +285,8 @@ def main():
     global_settings = GlobalSettingsValidator.validate(GLOBAL_SETTINGS)
 
     b = DiscordBot(
-        db=Database(GLOBAL_SETTINGS['DATABASE_URL']),
-        i18n=I18nManager(path=os.path.join(current_dir, 'i18n.json')),
+        db=Database(global_settings['DATABASE_URL']),
+        i18n=I18nManager(path=global_settings['I18N_FILE']),
         current_dir=current_dir,
         interval_time=global_settings['INTERVAL_TIME'],
         description=global_settings['DESCRIPTION'],

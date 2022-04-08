@@ -671,3 +671,11 @@ div.swal2-popup {
 .emoji-store.emoji-gold {
     background: url("./assets/icons/store-gold.svg") no-repeat;
 }
+
+.emoji-inventory {
+    background: url("./assets/icons/inventory.svg") no-repeat;
+}
+
+.emoji-inventory.emoji-gold {
+    background: url("./assets/icons/inventory-gold.svg") no-repeat;
+}

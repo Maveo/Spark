@@ -1,8 +1,8 @@
 <template>
   <div class="container container-large">
     <div class="pb-5">
-      <h2>Inventory</h2>
-      <span class="text-gray4">Items you have and do not have.</span>
+      <h2>{{ $filters.i18n('INVENTORY_TITLE') }}</h2>
+      <span class="text-gray4">{{ $filters.i18n('INVENTORY_SUBTITLE') }}</span>
     </div>
 
     <div v-if="loading" class="view-main-card text-center">
@@ -27,14 +27,14 @@
             <button @click="use_item(item_type_id)" v-if="item.item_equippable || item.item_useable" class="mt-2 btn btn-success btn-sm w-100 font-weight-bold">
                 <template v-if="item.item_equippable">
                     <template v-if="item.item_equipped">
-                        Unequip
+                        {{ $filters.i18n('INVENTORY_UNEQUIP') }}
                     </template>
                     <template v-else>
-                        Equip
+                        {{ $filters.i18n('INVENTORY_EQUIP') }}
                     </template>
                 </template>
                 <template v-else-if="item.item_useable">
-                    Use
+                    {{ $filters.i18n('INVENTORY_USE') }}
                 </template>
             </button>
           </div>

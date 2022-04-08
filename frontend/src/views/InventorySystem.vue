@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Inventory System</h2>
-            <span class="text-gray4">Create your own Inventory System!</span>
+            <h2>{{ $filters.i18n('INVENTORY_SYSTEM_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('INVENTORY_SYSTEM_SUBTITLE') }}</span>
         </div>
 
         <div class="view-main-card">

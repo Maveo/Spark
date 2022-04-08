@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Ranking</h2>
-            <span class="text-gray4">View the ranking of you and your Friends</span>
+            <h2>{{ $filters.i18n('RANKING_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('RANKING_SUBTITLE') }}</span>
         </div>
 
         <div class="d-flex text-white bg-gray2">

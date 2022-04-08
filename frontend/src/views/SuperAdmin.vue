@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Super Admin</h2>
-            <span class="text-gray4">You are Super!</span>
+            <h2>{{ $filters.i18n('SUPER_ADMIN_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('SUPER_ADMIN_SUBTITLE') }}</span>
         </div>
 
         <div class="view-main-card">

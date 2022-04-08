@@ -12,12 +12,6 @@ from cryptography.fernet import Fernet
 from helpers.exceptions import *
 from .json_encoder import create_json_encoder
 
-try:
-    from pydub import AudioSegment
-
-    PYDUB_IMPORTED = True
-except ImportError:
-    PYDUB_IMPORTED = False
 
 from typing import TYPE_CHECKING
 
@@ -130,6 +124,9 @@ class WebServer(threading.Thread):
             if self.dbot.is_super_admin(uid) or guild.get_member(uid) is not None
         ]}), 200
 
+    async def get_i18n(self):
+        return jsonify({'i18n': self.dbot.i18n.raw()}), 200
+
     def guild_member_wrapper(self, func):
         async def _call(*args, **kwargs):
             guild, member = await self.get_member_guild()
@@ -234,6 +231,7 @@ class WebServer(threading.Thread):
             return _call
 
         pages = [
+            Page(path=f"{api_base}/i18n", view_func=self.get_i18n),
             Page(path=f"{api_base}/get-auth", view_func=self.get_auth_url),
             Page(path=f"{api_base}/create-session", view_func=self.create_session, methods=['POST']),
             Page(path=f"{api_base}/guild", view_func=self.get_guild),

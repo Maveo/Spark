@@ -1,8 +1,8 @@
 <template>
   <div class="container container-large">
     <div class="pb-5">
-      <h2>Choose Server</h2>
-      <span class="text-gray4">Choose a server on which you will click.</span>
+      <h2>{{ $filters.i18n('CHOOSE_SERVER_TITLE') }}</h2>
+      <span class="text-gray4">{{ $filters.i18n('CHOOSE_SERVER_SUBTITLE') }}</span>
     </div>
 
     <div v-if="loading" class="view-main-card text-center">

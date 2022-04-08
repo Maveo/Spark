@@ -135,6 +135,10 @@ const router = createRouter({
 })
 
 router.beforeResolve(async (to, from, next) => {
+    if (!to.matched.some(record => record.meta.noI18n)) {
+        await store.dispatch('update_i18n');
+    }
+
     if (to.matched.some(record => record.meta.requiresLogin) && !store.state.persistant.token) {
         store.commit('set_redirect', to.fullPath);
         next('/login');

@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Your Profile</h2>
-            <span class="text-gray4">View general information of your Server Account</span>
+            <h2>{{ $filters.i18n('YOUR_PROFILE_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('YOUR_PROFILE_SUBTITLE') }}</span>
         </div>
         <div class="view-main-card py-4 px-3">
             <div class="p-sm-2">
@@ -36,23 +36,23 @@
                         <table class="ms-3 ms-xl-0">
                             <tbody>
                                 <tr>
-                                    <td><h6 class="mb-0">User-ID:</h6></td>
+                                    <td><h6 class="mb-0">{{ $filters.i18n('USER_ID') }}:</h6></td>
                                     <td class="text-muted ps-3">{{profile.member.id}}</td>
                                 </tr>
                                 <tr>
-                                    <td><h6 class="mb-0">Discord Tag:</h6></td>
+                                    <td><h6 class="mb-0">{{ $filters.i18n('DISCORD_TAG') }}:</h6></td>
                                     <td class="text-muted ps-3">#{{profile.member.tag}}</td>
                                 </tr>
                                 <tr>
-                                    <td><h6 class="mb-0">Joined At:</h6></td>
+                                    <td><h6 class="mb-0">{{ $filters.i18n('JOINED_AT') }}:</h6></td>
                                     <td class="text-muted ps-3">{{profile.joined_at}}</td>
                                 </tr>
                                 <tr>
-                                    <td><h6 class="mb-0">Hypesquad:</h6></td>
+                                    <td><h6 class="mb-0">{{ $filters.i18n('HYPESQUAD') }}:</h6></td>
                                     <td class="text-muted ps-3">{{profile.hype_squad}}</td>
                                 </tr>
                                 <tr>
-                                    <td><h6 class="mb-0">Boosting since:</h6></td>
+                                    <td><h6 class="mb-0">{{ $filters.i18n('BOOSTING_SINCE') }}:</h6></td>
                                     <td class="text-muted ps-3">{{profile.boosting_since}}</td>
                                 </tr>
                             </tbody>
@@ -64,10 +64,10 @@
                 <div v-if="selected_server.active_modules.includes('levelsystem')">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="text-gray4">Gained XP Origin</h6>
+                            <h6 class="text-gray4">{{ $filters.i18n('GAINED_XP_ORIGIN') }}</h6>
                         </div>
                         <div>
-                            <h6 class="text-gray4">Total XP Gained: <span class="text-white">{{profile.total_xp.toFixed(0)}}</span></h6>
+                            <h6 class="text-gray4">{{ $filters.i18n('TOTAL_XP_GAINED') }} <span class="text-white">{{profile.total_xp.toFixed(0)}}</span></h6>
                         </div>
                     </div>
                     <div class="progress" style="border-radius: 3rem; background-color: unset !important;">
@@ -81,22 +81,22 @@
                         <div v-if="unknown_xp_percent > 0" class="col d-flex align-items-center">
                             <div class="xp-dot me-2 bg-gray2-important">
                             </div>
-                            <span class="text-gray4 text-nowrap">Unknown</span>
+                            <span class="text-gray4 text-nowrap">{{ $filters.i18n('UNKNOWN_XP_SOURCE') }}</span>
                         </div>
                         <div v-if="text_msg_xp_percent > 0" class="col d-flex align-items-center">
                             <div class="xp-dot me-2 bg-purple">
                             </div>
-                            <span class="text-gray4 text-nowrap">Text-Messages</span>
+                            <span class="text-gray4 text-nowrap">{{ $filters.i18n('TEXT_MESSAGES_XP_SOURCE') }}</span>
                         </div>
                         <div v-if="voice_xp_percent > 0" class="col d-flex align-items-center">
                             <div class="xp-dot me-2 bg-blue">
                             </div>
-                            <span class="text-gray4 text-nowrap">Voice-Activity</span>
+                            <span class="text-gray4 text-nowrap">{{ $filters.i18n('VOICE_ACTIVITY_XP_SOURCE') }}</span>
                         </div>
                         <div v-if="boost_xp_percent > 0" class="col d-flex align-items-center">
                             <div class="xp-dot me-2 bg-cyan">
                             </div>
-                            <span class="text-gray4 text-nowrap">XP-Boost</span>
+                            <span class="text-gray4 text-nowrap">{{ $filters.i18n('XP_BOOST') }}</span>
                         </div>
                     </div>
 
@@ -107,29 +107,29 @@
                         <div class="col-12 col-xl-6">
 
                             <div class="text-field-dark d-flex flex-row mb-3 mt-1">
-                                Promo Boosts
-                                <div class="col d-flex justify-content-end" style="color: var(--green);">x{{profile.promo_boost_xp_multiplier}} XP-Boost
+                                {{ $filters.i18n('BOOSTS_PROMO') }}
+                                <div class="col d-flex justify-content-end" style="color: var(--green);">x{{profile.promo_boost_xp_multiplier}} {{ $filters.i18n('XP_BOOST') }}
                                 </div>
                             </div>
                             <div v-for="boost in profile.promo_boosts_raw_data" :key="boost.name" class="ms-3 mb-2">
                                 <div class="d-flex flex-row">
                                     <h5 class="col-8">{{boost.name}}</h5>
-                                    <p class="col text-gray4 d-flex justify-content-end me-3">{{boost.remaining_days}} Days and {{boost.remaining_hours}} Hours</p>
+                                    <p class="col text-gray4 d-flex justify-content-end me-3">{{ $filters.i18n('DAYS_AND_HOURS', [boost.remaining_days, boost.remaining_hours]) }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-12 col-xl-6">
                             <div class="d-none d-xl-block vertical-divider"></div>
                             <div class="text-field-dark d-flex flex-row mb-3 mt-1">
-                                Normal Boosts
+                                {{ $filters.i18n('BOOSTS_NORMAL') }}
                                 <div class="col d-flex justify-content-end" style="color: var(--green);">
-                                    x{{profile.boost_xp_multiplier}} XP-Boost
+                                    x{{profile.boost_xp_multiplier}} {{ $filters.i18n('XP_BOOST') }}
                                 </div>
                             </div>
                             <div v-for="boost in profile.boosts_raw_data" :key="boost.name" class="ms-3 mb-2">
                                 <div class="d-flex flex-row">
                                     <h5 class="col-8">{{boost.name}}</h5>
-                                    <p class="col text-gray4 d-flex justify-content-end me-3">{{boost.remaining_days}} Days and {{boost.remaining_hours}} Hours</p>
+                                    <p class="col text-gray4 d-flex justify-content-end me-3">{{ $filters.i18n('DAYS_AND_HOURS', [boost.remaining_days, boost.remaining_hours]) }}</p>
                                 </div>
                             </div>
                         </div>

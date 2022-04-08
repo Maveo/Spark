@@ -7,6 +7,7 @@ GLOBAL_SETTINGS = {
     'DATABASE_URL': '{protocol}://{hostname}/{path}'.format(protocol='sqlite',
                                                             hostname='',
                                                             path=os.path.join(current_dir, 'dbs', 'bot.db')),
+    'I18N_FILE': os.path.join(current_dir, 'i18n', 'en.json'),
     'APPLICATION_ID': '',
     'APPLICATION_SECRET': '',
     'ACTIVATE_WEBSERVER': True,

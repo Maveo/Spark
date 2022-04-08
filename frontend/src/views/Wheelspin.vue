@@ -1,14 +1,14 @@
 <template>
   <div class="container container-large">
     <div class="pb-5">
-      <h2>Wheelspin</h2>
-      <span class="text-gray4">Win daily prizes</span>
+      <h2>{{ $filters.i18n('WHEELSPIN_TITLE') }}</h2>
+      <span class="text-gray4">{{ $filters.i18n('WHEELSPIN_SUBTITLE') }}</span>
     </div>
 
     <div class="view-main-card">
       <div class="row">
         <div class="col-xxl-3 px-4">
-          <h4>Prizes</h4>
+          <h4>{{ $filters.i18n('WHEELSPIN_PRIZES') }}</h4>
           <div v-if="wheelspin_loading" class="spinner-border"></div>
           <div v-else>
             <div
@@ -91,7 +91,7 @@
                 @click.prevent="spark_start_spin"
                 :disabled="!can_spin"
               >
-                Spin
+                {{ $filters.i18n('WHEELSPIN_SPIN') }}
               </button>
             </div>
           </div>
@@ -100,22 +100,21 @@
           <div class="d-none d-xxl-block vertical-divider"></div>
 
           <div class="mb-4">
-            <h4>Spins</h4>
+            <h4>{{ $filters.i18n('WHEELSPIN_SPINS') }}</h4>
 
             <div
               class="bg-gray2 px-3 py-1 mb-1 text-center spark-rounded"
               style="max-width: 200px"
             >
               <div v-if="free_wheelspin_in <= 0" style="font-size: 1.5rem">
-                1 Free
+                {{ $filters.i18n('WHEELSPIN_FREE_SPIN') }}
               </div>
               <div v-else style="font-size: 1.5rem">
-                {{ wheelspins_available }} Spins
+                {{ $filters.i18n('WHEELSPIN_AVAILABLE_SPINS', [wheelspins_available]) }}
               </div>
             </div>
             <div v-if="free_wheelspin_in > 0" class="text-gray4">
-              Get your next free wheelspin in
-              {{ +(free_wheelspin_in / 3600).toFixed(0) + 1 }} Hours.
+              {{ $filters.i18n('WHEELSPIN_NEXT_FREE', [+(free_wheelspin_in / 3600).toFixed(0) + 1]) }}
             </div>
           </div>
         </div>

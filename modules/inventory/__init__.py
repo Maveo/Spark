@@ -29,7 +29,7 @@ class InventoryModule(SparkModule):
                                      ephemeral=True)
 
         async def list_inventory(ctx: discord.commands.context.ApplicationContext):
-            embed = discord.Embed(title=bot.i18n.get('INVENTORY_TITLE').format(ctx.author.display_name),
+            embed = discord.Embed(title=bot.i18n.get('INVENTORY_USER_TITLE').format(ctx.author.display_name),
                                   description='',
                                   color=discord.Color.gold())
             prev_rarity = None

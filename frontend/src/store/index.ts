@@ -15,7 +15,8 @@ export default createStore({
         },
         global_loading: false,
         selected_server: new ServerModel(),
-        profile: new ProfileModel()
+        profile: new ProfileModel(),
+        i18n: ({} as any),
     },
     mutations: {
         set_redirect(state, redirect: string) {
@@ -36,9 +37,16 @@ export default createStore({
         },
         set_global_loading(state, loading) {
             state.global_loading = loading;
+        },
+        set_i18n(state, i18n) {
+            state.i18n = i18n;
         }
     },
     actions: {
+        async update_i18n({ commit }) {
+            const i18n_response = await api.get_i18n();
+            commit('set_i18n', i18n_response.data.i18n);
+        },
         async update_profile({ commit }) {
             const profile_response = await api.get_profile();
             commit('set_profile', profile_response.data);

@@ -1,8 +1,8 @@
 <template>
   <div class="container container-large">
     <div class="pb-5">
-      <h2>Store</h2>
-      <span class="text-gray4">Buy or Sell stuff you do not need.</span>
+      <h2>{{ $filters.i18n('STORE_TITLE') }}</h2>
+      <span class="text-gray4">{{ $filters.i18n('STORE_SUBTITLE') }}</span>
     </div>
 
     <div class="view-main-card text-center">
@@ -14,22 +14,22 @@
       ></span>
       <div v-else class="row">
         <div v-for="offer in store" :key="offer.id" class="col bg-gray2 m-2 p-3 spark-rounded">
-            <h4 class="my-2">Pay</h4>
+            <h4 class="my-2">{{ $filters.i18n('STORE_PAY') }}</h4>
             <div class="spark-rounded" :style="'background-image: ' + offer.from_background_color_html">
                 <h2 class="m-0 px-2 text-nowrap background-text" :style="'background-image: ' + offer.from_foreground_color_html">
                     x{{offer.from_item_amount}} {{offer.from_item_type.name}}
                 </h2>
             </div>
-            (you have x{{inventory_amount(offer.from_item_type.id)}})
+            ({{ $filters.i18n('INVENTORY_YOU_HAVE', [inventory_amount(offer.from_item_type.id)]) }})
             <h4 class="my-2">to get</h4>
             <div class="spark-rounded" :style="'background-image: ' + offer.to_background_color_html">
                 <h2 class="m-0 px-2 text-nowrap background-text" :style="'background-image: ' + offer.to_foreground_color_html">
                    x{{offer.to_item_amount}} {{offer.to_item_type.name}}
                 </h2>
             </div>
-            (you have x{{inventory_amount(offer.to_item_type.id)}})
+            ({{ $filters.i18n('INVENTORY_YOU_HAVE', [inventory_amount(offer.to_item_type.id)]) }})
             <button :disabled="offer.from_item_amount > inventory_amount(offer.from_item_type.id)" @click="buy_offer(offer.id)" type="submit" class="mt-2 btn btn-success btn-sm w-100 font-weight-bold">
-                Buy
+                {{ $filters.i18n('STORE_BUY') }}
             </button>
         </div>
       </div>
@@ -162,7 +162,7 @@
 import api from "@/services/api";
 import store from "@/store";
 import { AxiosResponse } from "axios";
-import { defineComponent } from "vue";
+import { defineComponent, inject } from "vue";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 let Swal = require("sweetalert2/src/sweetalert2.js").default;
@@ -178,6 +178,7 @@ export default defineComponent({
   name: "Choose Server",
   data() {
     return {
+      filters: inject('filters') as any,
       profile: store.state.profile,
       loading: true,
       store: [],
@@ -224,7 +225,7 @@ export default defineComponent({
         api.buy_offer(offer_id, 1).then(() => {
             Toast.fire({
                 icon: "success",
-                text: "Successful",
+                text: this.filters.i18n('SUCCESSFUL'),
             });
             this.update_store(false);
         }).catch((error) => {
@@ -251,7 +252,7 @@ export default defineComponent({
         api.set_store(this.admin_store_items).then(() => {
           Toast.fire({
             icon: "success",
-            text: "Successful",
+            text: this.filters.i18n('SUCCESSFUL'),
           });
           this.update_store();
         })

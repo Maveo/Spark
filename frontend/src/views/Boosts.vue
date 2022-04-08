@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Boosts</h2>
-            <span class="text-gray4">Enter or create a Promo Code or manage your regular boosts</span>
+            <h2>{{ $filters.i18n('BOOST_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('BOOST_SUBTITLE') }}</span>
         </div>
 
         <div class="view-main-card p-4">
@@ -11,7 +11,7 @@
                 <div class="row">
 
                     <div v-if="selected_server.active_modules.includes('promo')" class="col-xxl-4 mb-3">
-                        <h4 class="mb-3">Promotion Code</h4>
+                        <h4 class="mb-3">{{ $filters.i18n('PROMO_CODE_LONG') }}</h4>
 
                         <div style="position: relative;">
 
@@ -25,12 +25,12 @@
 
                                 <div class="mb-3">
                                     <div class="font-weight-bold mb-2">
-                                        Enter another members Promo Code to get:
+                                        {{ $filters.i18n('PROMO_PREAMBLE') }}
                                     </div>
 
                                     <div>
                                         <i class="fas fa-fw fa-arrow-up" style="color: var(--green);"></i>
-                                        Rankup to Level {{profile.promo_user_set_level}}
+                                        {{ $filters.i18n('PROMO_ACTION_DESCRIPTION', [profile.promo_user_set_level]) }}
                                     </div>
                                 </div>
 
@@ -38,12 +38,12 @@
                                     <form @submit.prevent="redeem_promo_code()" class="d-flex">
                                         <div class="me-2">   
                                             <div class="input-group">
-                                                <input v-model.trim="redeem_code" type="text" class="form-control form-control-sm font-weight-bold" style="max-width: 150px;" placeholder="Promo Code" required>
+                                                <input v-model.trim="redeem_code" type="text" class="form-control form-control-sm font-weight-bold" style="max-width: 150px;" :placeholder="$filters.i18n('PROMO_CODE_SHORT')" required>
                                             </div>
                                         </div>
                                         <div>
                                             <button type="submit" class="btn btn-success btn-sm font-weight-bold">
-                                                Redeem
+                                                {{ $filters.i18n('REDEEM') }}
                                             </button>
                                         </div>
                                     </form>
@@ -61,13 +61,13 @@
                             <div class="mb-3">
 
                                 <div class="font-weight-bold mb-2">
-                                    Create your own Promo Code and send it to a new member and you get:
+                                    {{ $filters.i18n('PROMO_CODE_CREATE_DESCRIPTION') }}
                                 </div>
 
                                 <div>
                                     <i class="fas fa-fw fa-plus"></i>
                                     <span style="color: var(--green); font-weight: bold;" class="ps-1">x{{profile.promo_boost_xp_multiplier}}</span>
-                                    XP-Multiplier
+                                    {{ $filters.i18n('XP_MULTIPLIER') }}
                                 </div>
 
                             </div>
@@ -75,7 +75,7 @@
                             <div class="d-flex">
                                 <div>
                                     <button @click.prevent="get_promo_code()" class="btn btn-info btn-sm font-weight-bold">
-                                        New Code
+                                        {{ $filters.i18n('NEW_PROMO_CODE') }}
                                     </button>
                                 </div>
                                 <div class="ms-2">
@@ -85,7 +85,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="text-gray4 font-weight-bold" style="font-size: 0.75rem;">Valid for {{profile.promo_code_expires_hours}} Hrs.</div>
+                            <div class="text-gray4 font-weight-bold" style="font-size: 0.75rem;">{{ $filters.i18n('PROMO_CODE_VALID_DURATION', [profile.promo_code_expires_hours]) }}</div>
 
                         </div>
 
@@ -93,7 +93,7 @@
 
                     <div class="col-xxl-8">
                         <div v-if="selected_server.active_modules.includes('promo')" class="d-none d-xxl-block vertical-divider"></div>
-                        <h4 class="mb-3">Boosts</h4>
+                        <h4 class="mb-3">{{ $filters.i18n('BOOST_TITLE') }}</h4>
 
                         <div class="row">
                             <div v-if="selected_server.active_modules.includes('boost')" class="col-lg-5 mb-3">
@@ -103,13 +103,13 @@
                                     <div class="mb-3">
 
                                         <div class="font-weight-bold">
-                                            Boost another member:
+                                            {{ $filters.i18n('BOOST_ANOTHER_MEMBER') }}
                                         </div>
 
                                         <div>
-                                            Give a
+                                            {{ $filters.i18n('GIVE_A') }}
                                             <span style="color: var(--green); font-weight: bold;">x{{profile.boost_xp_multiplier}}</span>
-                                            XP-Multiplier
+                                            {{ $filters.i18n('XP_MULTIPLIER') }}
                                         </div>
 
                                     </div>
@@ -122,7 +122,7 @@
                                         </div>
                                         <div class="col">
                                             <button type="submit" class="btn btn-success btn-sm w-100 font-weight-bold" :disabled="profile.boosting">
-                                                Boost
+                                                {{ $filters.i18n('BOOST') }}
                                             </button>
                                         </div>
                                     </form>
@@ -130,12 +130,12 @@
                                         {{boost_error_msg}}
                                     </div>
                                     <div v-if="profile.boosting" class="text-gray4 font-weight-bold" style="font-size: 0.9rem;">
-                                        Boost again in {{profile.boosting_remaining_days}} Days and {{profile.boosting_remaining_hours}} Hours
+                                        {{ $filters.i18n('BOOST_AGAIN_IN', [profile.boosting_remaining_days, profile.boosting_remaining_hours]) }}
                                     </div>
 
                                     <div v-if="profile.boosting" class="mt-4">
                                         <div class="font-weight-bold mb-2">
-                                            Currently boosting:
+                                            {{ $filters.i18n('BOOSTING_CURRENTLY') }}
                                         </div>
                                         <div class="bg-gray1 spark-rounded p-2">
                                             {{profile.boosting_name}}
@@ -150,30 +150,30 @@
                                 <div v-if="selected_server.active_modules.includes('boost')" class="mb-4">
 
                                     <div class="text-field-dark d-flex flex-row mb-3 mt-1">
-                                        Normal Boosts
+                                        {{ $filters.i18n('BOOSTS_NORMAL') }}
                                         <div class="col d-flex justify-content-end" style="color: var(--green);">
-                                            x{{profile.boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">XP-Boost</span>
+                                            x{{profile.boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">{{ $filters.i18n('XP_BOOST') }}</span>
                                         </div>
                                     </div>
                                     <div v-for="boost in profile.boosts_raw_data" :key="boost.name" class="ms-3 mb-2">
                                         <div class="d-flex flex-row">
                                             <h5 class="col-8">{{boost.name}}</h5>
-                                            <p class="col text-gray4 d-flex justify-content-end me-3">{{boost.remaining_days}} Days and {{boost.remaining_hours}} Hours</p>
+                                            <p class="col text-gray4 d-flex justify-content-end me-3">{{ $filters.i18n('DAYS_AND_HOURS', [boost.remaining_days, boost.remaining_hours]) }}</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div v-if="selected_server.active_modules.includes('promo')">
                                     <div class="text-field-dark d-flex flex-row mb-3 mt-1">
-                                        Promo Boosts
+                                        {{ $filters.i18n('BOOSTS_PROMO') }}
                                         <div class="col d-flex justify-content-end" style="color: var(--green);">
-                                            x{{profile.promo_boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">XP-Boost</span>
+                                            x{{profile.promo_boost_xp_multiplier}}&nbsp;<span class="d-none d-md-flex d-lg-none d-xl-flex">{{ $filters.i18n('XP_BOOST') }}</span>
                                         </div>
                                     </div>
                                     <div v-for="boost in profile.promo_boosts_raw_data" :key="boost.name" class="ms-3 mb-2">
                                         <div class="d-flex flex-row">
                                             <h5 class="col-8">{{boost.name}}</h5>
-                                            <p class="col text-gray4 d-flex justify-content-end me-3">{{boost.remaining_days}} Days and {{boost.remaining_hours}} Hours</p>
+                                            <p class="col text-gray4 d-flex justify-content-end me-3">{{ $filters.i18n('DAYS_AND_HOURS', [boost.remaining_days, boost.remaining_hours]) }}</p>
                                         </div>
                                     </div>
                                 </div>

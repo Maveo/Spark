@@ -2,8 +2,8 @@
     <div class="container container-large">
 
         <div class="pb-5">
-            <h2>Server Settings</h2>
-            <span class="text-gray4">Edit default values or Sparks settings</span>
+            <h2>{{ $filters.i18n('SERVER_SETTINGS_TITLE') }}</h2>
+            <span class="text-gray4">{{ $filters.i18n('SERVER_MODULES_SUBTITLE') }}</span>
         </div>
 
         <div class="view-main-card">

@@ -1,6 +1,7 @@
 import json
 import logging
 from string import Formatter
+from typing import Dict
 
 
 class SafeFormatter(Formatter):
@@ -31,6 +32,7 @@ class I18nManager:
 
         self.key_not_found = FormatString('i18n-key-not-found')
 
+        self._raw_data = data
         self._data = data
         for key in self._data:
             self._data[key] = FormatString(self._data[key])
@@ -41,3 +43,9 @@ class I18nManager:
                 self.logger.error(' Key: {} not found in i18n')
             return self.key_not_found
         return self._data[key]
+
+    def raw(self) -> Dict[str, str]:
+        return self._raw_data
+
+    def all(self) -> Dict[str, FormatString]:
+        return self._data
