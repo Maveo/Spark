@@ -155,7 +155,7 @@
   "EMOJI_REACTIONS_REMOVE_COMMAND_DESCRIPTION": "Entferne eine Emoticon-Reaktion",
   "EMOJI_REACTIONS_REMOVE_SUCCESSFUL": "**Erfolgreich entfernt:**\n{}",
   "EMOJI_REACTIONS_IDENTIFIER": "ID: {} | {} | {} | {}",
-  "EMOJI_REACTIONS_ADD_COMMAND": "Füge eine Emoticon Reaktion hinzu",
+  "EMOJI_REACTIONS_ADD_COMMAND": "Emoticon Reaktion",
   "EMOJI_REACTIONS_TITLE": "Emoticon Reaktionen",
   "EMOJI_REACTIONS_CHOOSE_EMOJI_TITLE": "Wähle ein Emoticon für die Reaktion",
   "EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER": "Wähle ein Emoticon...",
