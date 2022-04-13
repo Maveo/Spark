@@ -136,7 +136,7 @@ Spark has an evergrowing utility set with numerous advanced features:
     When a user attempts to use a command without the permission to do so, the bot will deny the interaction and jokingly inform the user with one of 13 different custom text messages. The same will happen when a user executes an unknown command.
 
  - #### Advanced Command Interaction
-    Spark is able to communicate trough Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally Spark can handle user related commands with @mentions.
+    Spark is able to communicate through Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally Spark can handle user related commands with @mentions.
 
  - #### Custom Image Generation (ImageStack)
     The Bot is equipped with [ImageStack-SVG](https://github.com/skillor/imagestack-svg-python "ImageStacks Git Repository") (a custom image generator), which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using ImageStack-SVG Code.
