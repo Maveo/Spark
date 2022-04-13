@@ -139,4 +139,4 @@ Spark has an evergrowing utility set with numerous advanced features:
     Spark is able to communicate trough Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally Spark can handle user related commands with @mentions.
 
  - #### Custom Image Generation (ImageStack)
-    The Bot is equiped with [ImageStack-SVG](https://github.com/skillor/imagestack-svg-python "ImageStacks Git Repository") (a custom image generator), which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using ImageStack-SVG Code.
+    The Bot is equipped with [ImageStack-SVG](https://github.com/skillor/imagestack-svg-python "ImageStacks Git Repository") (a custom image generator), which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using ImageStack-SVG Code.
