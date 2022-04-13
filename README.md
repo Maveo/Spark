@@ -70,36 +70,36 @@ These modules contain their respective commands and settings.
 
 ### Global Settings
 
-These Settings are applied globally and **cannot be changed without restarting** the application
+These Settings are applied globally and **cannot be changed without restarting** the application.
 
 - **DATABASE_URL**
 
-  The url for the database of spark (e.g. ```mongodb://example.com:27017/```)
+  The url for the database of spark (e.g. ```mongodb://example.com:27017/```).
 - **APPLICATION_ID**
 
-  This is the Application-ID for your Discord Developer Application
+  This is the Application-ID for your Discord Developer Application.
 - **APPLICATION_SECRET**
 
-  This is the Oauth2-Application-Secret for your Discord Developer Application
+  This is the Oauth2-Application-Secret for your Discord Developer Application.
 - **ACTIVATE_WEBSERVER**
 
-  If the webserver should be activated
+  If the webserver should be activated.
 - **OAUTH2_REDIRECT_URI**
 
-  This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2)
-  You also need to set this up in the Discord Developer Settings
+  This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2).
+  You also need to set this up in the Discord Developer Settings.
 - **WEBSERVER_SECRET**
 
-  A secret to encrypt the webserver sessions
+  A secret to encrypt the webserver sessions.
 - **WEBSERVER_PORT**
 
-  This is the Port for the Webserver
+  This is the Port for the Webserver.
 - **TOKEN** 
 
-  This is the Token of your Discord Bot
+  This is the Token of your Discord Bot.
 - **INTERVAL_TIME**
 
-   The interval in which the modules do their scheduled update (in seconds | use -1 for no update interval)
+  The interval in which the modules do their scheduled update (in seconds | use -1 for no update interval).
 - **DOWNLOAD_EMOJIS**
 
   If emojis should be acquired from [emojipedia](https://emojipedia.org/).
@@ -113,7 +113,7 @@ These Settings are applied globally and **cannot be changed without restarting**
 
 ### Module Settings
 
-Every module can have own settings which are applied for each Discord guild (server) and **can be changed** via the settings command
+Every module can have own settings which are applied for each Discord guild (server) and **can be changed** via the settings command.
 
 
 ## Features
