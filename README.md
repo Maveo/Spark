@@ -87,7 +87,7 @@ These settings are applied globally and **cannot be changed without restarting**
   If the webserver should be activated.
 - **OAUTH2_REDIRECT_URI**
 
-  This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/oauth2" for the default setup (e.g. http://your.domain/oauth2).
+  This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/login" for the default setup (e.g. http://your.domain/login).
   You also need to set this up in the Discord Developer Settings.
 - **WEBSERVER_SECRET**
 
