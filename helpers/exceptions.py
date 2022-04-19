@@ -60,12 +60,21 @@ class ItemNotFoundException(WrongInputException):
         self.description = 'item not found'
         super().__init__(*args, **kwargs)
 
+
 class ItemNotUsableException(WrongInputException):
     pass
 
 
 class WheelspinForbiddenException(WrongInputException):
-    pass
+    def __init__(self, *args, **kwargs):
+        self.description = 'wheelspin forbidden'
+        super().__init__(*args, **kwargs)
+
+
+class WheelspinEmptyException(WrongInputException):
+    def __init__(self, *args, **kwargs):
+        self.description = 'wheelspin empty'
+        super().__init__(*args, **kwargs)
 
 
 class NoMoneyException(WrongInputException):

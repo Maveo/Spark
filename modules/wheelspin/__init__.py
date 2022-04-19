@@ -3,7 +3,7 @@ import time
 
 import discord
 
-from helpers.exceptions import WheelspinForbiddenException
+from helpers.exceptions import WheelspinForbiddenException, WheelspinEmptyException
 from helpers.module_hook_manager import INVENTORY_ITEM_ACTION_HOOK, INVENTORY_ADD_ITEM_HOOK
 from helpers.spark_module import SparkModule
 from .settings import SETTINGS
@@ -65,6 +65,8 @@ class WheelspinModule(SparkModule):
                 raise WheelspinForbiddenException()
 
         wheelspin = self.bot.db.get_wheelspin(member.guild.id)
+        if not wheelspin:
+            raise WheelspinEmptyException()
 
         result = random.choices(population=wheelspin,
                                 weights=list(map(lambda x: x.WheelspinProbability.probability, wheelspin)))[0]
