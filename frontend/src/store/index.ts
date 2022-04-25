@@ -16,7 +16,7 @@ export default createStore({
         global_loading: false,
         selected_server: new ServerModel(),
         profile: new ProfileModel(),
-        i18n: ({} as any),
+        i18n: (null as any),
     },
     mutations: {
         set_redirect(state, redirect: string) {
@@ -43,7 +43,8 @@ export default createStore({
         }
     },
     actions: {
-        async update_i18n({ commit }) {
+        async update_i18n({ commit, state }) {
+            if (state.i18n != null) return;
             const i18n_response = await api.get_i18n();
             commit('set_i18n', i18n_response.data.i18n);
         },
