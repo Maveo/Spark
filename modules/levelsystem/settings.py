@@ -82,6 +82,12 @@ SETTINGS = {
         itype='float',
         categories=['Levelsystem']
     ),
+    'SERVER_BOOSTER_ADD_XP_MULTIPLIER': Setting(
+        value=2.0,
+        description='the xp multiplier which is added for server boosters',
+        itype='float',
+        categories=['Levelsystem']
+    ),
     'MESSAGE_XP': Setting(
         value=0.2,
         description='The base-xp a user receives for sending a message',

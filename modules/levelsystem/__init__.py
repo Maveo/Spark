@@ -404,8 +404,11 @@ class LevelsystemModule(SparkModule):
 
     async def get_member_xp_multiplier(self, member: discord.Member):
         boosts = self.bot.db.get_level_user_xp_boosts(member.guild.id, member.id, time.time())
-        return self.bot.module_manager.settings.get(member.guild.id, 'BASE_XP_MULTIPLIER') \
+        boost = self.bot.module_manager.settings.get(member.guild.id, 'BASE_XP_MULTIPLIER') \
             + sum(map(lambda x: x.amount, boosts))
+        if member.guild.premium_subscriber_role in member.roles:
+            boost += self.bot.module_manager.settings.get(member.guild.id, 'SERVER_BOOSTER_ADD_XP_MULTIPLIER')
+        return boost
 
     async def member_role_manage(self, member, lvl):
         data = self.bot.db.get_levelsystem(member.guild.id)
