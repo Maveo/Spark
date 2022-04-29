@@ -9,6 +9,7 @@ import requests
 from helpers.dummys import MemberDummy
 import base64
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
 from helpers.exceptions import *
 from .json_encoder import create_json_encoder
 
@@ -166,9 +167,9 @@ class WebServer(threading.Thread):
         if webserver_secret is None:
             webserver_secret = Fernet.generate_key()
         else:
-            webserver_secret = webserver_secret[:32]
-            webserver_secret = webserver_secret + ('0' * max(0, 32 - len(webserver_secret)))
-            webserver_secret = base64.urlsafe_b64encode(webserver_secret.encode())
+            digest = hashes.Hash(hashes.SHA256())
+            digest.update(webserver_secret.encode())
+            webserver_secret = base64.urlsafe_b64encode(digest.finalize())
         self.crypter = Fernet(webserver_secret)
 
         self.root_path = os.path.dirname(os.path.abspath(__file__))
