@@ -513,8 +513,9 @@ class LevelsystemModule(SparkModule):
 
     async def interval_update(self, current_time, guild: discord.Guild):
         for voice_channel in guild.voice_channels:
-            for member in voice_channel.members:
-                await self.voice_xp(member, current_time, current_time)
+            if voice_channel.id != guild.afk_channel.id:
+                for member in voice_channel.members:
+                    await self.voice_xp(member, current_time, current_time)
 
     async def create_extended_profile(self, member: discord.Member):
         await self.check_level_user(member)
