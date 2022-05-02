@@ -39,4 +39,4 @@ jobs:
         git config --global user.email "Maveo@gmx.de"
         git config --global user.name "Spark Runner"
         git add --force ./webserver/static
-        git diff-index --quiet HEAD || git commit -am "Automated frontend dist build" && git push
+        git diff-index --quiet HEAD || git commit -m "Automated frontend dist build" && git push
