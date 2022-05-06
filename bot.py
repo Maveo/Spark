@@ -76,7 +76,8 @@ class DiscordBot:
                  description='',
                  image_creator: ImageCreator = None,
                  super_admins=None,
-                 logging_level=logging.WARNING
+                 logging_level=logging.WARNING,
+                 max_sync_commands_tries=5,
                  ):
         self.current_dir = current_dir
         self.db = db
@@ -84,6 +85,8 @@ class DiscordBot:
         if i18n is None:
             i18n = I18nManager(data={})
         self.i18n = i18n
+
+        self.max_sync_commands_tries = max_sync_commands_tries
 
         if super_admins is None:
             super_admins = []
@@ -231,7 +234,7 @@ class DiscordBot:
                 await asyncio.sleep(self.interval_time)
                 await self._interval_update()
 
-    async def sync_commands(self):
+    async def sync_commands(self, tried=0):
         self.logger.info('syncing commands...')
         self.bot._application_commands.clear()
         self.bot._pending_application_commands.clear()
@@ -264,9 +267,12 @@ class DiscordBot:
         try:
             await self.bot.sync_commands()
             self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
-        except discord.HTTPException:
-            self.logger.error('syncing commands {} failed'.format(modules_to_guilds))
-            await self.sync_commands()
+        except discord.HTTPException as e:
+            if tried < self.max_sync_commands_tries:
+                self.logger.error('syncing commands {} failed with {}'.format(modules_to_guilds, e))
+                await self.sync_commands(tried + 1)
+            else:
+                self.logger.error('exceeded max sync command tries')
 
     async def _on_ready(self):
         self.logger.info('Bot is running...')
