@@ -10,6 +10,7 @@
   "LEFT_USER_NAME": "A USER WHO LEFT",
   "BOT_MISSING_ADMINISTRATOR_PERMISSIONS": "Sorry, I am missing Administrator permissions and cannot work :(",
   "BOT_MISSING_COMMANDS_SCOPE": "Sorry, I am missing the application.commands scope and cannot work :(",
+  "DIRECT_MESSAGE_FORBIDDEN": "Sorry, but I can't send you a private message. Please check your privacy settings",
   "BOOST_COMMAND": "boost",
   "BOOST_DESCRIPTION": "boost another member",
   "BOOST_TITLE": "Boosts",

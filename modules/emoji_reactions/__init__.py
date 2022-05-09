@@ -85,10 +85,10 @@ class EmojiReactionsModule(SparkModule):
                 await self.add_emoji_reaction_action(ctx.guild, ctx, message, emoji)
 
             options = [
-                          discord.SelectOption(label=str(emoji.name),
-                                               emoji=str(emoji),
-                                               value=str(emoji.id)) for emoji in ctx.guild.emojis
-                      ]
+                discord.SelectOption(label=str(emoji.name),
+                                     emoji=str(emoji),
+                                     value=str(emoji.id)) for emoji in ctx.guild.emojis
+            ]
 
             pages = []
             for i in range(math.ceil(len(options) / 25)):
@@ -100,7 +100,7 @@ class EmojiReactionsModule(SparkModule):
                 view.add_item(
                     CustomDropdown(response,
                                    bot.i18n.get('EMOJI_REACTIONS_CHOOSE_EMOJI_PLACEHOLDER'),
-                                   options[i*25:(i+1)*25]))
+                                   options[i * 25:(i + 1) * 25]))
                 pages.append(view)
 
             paginator = ViewPaginator(pages, hide_empty=True)
@@ -331,6 +331,12 @@ class EmojiReactionsModule(SparkModule):
                     await tools.give_role(payload.member.guild, payload.member, int(action.action))
                 elif action.action_type == self.SEND_DM:
                     await payload.member.send(action.action)
+            except discord.Forbidden:
+                c = await payload.member.guild.fetch_channel(payload.channel_id)
+                await c.send(embed=discord.Embed(title='',
+                                                 description=payload.member.mention + ' ' +
+                                                             self.bot.i18n.get('DIRECT_MESSAGE_FORBIDDEN'),
+                                                 color=discord.Color.red()))
             except Exception as e:
                 self.bot.logger.error(e)
                 pass

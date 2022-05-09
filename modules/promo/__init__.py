@@ -154,21 +154,30 @@ class PromoModule(SparkModule):
             if promo_code is None:
                 raise UnknownException('Promo code not found')
 
-            await ctx.author.send(
-                embed=discord.Embed(title='',
-                                    description=self.bot.i18n.get('PROMO_CODE_PRIVATE_MESSAGE')
-                                    .format(ctx.author.guild.name,
-                                            self.bot.module_manager.settings.get(
-                                                ctx.author.guild.id, 'PROMO_CODE_EXPIRES_HOURS'
-                                            ),
-                                            promo_code),
-                                    color=discord.Color.blue())
-            )
-            await ctx.respond(
-                embed=discord.Embed(title='',
-                                    description=self.bot.i18n.get('PROMO_CODE_CREATE_SUCCESSFUL'),
-                                    color=discord.Color.green())
-            )
+            try:
+                await ctx.author.send(
+                    embed=discord.Embed(title='',
+                                        description=self.bot.i18n.get('PROMO_CODE_PRIVATE_MESSAGE')
+                                        .format(ctx.author.guild.name,
+                                                self.bot.module_manager.settings.get(
+                                                    ctx.author.guild.id, 'PROMO_CODE_EXPIRES_HOURS'
+                                                ),
+                                                promo_code),
+                                        color=discord.Color.blue()),
+                )
+                await ctx.respond(
+                    embed=discord.Embed(title='',
+                                        description=self.bot.i18n.get('PROMO_CODE_CREATE_SUCCESSFUL'),
+                                        color=discord.Color.green()),
+                    ephemeral=True,
+                )
+            except discord.Forbidden:
+                await ctx.respond(
+                    embed=discord.Embed(title='',
+                                        description=self.bot.i18n.get('DIRECT_MESSAGE_FORBIDDEN'),
+                                        color=discord.Color.red()),
+                    ephemeral=True,
+                )
 
         self.commands = [
             discord.SlashCommand(

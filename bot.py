@@ -148,14 +148,6 @@ class DiscordBot:
         async def on_error(event, *args, **kwargs):
             error = sys.exc_info()[1]
             self.logger.error('"{}" in event: {}'.format(error, event))
-            # if event == 'on_raw_reaction_add':
-            #     if len(args) > 0 and isinstance(args[0], discord.RawReactionActionEvent) \
-            #             and args[0].member is not None and args[0].member.guild is not None:
-            #         await self.module_manager.on_member_error(args[0].member, error, event, args, kwargs)
-            # elif event == 'on_interaction':
-            #     if len(args) > 0 and isinstance(args[0], discord.Interaction) \
-            #             and args[0].user is not None and args[0].user.guild is not None:
-            #         await self.module_manager.on_member_error(args[0].user, error, event, args, kwargs)
 
         @self.bot.event
         async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.ApplicationCommandError):
