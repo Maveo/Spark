@@ -66,7 +66,7 @@ class EmojiReactionsModule(SparkModule):
         self.activating_reactions = {}
 
         @bot.has_permissions(administrator=True)
-        async def add_emoji_action(ctx: discord.commands.context.ApplicationContext,
+        async def add_emoji_action(ctx: discord.ApplicationContext,
                                    message: discord.Message):
             async def custom_emoji_response(button: CustomButton, interaction1: discord.Interaction):
                 m = await ctx.send(embed=discord.Embed(
@@ -108,7 +108,7 @@ class EmojiReactionsModule(SparkModule):
             await ctx.respond(view=paginator.view(), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
-        async def get_emoji_reactions(ctx: discord.commands.context.ApplicationContext):
+        async def get_emoji_reactions(ctx: discord.ApplicationContext):
             reactions = self.bot.db.get_emoji_reactions(ctx.guild.id)
             embed = discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_TITLE'), color=discord.Color.green())
 
@@ -153,7 +153,7 @@ class EmojiReactionsModule(SparkModule):
             return tools.autocomplete_match(ctx.value, reactions)
 
         @bot.has_permissions(administrator=True)
-        async def remove_emoji_reaction(ctx: discord.commands.context.ApplicationContext,
+        async def remove_emoji_reaction(ctx: discord.ApplicationContext,
                                         reaction: discord.commands.Option(
                                             str,
                                             description=bot.i18n.get('REMOVE_REACTION_OPTION'),
@@ -175,12 +175,12 @@ class EmojiReactionsModule(SparkModule):
             description=self.bot.i18n.get('EMOJI_REACTIONS_COMMAND_DESCRIPTION'),
         )
 
-        emoji_reactions.subcommands.append(discord.SlashCommand(
-            func=get_emoji_reactions,
-            name=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND'),
-            description=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND_DESCRIPTION'),
-            parent=emoji_reactions
-        ))
+        # emoji_reactions.subcommands.append(discord.SlashCommand(
+        #     func=get_emoji_reactions,
+        #     name=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND'),
+        #     description=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND_DESCRIPTION'),
+        #     parent=emoji_reactions
+        # ))
         emoji_reactions.subcommands.append(discord.SlashCommand(
             func=remove_emoji_reaction,
             name=self.bot.i18n.get('EMOJI_REACTIONS_REMOVE_COMMAND'),

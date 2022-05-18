@@ -43,7 +43,7 @@ class GeneralModule(SparkModule):
             return autocomplete_match(ctx.value, self.bot.module_manager.settings.keys(ctx.interaction.guild.id))
 
         @bot.has_permissions(administrator=True)
-        async def set_setting(ctx: discord.commands.context.ApplicationContext,
+        async def set_setting(ctx: discord.ApplicationContext,
                               key: discord.commands.Option(
                                   str,
                                   description=bot.i18n.get('SET_SETTING_KEY_OPTION'),
@@ -66,7 +66,7 @@ class GeneralModule(SparkModule):
                                                              color=discord.Color.red()))
 
         @bot.has_permissions(administrator=True)
-        async def get_setting(ctx: discord.commands.context.ApplicationContext,
+        async def get_setting(ctx: discord.ApplicationContext,
                               key: discord.commands.Option(
                                   str,
                                   description=bot.i18n.get('GET_SETTING_KEY_OPTION'),
@@ -87,7 +87,7 @@ class GeneralModule(SparkModule):
                                                              color=discord.Color.red()))
 
         @bot.has_permissions(administrator=True)
-        async def reset_setting(ctx: discord.commands.context.ApplicationContext,
+        async def reset_setting(ctx: discord.ApplicationContext,
                                 key: discord.commands.Option(
                                     str,
                                     description=bot.i18n.get('RESET_SETTING_KEY_OPTION'),
@@ -135,9 +135,9 @@ class GeneralModule(SparkModule):
                                       self.bot.module_manager.get_activatable_modules(ctx.interaction.guild.id))
 
         @bot.has_permissions(administrator=True)
-        async def activate_module(ctx: discord.commands.context.ApplicationContext,
+        async def activate_module(ctx: discord.ApplicationContext,
                                   module: discord.commands.Option(
-                                      str,
+                                      type=str,
                                       description=bot.i18n.get('MODULE_ACTIVATE_OPTION'),
                                       autocomplete=activate_module_autocomplete,
                                   )):
@@ -162,7 +162,7 @@ class GeneralModule(SparkModule):
                                       self.bot.module_manager.get_deactivatable_modules(ctx.interaction.guild.id))
 
         @bot.has_permissions(administrator=True)
-        async def deactivate_module(ctx: discord.commands.context.ApplicationContext,
+        async def deactivate_module(ctx: discord.ApplicationContext,
                                     module: discord.commands.Option(
                                         str,
                                         description=bot.i18n.get('MODULE_DEACTIVATE_OPTION'),
@@ -184,7 +184,7 @@ class GeneralModule(SparkModule):
                                     color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def get_active_modules(ctx: discord.commands.context.ApplicationContext):
+        async def get_active_modules(ctx: discord.ApplicationContext):
             return await ctx.respond(
                 embed=discord.Embed(title=self.bot.i18n.get('ACTIVE_MODULES_TITLE'),
                                     description='\n'.join(
@@ -208,12 +208,12 @@ class GeneralModule(SparkModule):
             description=self.bot.i18n.get('MODULE_ACTIVATE_DESCRIPTION'),
             parent=modules
         ))
-        modules.subcommands.append(discord.SlashCommand(
-            func=get_active_modules,
-            name=self.bot.i18n.get('MODULES_GET_ACTIVE_COMMAND'),
-            description=self.bot.i18n.get('MODULES_GET_ACTIVE_DESCRIPTION'),
-            parent=modules
-        ))
+        # modules.subcommands.append(discord.SlashCommand(
+        #     func=get_active_modules,
+        #     name=self.bot.i18n.get('MODULES_GET_ACTIVE_COMMAND'),
+        #     description=self.bot.i18n.get('MODULES_GET_ACTIVE_DESCRIPTION'),
+        #     parent=modules
+        # ))
 
         self.commands = [
             settings_command,

@@ -58,16 +58,16 @@ class LuckyModule(SparkModule):
             await ctx.send(random_string.format(random.choice(args)))
 
         self.commands = [
-            discord.SlashCommand(
-                func=coinflip,
-                name=self.bot.i18n.get('COINFLIP_COMMAND'),
-                description=self.bot.i18n.get('COINFLIP_COMMAND_DESCRIPTION'),
-            ),
-            discord.SlashCommand(
-                func=dice,
-                name=self.bot.i18n.get('DICE_COMMAND'),
-                description=self.bot.i18n.get('DICE_COMMAND_DESCRIPTION'),
-            ),
+            # discord.SlashCommand(
+            #     func=coinflip,
+            #     name=self.bot.i18n.get('COINFLIP_COMMAND'),
+            #     description=self.bot.i18n.get('COINFLIP_COMMAND_DESCRIPTION'),
+            # ),
+            # discord.SlashCommand(
+            #     func=dice,
+            #     name=self.bot.i18n.get('DICE_COMMAND'),
+            #     description=self.bot.i18n.get('DICE_COMMAND_DESCRIPTION'),
+            # ),
             discord.SlashCommand(
                 func=random_command,
                 name=self.bot.i18n.get('RANDOM_COMMAND'),

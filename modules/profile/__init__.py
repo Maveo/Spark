@@ -19,7 +19,7 @@ class ProfileModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def profile(ctx: discord.commands.context.ApplicationContext,
+        async def profile(ctx: discord.ApplicationContext,
                           member: discord.commands.Option(
                               discord.Member,
                               description=bot.i18n.get('LEVELSYSTEM_PROFILE_MEMBER_OPTION'),

@@ -149,7 +149,7 @@ class PromoModule(SparkModule):
 
         self.guild_promo_codes = {}
 
-        async def promo(ctx: discord.commands.context.ApplicationContext):
+        async def promo(ctx: discord.ApplicationContext):
             promo_code = await self.create_promo_code(ctx.author)
             if promo_code is None:
                 raise UnknownException('Promo code not found')
@@ -180,11 +180,11 @@ class PromoModule(SparkModule):
                 )
 
         self.commands = [
-            discord.SlashCommand(
-                func=promo,
-                name=self.bot.i18n.get('PROMO_COMMAND'),
-                description=self.bot.i18n.get('PROMO_COMMAND_DESCRIPTION'),
-            )
+            # discord.SlashCommand(
+            #     func=promo,
+            #     name=self.bot.i18n.get('PROMO_COMMAND'),
+            #     description=self.bot.i18n.get('PROMO_COMMAND_DESCRIPTION'),
+            # )
         ]
 
     async def check_promo_code_message(self, message: discord.Message):

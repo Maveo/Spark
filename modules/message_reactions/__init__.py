@@ -16,7 +16,7 @@ class MessageReactionsModule(SparkModule):
         super().__init__(bot)
 
         @bot.has_permissions(administrator=True)
-        async def get_reactions(ctx: discord.commands.context.ApplicationContext):
+        async def get_reactions(ctx: discord.ApplicationContext):
             reactions = self.bot.db.get_message_reactions(ctx.guild.id)
             embed = discord.Embed(title=self.bot.i18n.get('MESSAGE_REACTIONS_TITLE'), color=discord.Color.green())
 
@@ -26,7 +26,7 @@ class MessageReactionsModule(SparkModule):
             return await ctx.respond(embed=embed)
 
         @bot.has_permissions(administrator=True)
-        async def set_reaction(ctx: discord.commands.context.ApplicationContext,
+        async def set_reaction(ctx: discord.ApplicationContext,
                                trigger: discord.commands.Option(
                                    str,
                                    description=bot.i18n.get('MESSAGE_REACTIONS_TRIGGER_OPTION_DESCRIPTION'),
@@ -48,7 +48,7 @@ class MessageReactionsModule(SparkModule):
                 ctx.value, list(map(lambda x: x.trigger, self.bot.db.get_message_reactions(ctx.interaction.guild.id))))
 
         @bot.has_permissions(administrator=True)
-        async def remove_reaction(ctx: discord.commands.context.ApplicationContext,
+        async def remove_reaction(ctx: discord.ApplicationContext,
                                   trigger: discord.commands.Option(
                                       str,
                                       description=bot.i18n.get('MESSAGE_REACTIONS_TRIGGER_OPTION_DESCRIPTION'),
@@ -64,12 +64,12 @@ class MessageReactionsModule(SparkModule):
             name=self.bot.i18n.get('MESSAGE_REACTIONS_COMMAND'),
             description=self.bot.i18n.get('MESSAGE_REACTIONS_COMMAND_DESCRIPTION'),
         )
-        message_reactions.subcommands.append(discord.SlashCommand(
-            func=get_reactions,
-            name=self.bot.i18n.get('MESSAGE_REACTIONS_GET_COMMAND'),
-            description=self.bot.i18n.get('MESSAGE_REACTIONS_GET_COMMAND_DESCRIPTION'),
-            parent=message_reactions
-        ))
+        # message_reactions.subcommands.append(discord.SlashCommand(
+        #     func=get_reactions,
+        #     name=self.bot.i18n.get('MESSAGE_REACTIONS_GET_COMMAND'),
+        #     description=self.bot.i18n.get('MESSAGE_REACTIONS_GET_COMMAND_DESCRIPTION'),
+        #     parent=message_reactions
+        # ))
         message_reactions.subcommands.append(discord.SlashCommand(
             func=set_reaction,
             name=self.bot.i18n.get('MESSAGE_REACTIONS_SET_COMMAND'),

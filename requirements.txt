@@ -1,5 +1,5 @@
 MarkupSafe==2.0.1
-py-cord==2.0.0b7
+py-cord==2.0.0rc1
 requests==2.25.1
 flask==1.1.4
 imagestack-svg==0.2.6

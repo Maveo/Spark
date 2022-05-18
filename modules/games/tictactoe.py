@@ -145,7 +145,7 @@ class TicTacToeView(discord.ui.View):
 
 
 class TicTacToeViewHolder:
-    def __init__(self, bot: 'DiscordBot', ctx: discord.commands.context.ApplicationContext):
+    def __init__(self, bot: 'DiscordBot', ctx: discord.ApplicationContext):
         self.ctx = ctx
         self.bot = bot
 

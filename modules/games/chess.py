@@ -1083,7 +1083,7 @@ class ChessViewHolder:
                 child.label = str(piece.emoji())
                 child.disabled = self.chess_game.turn != piece.color or not self.chess_game.has_valid_move(child.pos)
 
-    def __init__(self, bot: 'DiscordBot', ctx: discord.commands.context.ApplicationContext):
+    def __init__(self, bot: 'DiscordBot', ctx: discord.ApplicationContext):
         self.bot = bot
 
         self.selected_pos: Tuple[int, int] or None = None
@@ -1114,7 +1114,7 @@ class ChessViewHolder:
             child.label = piece.emoji()
             self.promotion_view.add_item(child)
 
-        self.original_context: discord.commands.context.ApplicationContext = ctx
+        self.original_context: discord.ApplicationContext = ctx
         self.view_messages: List[int] or None = None
         self.current_player = True
         self.white_players = []
