@@ -37,7 +37,7 @@ class CustomModal(discord.ui.Modal):
                  callback: Callable[['CustomModal', discord.Interaction], Coroutine],
                  title: str):
         self.custom_callback = callback
-        super().__init__(title)
+        super().__init__(title=title)
 
     async def callback(self, interaction: discord.Interaction):
         await self.custom_callback(self, interaction)
@@ -108,7 +108,7 @@ class EmojiReactionsModule(SparkModule):
             await ctx.respond(view=paginator.view(), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
-        async def get_emoji_reactions(ctx: discord.ApplicationContext):
+        async def get_emoji_reactions(ctx: discord.ApplicationContext, *args):
             reactions = self.bot.db.get_emoji_reactions(ctx.guild.id)
             embed = discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_TITLE'), color=discord.Color.green())
 
@@ -175,12 +175,12 @@ class EmojiReactionsModule(SparkModule):
             description=self.bot.i18n.get('EMOJI_REACTIONS_COMMAND_DESCRIPTION'),
         )
 
-        # emoji_reactions.subcommands.append(discord.SlashCommand(
-        #     func=get_emoji_reactions,
-        #     name=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND'),
-        #     description=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND_DESCRIPTION'),
-        #     parent=emoji_reactions
-        # ))
+        emoji_reactions.subcommands.append(discord.SlashCommand(
+            func=get_emoji_reactions,
+            name=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND'),
+            description=self.bot.i18n.get('EMOJI_REACTIONS_GET_COMMAND_DESCRIPTION'),
+            parent=emoji_reactions
+        ))
         emoji_reactions.subcommands.append(discord.SlashCommand(
             func=remove_emoji_reaction,
             name=self.bot.i18n.get('EMOJI_REACTIONS_REMOVE_COMMAND'),

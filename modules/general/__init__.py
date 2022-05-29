@@ -184,7 +184,7 @@ class GeneralModule(SparkModule):
                                     color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def get_active_modules(ctx: discord.ApplicationContext):
+        async def get_active_modules(ctx: discord.ApplicationContext, *args):
             return await ctx.respond(
                 embed=discord.Embed(title=self.bot.i18n.get('ACTIVE_MODULES_TITLE'),
                                     description='\n'.join(
@@ -208,12 +208,12 @@ class GeneralModule(SparkModule):
             description=self.bot.i18n.get('MODULE_ACTIVATE_DESCRIPTION'),
             parent=modules
         ))
-        # modules.subcommands.append(discord.SlashCommand(
-        #     func=get_active_modules,
-        #     name=self.bot.i18n.get('MODULES_GET_ACTIVE_COMMAND'),
-        #     description=self.bot.i18n.get('MODULES_GET_ACTIVE_DESCRIPTION'),
-        #     parent=modules
-        # ))
+        modules.subcommands.append(discord.SlashCommand(
+            func=get_active_modules,
+            name=self.bot.i18n.get('MODULES_GET_ACTIVE_COMMAND'),
+            description=self.bot.i18n.get('MODULES_GET_ACTIVE_DESCRIPTION'),
+            parent=modules
+        ))
 
         self.commands = [
             settings_command,

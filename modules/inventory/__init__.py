@@ -23,12 +23,12 @@ class InventoryModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def get_inventory(ctx: discord.ApplicationContext):
+        async def get_inventory(ctx: discord.ApplicationContext, *args):
             return await ctx.respond(file=await self.create_inventory_image(
                 ctx.author.guild.id, (await self.get_inventory(ctx.author)).values()),
                                      ephemeral=True)
 
-        async def list_inventory(ctx: discord.ApplicationContext):
+        async def list_inventory(ctx: discord.ApplicationContext, *args):
             embed = discord.Embed(title=bot.i18n.get('INVENTORY_USER_TITLE').format(ctx.author.display_name),
                                   description='',
                                   color=discord.Color.gold())
@@ -162,19 +162,19 @@ class InventoryModule(SparkModule):
             description=self.bot.i18n.get('INVENTORY_COMMAND_DESCRIPTION'),
         )
 
-        # inventory.subcommands.append(discord.SlashCommand(
-        #     func=get_inventory,
-        #     name=self.bot.i18n.get('INVENTORY_GET_COMMAND'),
-        #     description=self.bot.i18n.get('INVENTORY_GET_COMMAND_DESCRIPTION'),
-        #     parent=inventory
-        # ))
+        inventory.subcommands.append(discord.SlashCommand(
+            func=get_inventory,
+            name=self.bot.i18n.get('INVENTORY_GET_COMMAND'),
+            description=self.bot.i18n.get('INVENTORY_GET_COMMAND_DESCRIPTION'),
+            parent=inventory
+        ))
 
-        # inventory.subcommands.append(discord.SlashCommand(
-        #     func=list_inventory,
-        #     name=self.bot.i18n.get('INVENTORY_LIST_COMMAND'),
-        #     description=self.bot.i18n.get('INVENTORY_LIST_COMMAND_DESCRIPTION'),
-        #     parent=inventory
-        # ))
+        inventory.subcommands.append(discord.SlashCommand(
+            func=list_inventory,
+            name=self.bot.i18n.get('INVENTORY_LIST_COMMAND'),
+            description=self.bot.i18n.get('INVENTORY_LIST_COMMAND_DESCRIPTION'),
+            parent=inventory
+        ))
 
         inventory.subcommands.append(discord.SlashCommand(
             func=use_item,

@@ -19,7 +19,7 @@ class LuckyModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def coinflip(ctx: discord.ApplicationContext):
+        async def coinflip(ctx: discord.ApplicationContext, *args):
             res = random.choice(['heads', 'tails'])
 
             message = await ctx.respond(file=discord.File(
@@ -36,7 +36,7 @@ class LuckyModule(SparkModule):
 
             await ctx.edit(file=discord.File(os.path.join(self.bot.current_dir, 'images', '{}.png'.format(res))))
 
-        async def dice(ctx: discord.ApplicationContext):
+        async def dice(ctx: discord.ApplicationContext, *args):
             await ctx.respond(file=discord.File(
                 os.path.join(self.bot.current_dir, 'images', '{}.gif'.format(random.randint(1, 6)))))
 
@@ -58,16 +58,16 @@ class LuckyModule(SparkModule):
             await ctx.send(random_string.format(random.choice(args)))
 
         self.commands = [
-            # discord.SlashCommand(
-            #     func=coinflip,
-            #     name=self.bot.i18n.get('COINFLIP_COMMAND'),
-            #     description=self.bot.i18n.get('COINFLIP_COMMAND_DESCRIPTION'),
-            # ),
-            # discord.SlashCommand(
-            #     func=dice,
-            #     name=self.bot.i18n.get('DICE_COMMAND'),
-            #     description=self.bot.i18n.get('DICE_COMMAND_DESCRIPTION'),
-            # ),
+            discord.SlashCommand(
+                func=coinflip,
+                name=self.bot.i18n.get('COINFLIP_COMMAND'),
+                description=self.bot.i18n.get('COINFLIP_COMMAND_DESCRIPTION'),
+            ),
+            discord.SlashCommand(
+                func=dice,
+                name=self.bot.i18n.get('DICE_COMMAND'),
+                description=self.bot.i18n.get('DICE_COMMAND_DESCRIPTION'),
+            ),
             discord.SlashCommand(
                 func=random_command,
                 name=self.bot.i18n.get('RANDOM_COMMAND'),

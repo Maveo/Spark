@@ -47,7 +47,7 @@ class LevelsystemModule(SparkModule):
         super().__init__(bot)
 
         @bot.has_permissions(administrator=True)
-        async def get_levelsystem(ctx: discord.ApplicationContext):
+        async def get_levelsystem(ctx: discord.ApplicationContext, *args):
             return await ctx.respond(embed=await self.lvlsys_get_embed(ctx.guild))
 
         @bot.has_permissions(administrator=True)
@@ -147,7 +147,7 @@ class LevelsystemModule(SparkModule):
                                         color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def blacklisted_users(ctx: discord.ApplicationContext):
+        async def blacklisted_users(ctx: discord.ApplicationContext, *args):
             description = []
             for user in self.bot.db.get_blacklisted_level_users(ctx.guild.id, True):
                 member = get(ctx.guild.members, id=int(user.user_id))
@@ -158,7 +158,7 @@ class LevelsystemModule(SparkModule):
                 description='\n'.join(description),
                 color=discord.Color.green()))
 
-        async def leaderboard(ctx: discord.ApplicationContext):
+        async def leaderboard(ctx: discord.ApplicationContext, *args):
             await ctx.defer()
 
             await ctx.respond(file=await self.create_leaderboard_image(ctx.author))
@@ -167,12 +167,12 @@ class LevelsystemModule(SparkModule):
             name=self.bot.i18n.get('LEVELSYSTEM_COMMAND'),
             description=self.bot.i18n.get('LEVELSYSTEM_COMMAND_DESCRIPTION'),
         )
-        # levelsystem.subcommands.append(discord.SlashCommand(
-        #     func=get_levelsystem,
-        #     name=self.bot.i18n.get('LEVELSYSTEM_GET_COMMAND'),
-        #     description=self.bot.i18n.get('LEVELSYSTEM_GET_COMMAND_DESCRIPTION'),
-        #     parent=levelsystem
-        # ))
+        levelsystem.subcommands.append(discord.SlashCommand(
+            func=get_levelsystem,
+            name=self.bot.i18n.get('LEVELSYSTEM_GET_COMMAND'),
+            description=self.bot.i18n.get('LEVELSYSTEM_GET_COMMAND_DESCRIPTION'),
+            parent=levelsystem
+        ))
         levelsystem.subcommands.append(discord.SlashCommand(
             func=set_levelsystem,
             name=self.bot.i18n.get('LEVELSYSTEM_SET_COMMAND'),
@@ -203,19 +203,19 @@ class LevelsystemModule(SparkModule):
             description=self.bot.i18n.get('LEVELSYSTEM_BLACKLIST_COMMAND_DESCRIPTION'),
             parent=levelsystem
         ))
-        # levelsystem.subcommands.append(discord.SlashCommand(
-        #     func=blacklisted_users,
-        #     name=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND'),
-        #     description=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND_DESCRIPTION'),
-        #     parent=levelsystem
-        # ))
+        levelsystem.subcommands.append(discord.SlashCommand(
+            func=blacklisted_users,
+            name=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND'),
+            description=self.bot.i18n.get('LEVELSYSTEM_BLACKLISTED_COMMAND_DESCRIPTION'),
+            parent=levelsystem
+        ))
         self.commands = [
             levelsystem,
-            # discord.SlashCommand(
-            #     func=leaderboard,
-            #     name=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND'),
-            #     description=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND_DESCRIPTION'),
-            # )
+            discord.SlashCommand(
+                func=leaderboard,
+                name=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND'),
+                description=self.bot.i18n.get('LEVELSYSTEM_LEADERBOARD_COMMAND_DESCRIPTION'),
+            )
         ]
 
         async def give_xp_boost(member: discord.Member, amount, equipped, options):
