@@ -8,6 +8,7 @@
   "SUCCESSFUL": "Erfolgreich",
   "LOADING": "Lädt...",
   "LEFT_USER_NAME": "MITGLIED EXISTIERT NICHT MEHR",
+  "LEFT_USER_ROLE": "@",
   "BOT_MISSING_ADMINISTRATOR_PERMISSIONS": "Sorry, ich habe keine Admin Rechte und kann nicht arbeiten :(",
   "BOT_MISSING_COMMANDS_SCOPE": "Sorry, ich hab nicht den application.commands scope und kann nicht arbeiten :(",
   "DIRECT_MESSAGE_FORBIDDEN": "Sorry, ich kann dir keine DM schicken. Bitte prüfe deine Datenschutzbestimmung!",
