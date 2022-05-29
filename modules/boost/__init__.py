@@ -59,10 +59,12 @@ class BoostModule(SparkModule):
                 return id_names[uid]
             m = get(member.guild.members, id=uid)
             name = self.bot.i18n.get('LEFT_USER_NAME')
+            top_role = self.bot.i18n.get('LEFT_USER_ROLE')
             if m is not None:
                 name = m.display_name
-            id_names[uid] = name, str(m.top_role.name)
-            return name, str(m.top_role.name)
+                top_role = str(m.top_role.name)
+            id_names[uid] = name, top_role
+            return name, top_role
 
         def _get_days_hours(expires):
             br = (expires - current_time) / (24 * 60 * 60)
@@ -107,7 +109,7 @@ class BoostModule(SparkModule):
                               description=self.bot.i18n.get('BOOSTING_NO_ONE'),
                               color=discord.Color.gold())
 
-        if data['boosting'] is not None:
+        if data['boosting']:
             embed = discord.Embed(title=self.bot.i18n.get('BOOST_TITLE'),
                                   description=self.bot.i18n.get('BOOSTING_USER')
                                   .format(data['boosting_name'],
