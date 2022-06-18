@@ -6,6 +6,11 @@ class UnknownException(HTTPException):
         super().__init__(status_code, detail)
 
 
+class NotFoundException(HTTPException):
+    def __init__(self, status_code=404, detail='not_found'):
+        super().__init__(status_code, detail)
+
+
 class WrongInputException(HTTPException):
     def __init__(self, status_code=400, detail='wrong_input'):
         super().__init__(status_code, detail)
@@ -46,12 +51,12 @@ class PromotingYourselfForbiddenException(WrongInputException):
         super().__init__(detail='promoting_yourself_forbidden')
 
 
-class PromoCodeNotFoundException(WrongInputException):
+class PromoCodeNotFoundException(NotFoundException):
     def __init__(self):
         super().__init__(detail='promo_code_not_found')
 
 
-class ItemNotFoundException(WrongInputException):
+class ItemNotFoundException(NotFoundException):
     def __init__(self):
         super().__init__(detail='item_not_found')
 
