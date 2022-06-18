@@ -54,7 +54,6 @@ SETTINGS = {
 '''
 
 WEB_FILE = '''import discord
-from flask import jsonify
 
 from helpers.module_pages import has_permissions
 from webserver import Page
@@ -69,7 +68,7 @@ if TYPE_CHECKING:
 async def example_func(module: '${MODULE_NAME_CAMEL}Module',
                        guild: discord.Guild,
                        member: discord.Member):
-    return jsonify({'msg': 'success'}), 200
+    return {'msg': 'success'}
 
 
 API_PAGES = [
