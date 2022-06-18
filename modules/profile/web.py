@@ -1,10 +1,12 @@
 import discord
-from flask import request, send_file
+from fastapi import Body
 
 from helpers.exceptions import WrongInputException
 from webserver import Page
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
+
+from webserver.responses import BytesFileResponse
 
 if TYPE_CHECKING:
     from . import ProfileModule
@@ -12,26 +14,27 @@ if TYPE_CHECKING:
 
 async def profile_image(module: 'ProfileModule',
                         guild: discord.Guild,
-                        member: discord.Member):
-    json = request.get_json()
-    if json is None or 'preview' not in json:
+                        member: discord.Member,
+                        preview: Union[str, None] = Body(default=None, embed=True),
+                        ):
+    if preview is None:
         img = await module.member_create_profile_image(member)
-        return send_file(
+        return BytesFileResponse(
             img.fp,
-            attachment_filename=img.filename,
-            mimetype='image/png'
+            filename=img.filename,
+            media_type='image/png'
         )
 
     try:
-        preview = module.bot.module_manager.settings.preview(guild.id, 'PROFILE_IMAGE', json['preview'])
+        preview = module.bot.module_manager.settings.preview(guild.id, 'PROFILE_IMAGE', preview)
     except:
-        raise WrongInputException('setting preview not correct')
+        raise WrongInputException(detail='setting preview not correct')
 
     img = await module.member_create_profile_image_by_template(member, preview)
-    return send_file(
+    return BytesFileResponse(
         img.fp,
-        attachment_filename=img.filename,
-        mimetype='image/png'
+        filename=img.filename,
+        media_type='image/png'
     )
 
 
