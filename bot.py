@@ -69,8 +69,8 @@ class DiscordBot:
         return wrapper
 
     def __init__(self,
-                 db: Database,
-                 i18n: I18nManager = None,
+                 db: Database = Database('sqlite:///'),
+                 i18n: I18nManager = I18nManager(data={}),
                  current_dir='',
                  interval_time=-1,
                  description='',
@@ -81,9 +81,6 @@ class DiscordBot:
                  ):
         self.current_dir = current_dir
         self.db = db
-
-        if i18n is None:
-            i18n = I18nManager(data={})
         self.i18n = i18n
 
         self.max_sync_commands_tries = max_sync_commands_tries
