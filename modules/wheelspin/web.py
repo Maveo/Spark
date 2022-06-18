@@ -1,14 +1,13 @@
 import time
 
 import discord
-from flask import jsonify, request
+from fastapi import Body
 
-from helpers.exceptions import WrongInputException
 from helpers.module_pages import has_permissions
 from helpers.tools import make_linear_gradient, svg_color_definition_with_id, html_color
 from webserver import Page
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from . import WheelspinModule
@@ -38,10 +37,10 @@ async def get_wheelspin(module: 'WheelspinModule',
             'background_color_html': html_color(background_color[0], background_color[1]),
             'sound': x.WheelspinProbability.sound
         })
-    return jsonify({
+    return {
         'msg': 'success',
         'wheelspin': wheelspin
-    }), 200
+    }
 
 
 async def can_wheelspin(module: 'WheelspinModule',
@@ -52,41 +51,38 @@ async def can_wheelspin(module: 'WheelspinModule',
     if available is not None:
         free_wheelspin = - time.time() + available.last_free + \
                          (module.bot.module_manager.settings.get(guild.id, 'WHEELSPIN_FREE_RESET_HOURS') * 60 * 60)
-    return jsonify({
+    return {
         'msg': 'success',
         'wheelspins_available': 0 if available is None else available.amount,
         'free_wheelspin_in': free_wheelspin
-    }), 200
+    }
 
 
 async def spin_wheel(module: 'WheelspinModule',
                      guild: discord.Guild,
                      member: discord.Member):
 
-    return jsonify({
+    return {
         'msg': 'success',
         'result': (await module.spin_wheel(member)).WheelspinProbability.id,
-    }), 200
+    }
 
 
 @has_permissions(administrator=True)
 async def get_wheelspin_admin(module: 'WheelspinModule',
                               guild: discord.Guild,
                               member: discord.Member):
-    return jsonify({'msg': 'success',
-                    'wheelspin': list(map(lambda x: x.WheelspinProbability, module.bot.db.get_wheelspin(guild.id)))}), \
-           200
+    return {'msg': 'success',
+            'wheelspin': list(map(lambda x: x.WheelspinProbability, module.bot.db.get_wheelspin(guild.id)))}
 
 
 @has_permissions(administrator=True)
 async def set_wheelspin(module: 'WheelspinModule',
                         guild: discord.Guild,
-                        member: discord.Member):
-    json = request.get_json()
-    if json is None or 'wheelspin' not in json:
-        raise WrongInputException('wheelspin not provided')
-    await module.set_wheelspin(guild, json['wheelspin'])
-    return jsonify({'msg': 'success'}), 200
+                        member: discord.Member,
+                        wheelspin: Any = Body(embed=True)):
+    await module.set_wheelspin(guild, wheelspin)
+    return {'msg': 'success'}
 
 
 API_PAGES = [
