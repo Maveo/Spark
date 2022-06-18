@@ -5,7 +5,7 @@ from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceC
 from fastapi.responses import JSONResponse
 
 from helpers.db import InventoryItemType, WheelspinProbability
-from helpers.dummys import RoleDummy, MemberDummy
+from helpers.dummys import MemberDummy
 from datetime import datetime
 from imagestack_svg.imageresolve import ImageStackResolveString
 

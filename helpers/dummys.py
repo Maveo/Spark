@@ -98,9 +98,6 @@ class MemberDummy:
         if role in self.roles:
             del self.roles[role]
 
-    def avatar_url_as(self, *args, **kwargs):
-        return self.avatar_url
-
 
 class MessageDummy:
     def __init__(self, uid=0, content='', author=None, guild=None, channel=None):

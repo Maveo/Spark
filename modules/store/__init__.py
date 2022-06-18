@@ -24,7 +24,7 @@ class StoreModule(SparkModule):
         offer = self.bot.db.get_offer(member.guild.id, offer_id)
         user_amount = self.bot.db.get_user_item_amount(member.guild.id, member.id, offer.from_item_id)
         if user_amount < offer.from_item_amount * amount:
-            raise NoMoneyException('you have not enough to buy this')
+            raise NoMoneyException()
         hook = self.bot.module_manager.hooks.get_one(member.guild.id, INVENTORY_ADD_ITEM_HOOK, 'inventory')
         if hook is not None:
             await hook['callback'](member, offer.from_item_id, -offer.from_item_amount * amount)
