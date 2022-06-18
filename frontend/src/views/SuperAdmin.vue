@@ -108,7 +108,9 @@ export default defineComponent({
     }
   },
   methods: {
-    set_presence(activity_name: string, activity_type: number, status_type: string) {
+    set_presence(activity_name: string | null = null,
+                 activity_type: number | null = null,
+                 status_type: string | null = null) {
         const Toast2 = Swal.mixin({
             toast: true,
             position: 'top-end',
