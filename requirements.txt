@@ -2,6 +2,7 @@ MarkupSafe==2.0.1
 py-cord==2.0.0b7
 requests==2.25.1
 fastapi==0.78.0
+python-multipart==0.0.5
 uvicorn[standard]==0.17.6
 imagestack-svg==0.2.6
 cryptography==36.0.1
