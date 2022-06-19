@@ -1,6 +1,5 @@
 import inspect
 import os
-import threading
 import logging
 import requests
 import uvicorn
@@ -54,7 +53,7 @@ class Page:
                           **self.kwargs)
 
 
-class WebServer(threading.Thread):
+class WebServer:
     def encrypt(self, s):
         return self.crypter.encrypt(s.encode()).decode()
 
@@ -184,8 +183,6 @@ class WebServer(threading.Thread):
         return _call
 
     def __init__(self,
-                 host='0.0.0.0',
-                 port=4004,
                  discord_bot: 'DiscordBot' = None,
                  oauth2_client_id=None,
                  oauth2_client_secret=None,
@@ -193,13 +190,9 @@ class WebServer(threading.Thread):
                  webserver_secret=None,
                  static_path='',
                  debug=False,
-                 logging_level=logging.WARNING,
                  api_base='fap'
                  ):
         super().__init__()
-
-        self.HOST = host
-        self.PORT = port
 
         self.dbot = discord_bot
         self.JSONResponse = create_custom_json_response_class(self.dbot)
@@ -229,7 +222,6 @@ class WebServer(threading.Thread):
             openapi_url=None,
         )
         self.app.logger = logging.getLogger('sparkbot-webserver')
-        self.logging_level = logging_level
 
         if debug:
             self.app.add_middleware(
@@ -279,7 +271,7 @@ class WebServer(threading.Thread):
             page.add_to_app(self.app)
 
     def run(self):
-        uvicorn.run(self.app, host=self.HOST, port=self.PORT, log_level=self.logging_level)
+        uvicorn.run(self.app)
 
 
 def main():

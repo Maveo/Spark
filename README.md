@@ -31,7 +31,11 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     python tests.py
 
-> Start the bot
+> Start bot and webserver
+
+    python -m uvicorn main:app --port 4004
+
+> Start only the bot 
 
     python bot.py
 
@@ -55,7 +59,11 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     python3 tests.py
 
-> Start the bot
+> Start bot and webserver
+
+    python3 -m uvicorn main:app --port 4004
+
+> Start only the bot 
 
     python3 bot.py
 
@@ -82,9 +90,6 @@ These settings are applied globally and **cannot be changed without restarting**
 - **APPLICATION_SECRET**
 
   This is the Oauth2-Application-Secret for your Discord Developer Application.
-- **ACTIVATE_WEBSERVER**
-
-  If the webserver should be activated.
 - **OAUTH2_REDIRECT_URI**
 
   This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/login" for the default setup (e.g. http://your.domain/login).
@@ -92,9 +97,6 @@ These settings are applied globally and **cannot be changed without restarting**
 - **WEBSERVER_SECRET**
 
   A secret to encrypt the webserver sessions.
-- **WEBSERVER_PORT**
-
-  This is the Port for the Webserver.
 - **TOKEN** 
 
   This is the Token of your Discord Bot.
