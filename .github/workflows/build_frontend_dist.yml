@@ -36,7 +36,7 @@ jobs:
         cp -r ./frontend/dist ./webserver/static
     - name: Commit static
       run: |
-        git config --global user.email "Maveo@gmx.de"
         git config --global user.name "Spark Runner"
+        git pull
         git add --force ./webserver/static
         git diff-index --quiet HEAD || git commit -m "Automated frontend dist build" && git push
