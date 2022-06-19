@@ -1,13 +1,16 @@
-from bot import DiscordBot
-
-
 def main():
-    from fastapi.openapi.utils import get_openapi
-    from webserver.server import WebServer
-    import json
     import os
+    import sys
 
     top_level_dir = os.path.join(os.path.realpath(os.path.dirname(__file__)), '..')
+
+    sys.path.append(top_level_dir)
+
+    from fastapi.openapi.utils import get_openapi
+    import json
+
+    from bot import DiscordBot
+    from webserver.server import WebServer
 
     app = WebServer(
         discord_bot=DiscordBot(
