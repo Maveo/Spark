@@ -41,16 +41,19 @@ class Page:
             self.kwargs[key] = value
         return Page(path, view_func, methods, **self.kwargs)
 
-    def add_to_app(self, app: FastAPI, path_prefix: str = '', wrapper=None):
+    def add_to_app(self, app: FastAPI, path_prefix: str = '', wrapper=None, **kwargs):
         func = self.view_func
         if wrapper is not None:
             func = wrapper(func)
+        api_kwargs = self.kwargs.copy()
+        for key, value in kwargs.items():
+            api_kwargs[key] = value
         if 'name' not in self.kwargs:
-            self.kwargs['name'] = self.path
+            api_kwargs['name'] = self.path
         app.add_api_route(path=f'{path_prefix}{self.path}',
                           endpoint=func,
                           methods=self.methods,
-                          **self.kwargs)
+                          **api_kwargs)
 
 
 class WebServer:
@@ -248,11 +251,11 @@ class WebServer:
             return await send_root()
 
         api_pages = [
-            Page(path=f'/{api_base}/i18n', view_func=self.get_i18n),
-            Page(path=f'/{api_base}/get-auth', view_func=self.get_auth_url),
-            Page(path=f'/{api_base}/create-session', view_func=self.create_session, methods=['POST']),
-            Page(path=f'/{api_base}/guild', view_func=self.get_guild),
-            Page(path=f'/{api_base}/guilds', view_func=self.get_guilds),
+            Page(path='i18n', view_func=self.get_i18n),
+            Page(path='get-auth', view_func=self.get_auth_url),
+            Page(path='create-session', view_func=self.create_session, methods=['POST']),
+            Page(path='guild', view_func=self.get_guild),
+            Page(path='guilds', view_func=self.get_guilds),
         ]
 
         static_pages = [
@@ -261,11 +264,17 @@ class WebServer:
         ]
 
         for page in api_pages:
-            page.add_to_app(self.app)
+            page.add_to_app(self.app,
+                            path_prefix=f'/{api_base}/',
+                            tags=['core'])
 
         if self.dbot is not None:
-            for page in self.dbot.module_manager.api_pages.all():
-                page.add_to_app(self.app, path_prefix=f'/{api_base}/', wrapper=self.guild_member_wrapper)
+            for module_name, pages in self.dbot.module_manager.api_pages.items():
+                for page in pages:
+                    page.add_to_app(self.app,
+                                    path_prefix=f'/{api_base}/',
+                                    wrapper=self.guild_member_wrapper,
+                                    tags=['module '+module_name])
 
         for page in static_pages:
             page.add_to_app(self.app)

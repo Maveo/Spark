@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ModuleApiPagesManager:
     def __init__(self, module_manager: 'ModuleManager'):
         self.module_manager = module_manager
-        self.default_api_pages: Dict[str, Page] = {}
+        self.default_api_pages: Dict[str, List[Page]] = {}
 
     def initialize(self, modules: List['SparkModule']):
         pages_keys: Dict[str, str] = {}
@@ -31,9 +31,14 @@ class ModuleApiPagesManager:
                     ))
                 else:
                     pages_keys[api_page.path] = module.get_name()
-                    self.default_api_pages[api_page.path] = api_page.new(
+                    module_name = module.get_name()
+                    wrapped_page = api_page.new(
                         view_func=self.module_wrapper(api_page.view_func, module)
                     )
+                    if module_name in self.default_api_pages:
+                        self.default_api_pages[module_name].append(wrapped_page)
+                    else:
+                        self.default_api_pages[module_name] = [wrapped_page]
 
     def module_wrapper(self, func, module):
         async def _call(guild: discord.Guild, member: discord.Member, *args, **kwargs):
@@ -45,5 +50,5 @@ class ModuleApiPagesManager:
         _call.__signature__ = inspect.signature(func)
         return _call
 
-    def all(self):
-        return self.default_api_pages.values()
+    def items(self) -> ItemsView[str, List[Page]]:
+        return self.default_api_pages.items()
