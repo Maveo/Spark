@@ -279,8 +279,10 @@ class WebServer:
         for page in static_pages:
             page.add_to_app(self.app)
 
-    def run(self):
-        uvicorn.run(self.app)
+    def run(self,
+            host: str = '127.0.0.1',
+            port: int = 8000,):
+        uvicorn.run(self.app, host=str(host), port=int(port))
 
 
 def main():

@@ -98,7 +98,18 @@ web = WebServer(
 app = web.app
 
 if __name__ == '__main__':
-    t = threading.Thread(target=web.run)
+    kwargs = {}
+    try:
+        port_index = sys.argv[1:].index('--port')
+        kwargs['port'] = sys.argv[1:][port_index + 1]
+    except ValueError:
+        pass
+    try:
+        port_index = sys.argv[1:].index('--host')
+        kwargs['host'] = sys.argv[1:][port_index + 1]
+    except ValueError:
+        pass
+    t = threading.Thread(target=web.run, kwargs=kwargs)
     t.daemon = True
     t.start()
     bot.run(global_settings['TOKEN'])
