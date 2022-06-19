@@ -56,8 +56,6 @@ if '--skip-check' in sys.argv[1:]:
 if not build_frontend and '--build' in sys.argv[1:]:
     build_frontend = True
 
-print(len(os.listdir(webserver_static_path)))
-
 if not skip_check and not build_frontend and len(os.listdir(webserver_static_path)) == 0:
     i = input('webserver path ({}) is empty. Do you want to build the frontend into that folder? [y/N] '
               .format(webserver_static_path))
