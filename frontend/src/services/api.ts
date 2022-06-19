@@ -270,7 +270,7 @@ function set_nickname(nickname: string | null): Promise<AxiosResponse> {
     });
 }
 
-function set_presence(activity_name: string | null, activity_type: number | null, status_type: string | null): Promise<AxiosResponse> {
+function set_presence(activity_name: string | undefined, activity_type: number | undefined, status_type: string | undefined): Promise<AxiosResponse> {
     return axios.post(process.env.VUE_APP_API_BASE_URL + '/presence', {
         'activity_name': activity_name,
         'activity_type': activity_type,

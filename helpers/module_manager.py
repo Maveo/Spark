@@ -85,14 +85,14 @@ class ModuleManager:
 
     async def activate_module(self, guild_id, module_key, sync_as_task=False, sync=True, activate_dependencies=False):
         if not self.bot.module_manager.is_optional(module_key):
-            raise WrongInputException('module "{}" not found!'.format(module_key))
+            raise WrongInputException(detail='module "{}" not found!'.format(module_key))
 
         missing_dependencies = self.bot.module_manager.missing_dependencies(guild_id, module_key)
         if activate_dependencies:
             for missing_dependency in missing_dependencies:
                 await self.activate_module(guild_id, missing_dependency, False, False, True)
         elif missing_dependencies:
-            raise WrongInputException('module "{}" misses dependencies: {}'.format(
+            raise WrongInputException(detail='module "{}" misses dependencies: {}'.format(
                 module_key,
                 ', '.join(missing_dependencies))
             )
@@ -108,11 +108,11 @@ class ModuleManager:
 
     async def deactivate_module(self, guild_id, module_key, sync_as_task=False, sync=True):
         if not self.bot.module_manager.is_optional(module_key):
-            raise WrongInputException('module "{}" not found!'.format(module_key))
+            raise WrongInputException(detail='module "{}" not found!'.format(module_key))
 
         dependency_for = self.bot.module_manager.is_dependency_for(guild_id, module_key)
         if dependency_for:
-            raise WrongInputException('module "{}" is dependency for: {} (disable them first)'.format(
+            raise WrongInputException(detail='module "{}" is dependency for: {} (disable them first)'.format(
                 module_key,
                 ', '.join(dependency_for)
             ))

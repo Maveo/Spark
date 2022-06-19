@@ -1,3 +1,4 @@
+import inspect
 from typing import *
 
 import discord
@@ -38,9 +39,10 @@ class ModuleApiPagesManager:
         async def _call(guild: discord.Guild, member: discord.Member, *args, **kwargs):
             activated_modules = self.module_manager.get_activated_modules(guild.id)
             if module.get_name() not in activated_modules:
-                raise ModuleNotActivatedException('module "{}" not activated'.format(module.get_name()))
+                raise ModuleNotActivatedException(detail='module "{}" not activated'.format(module.get_name()))
             return await func(self.module_manager.get(module.get_name()), guild, member, *args, **kwargs)
 
+        _call.__signature__ = inspect.signature(func)
         return _call
 
     def all(self):

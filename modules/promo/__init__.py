@@ -154,7 +154,7 @@ class PromoModule(SparkModule):
         async def promo(ctx: discord.commands.context.ApplicationContext):
             promo_code = await self.create_promo_code(ctx.author)
             if promo_code is None:
-                raise UnknownException('Promo code not found')
+                raise UnknownException(detail='Promo code not found')
 
             try:
                 await ctx.author.send(

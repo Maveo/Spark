@@ -7,7 +7,7 @@
 
 ## Application
 
-Spark is currently being beta-tested on the [StudeGaming Discord Server](https://discord.gg/MzXV5GYRsN "Join the Discord") and continues to be enhanced by his developer [skillor](https://github.com/skillor "Visit his github profile"). If you are interested in Sparks development, you can view the project roadmap and history in the [Projects](https://github.com/skillor/Spark/projects "A deep dive into Sparks development") tab. If you have any suggestions or bug reports and want to help in the development process, you are welcome to let us know in the [Issues](https://github.com/skillor/Spark/issues/new/choose "Give us feedback") tab. Spark is currently not publicly available, so can't be easily invited to your Discord server. Should you still want to use Spark on your Discord server, feel free to use it's source code to host it yourself.
+Spark is currently being beta-tested on the [StudeGaming Discord Server](https://discord.gg/MzXV5GYRsN "Join the Discord") and continues to be enhanced by his developer [skillor](https://github.com/skillor "Visit his github profile"). If you are interested in Sparks development, you can view the project roadmap and history in the [Projects](https://github.com/skillor/Spark/projects "A deep dive into Sparks development") tab. If you have any suggestions or bug reports and want to help in the development process, you are welcome to let us know in the [Issues](https://github.com/skillor/Spark/issues/new/choose "Give us feedback") tab. Spark is currently not publicly available, so can't be easily invited to your Discord server. Should you still want to use Spark on your Discord server, feel free to use its source code to host it yourself.
 
 ## Installation
 
@@ -31,7 +31,11 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     python tests.py
 
-> Start the bot
+> Start bot and webserver
+
+    python -m uvicorn main:app --port 4004
+
+> Start only the bot 
 
     python bot.py
 
@@ -55,7 +59,11 @@ Spark is currently being beta-tested on the [StudeGaming Discord Server](https:/
 
     python3 tests.py
 
-> Start the bot
+> Start bot and webserver
+
+    python3 -m uvicorn main:app --port 4004
+
+> Start only the bot 
 
     python3 bot.py
 
@@ -82,9 +90,6 @@ These settings are applied globally and **cannot be changed without restarting**
 - **APPLICATION_SECRET**
 
   This is the Oauth2-Application-Secret for your Discord Developer Application.
-- **ACTIVATE_WEBSERVER**
-
-  If the webserver should be activated.
 - **OAUTH2_REDIRECT_URI**
 
   This is the Oauth2-Redirect-Uri for your Discord Developer Application, you need to add "/login" for the default setup (e.g. http://your.domain/login).
@@ -92,9 +97,6 @@ These settings are applied globally and **cannot be changed without restarting**
 - **WEBSERVER_SECRET**
 
   A secret to encrypt the webserver sessions.
-- **WEBSERVER_PORT**
-
-  This is the Port for the Webserver.
 - **TOKEN** 
 
   This is the Token of your Discord Bot.
@@ -128,7 +130,7 @@ Spark has an evergrowing utility set with numerous advanced features:
 	Spark has an own frontend, yay
 
  - #### Level System
-    The level system tracks users voice-channel and chat activity on the server and rewards them with XP, which enables users to get levels. Server admins are then able to create ranks on certain level targets using the <kbd>/lvlsys set {level target} {role-id}</kbd> command and assign roles, that will  automatically be given to users hitting the stated level target (rank). All parameters like the rate at which users gain XP can be edited in the source code. Furthermore admins can change users levels and XP-multipliers, aswell as blacklisting users from gaining XP using <kbd>/lvlsys</kbd> chat commands.
+    The level system tracks users voice-channel and chat activity on the server and rewards them with XP, which enables users to get levels. Server admins are then able to create ranks on certain level targets using the <kbd>/lvlsys set {level target} {role-id}</kbd> command and assign roles, that will  automatically be given to users hitting the stated level target (rank). All parameters like the rate at which users gain XP can be edited in the source code. Furthermore, admins can change users levels and XP-multipliers, aswell as blacklisting users from gaining XP using <kbd>/lvlsys</kbd> chat commands.
 
  - #### Promotion Codes
     Users have to ability to provide new users with a promo code, which rewards the new user with a configurable level headstart and to old user with a temporary configurable xp-multiplier
@@ -137,7 +139,7 @@ Spark has an evergrowing utility set with numerous advanced features:
     When a user attempts to use a command without the permission to do so, the bot will deny the interaction and jokingly inform the user with one of 13 different custom text messages. The same will happen when a user executes an unknown command.
 
  - #### Advanced Command Interaction
-    Spark is able to communicate through Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally Spark can handle user related commands with @mentions.
+    Spark is able to communicate through Discords slash command integration, which offers a more polished user experience and will help to keep your chat cleaner. Additionally, Spark can handle user related commands with @mentions.
 
  - #### Custom Image Generation (ImageStack)
     The Bot is equipped with [ImageStack-SVG](https://github.com/skillor/imagestack-svg-python "ImageStacks Git Repository") (a custom image generator), which will create custom levelup, rankup, leaderboard and profile-card images. All images can be designed using ImageStack-SVG Code.
