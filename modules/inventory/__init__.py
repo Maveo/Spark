@@ -242,13 +242,13 @@ class InventoryModule(SparkModule):
     async def use_item(self, member: discord.Member, item_type_id, amount):
         success, item = self.bot.db.use_inventory_item(member.guild.id, member.id, item_type_id, amount)
         if not success:
-            raise ItemNotUsableException('item not useable')
+            raise ItemNotUsableException()
         item_type = item.InventoryItemType
         loaded_actions = json.loads(item_type.actions)
         for action in loaded_actions:
             hooks = self.bot.module_manager.hooks.get(member.guild.id, INVENTORY_ITEM_ACTION_HOOK)
             if action['action'] not in hooks:
-                raise UnknownException('Item action not found')
+                raise UnknownException(detail='Item action not found')
 
             await hooks[action['action']]['callback'](member,
                                                       amount,
@@ -275,20 +275,20 @@ class InventoryModule(SparkModule):
     async def edit_rarity(self, guild: discord.Guild, rarity):
         try:
             if len(rarity['name']) > 20:
-                raise WrongInputException('name can only be 20 characters long')
+                raise WrongInputException(detail='name can only be 20 characters long')
 
             try:
                 make_linear_gradient(rarity['foreground_color'])
                 make_linear_gradient(rarity['background_color'])
             except:
-                raise WrongInputException('wrong format for color')
+                raise WrongInputException(detail='wrong format for color')
             self.bot.db.edit_rarity(guild.id,
                                     rarity['id'] if 'id' in rarity else None,
                                     rarity['name'],
                                     rarity['foreground_color'],
                                     rarity['background_color'])
         except KeyError:
-            raise WrongInputException('missing parameter')
+            raise WrongInputException(detail='missing parameter')
 
     async def get_rarities(self, guild: discord.Guild):
         return {r.order: {'id': r.id,
@@ -304,7 +304,7 @@ class InventoryModule(SparkModule):
             item_actions = []
             for item_action in item_type['actions']:
                 if item_action['action'] not in actions:
-                    raise WrongInputException('action "{}" not found'.format(item_type['action']))
+                    raise WrongInputException(detail='action "{}" not found'.format(item_type['action']))
 
                 item_actions.append({'action': item_action['action'], 'action_options': {
                     k: item_action['action_options'][k]['value']
@@ -323,4 +323,4 @@ class InventoryModule(SparkModule):
                 json.dumps(item_actions)
             )
         except KeyError:
-            raise WrongInputException('missing parameter')
+            raise WrongInputException(detail='missing parameter')

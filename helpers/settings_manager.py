@@ -17,9 +17,6 @@ class GlobalSettingsValidator:
         if 'LOGGING_LEVEL' not in settings:
             settings['LOGGING_LEVEL'] = logging.WARNING
 
-        if 'WEBSERVER_LOGGING_LEVEL' not in settings:
-            settings['WEBSERVER_LOGGING_LEVEL'] = logging.WARNING
-
         return settings
 
 

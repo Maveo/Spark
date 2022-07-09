@@ -1,0 +1,33 @@
+name: Build Open Api Spec
+
+on:
+  push:
+    branches: [ "master" ]
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Generate openapi.json
+      run: |
+        python ./webserver/gen_openapi.py
+    - name: Commit openapi.json
+      run: |
+        git config --global user.name "Build Runner"
+        git pull
+        git add --force ./docs/openapi.json
+        git diff-index --quiet HEAD || git commit -m "Automated openapi.json build" && git push

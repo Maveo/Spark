@@ -55,7 +55,7 @@ class GeneralModule(SparkModule):
                               )):
             try:
                 if not self.bot.module_manager.settings.set(ctx.guild.id, key, value):
-                    raise UnknownException('Setting not found')
+                    raise UnknownException(detail='Setting not found')
                 return await ctx.respond(embed=settings_embed({
                     key: self.bot.module_manager.settings.get(ctx.guild.id, key)
                 }, max_length=1020))
@@ -147,7 +147,7 @@ class GeneralModule(SparkModule):
                 await self.bot.module_manager.activate_module(ctx.guild.id, module)
             except WrongInputException as e:
                 return await ctx.respond(embed=discord.Embed(title='',
-                                                             description=e.description,
+                                                             description=e.detail,
                                                              color=discord.Color.red()))
 
             return await ctx.respond(
@@ -174,7 +174,7 @@ class GeneralModule(SparkModule):
                 await self.bot.module_manager.deactivate_module(ctx.guild.id, module)
             except WrongInputException as e:
                 return await ctx.respond(embed=discord.Embed(title='',
-                                                             description=e.description,
+                                                             description=e.detail,
                                                              color=discord.Color.red()))
 
             return await ctx.respond(

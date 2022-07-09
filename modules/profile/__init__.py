@@ -1,5 +1,3 @@
-import time
-
 import discord
 import discord.commands
 

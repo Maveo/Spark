@@ -1,81 +1,81 @@
-import werkzeug
+from fastapi import HTTPException
 
 
-class UnauthorizedException(werkzeug.exceptions.HTTPException):
-    code = 401
+class UnknownException(HTTPException):
+    def __init__(self, status_code=400, detail='unknown'):
+        super().__init__(status_code, detail)
 
 
-class UnknownException(werkzeug.exceptions.HTTPException):
-    code = 400
+class NotFoundException(HTTPException):
+    def __init__(self, status_code=404, detail='not_found'):
+        super().__init__(status_code, detail)
 
 
-class WrongInputException(werkzeug.exceptions.HTTPException):
-    code = 400
+class WrongInputException(HTTPException):
+    def __init__(self, status_code=400, detail='wrong_input'):
+        super().__init__(status_code, detail)
 
 
-class MethodNotAvailableException(werkzeug.exceptions.HTTPException):
-    code = 400
+class UnauthorizedException(HTTPException):
+    def __init__(self, status_code=401, detail='unauthorized'):
+        super().__init__(status_code, detail)
 
 
-class ModuleNotActivatedException(werkzeug.exceptions.HTTPException):
-    code = 400
+class MethodNotAvailableException(HTTPException):
+    def __init__(self, status_code=400, detail='method_not_available'):
+        super().__init__(status_code, detail)
 
-    def __init__(self, *args, **kwargs):
-        self.description = 'module is not activated'
-        super().__init__(*args, **kwargs)
+
+class ModuleNotActivatedException(HTTPException):
+    def __init__(self, status_code=400, detail='module_not_activated'):
+        super().__init__(status_code, detail)
 
 
 class BoostingYourselfForbiddenException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'boosting yourself forbidden'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='boosting_yourself_forbidden')
 
 
 class BoostNotExpiredException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'boost not expired'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='boost_not_expired')
 
 
 class LevelingBlacklistedUserException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'user is blacklisted'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='level_user_blacklisted')
 
 
 class PromotingYourselfForbiddenException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'promoting yourself forbidden'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='promoting_yourself_forbidden')
 
 
-class PromoCodeNotFoundException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'promo code not found'
-        super().__init__(*args, **kwargs)
+class PromoCodeNotFoundException(NotFoundException):
+    def __init__(self):
+        super().__init__(detail='promo_code_not_found')
 
 
-class ItemNotFoundException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'item not found'
-        super().__init__(*args, **kwargs)
+class ItemNotFoundException(NotFoundException):
+    def __init__(self):
+        super().__init__(detail='item_not_found')
 
 
 class ItemNotUsableException(WrongInputException):
-    pass
+    def __init__(self):
+        super().__init__(detail='item_not_usable')
 
 
 class WheelspinForbiddenException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'wheelspin forbidden'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='wheelspin_forbidden')
 
 
 class WheelspinEmptyException(WrongInputException):
-    def __init__(self, *args, **kwargs):
-        self.description = 'wheelspin empty'
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        super().__init__(detail='wheelspin_empty')
 
 
 class NoMoneyException(WrongInputException):
-    pass
+    def __init__(self):
+        super().__init__(detail='no_money')

@@ -81,7 +81,7 @@ class EmojiReactionsModule(SparkModule):
             async def response(dropdown1: CustomDropdown, interaction1: discord.Interaction):
                 emoji = get(ctx.guild.emojis, id=int(dropdown1.values[0]))
                 if not emoji:
-                    raise UnknownException('Emoji not found')
+                    raise UnknownException(detail='Emoji not found')
                 await self.add_emoji_reaction_action(ctx.guild, ctx, message, emoji)
 
             options = [
@@ -162,7 +162,7 @@ class EmojiReactionsModule(SparkModule):
             try:
                 reaction_id = int(reaction[4:].split(' ')[0])
             except:
-                raise UnknownException('Reaction ID not found')
+                raise UnknownException(detail='Reaction ID not found')
             self.bot.db.remove_emoji_reaction(ctx.author.guild.id, reaction_id)
             return await ctx.respond(
                 embed=discord.Embed(title='',
@@ -282,7 +282,7 @@ class EmojiReactionsModule(SparkModule):
                                view=paginator.view())
 
             else:
-                raise UnknownException('emoji action not found')
+                raise UnknownException(detail='emoji action not found')
 
         options = []
 

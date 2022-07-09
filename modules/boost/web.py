@@ -1,5 +1,5 @@
 import discord
-from flask import jsonify, request
+from fastapi import Body
 
 from helpers.exceptions import WrongInputException
 from helpers.tools import search_member
@@ -13,16 +13,14 @@ if TYPE_CHECKING:
 
 async def boost_user(module: 'BoostModule',
                      guild: discord.Guild,
-                     member: discord.Member):
-    json = request.get_json()
-    if json is None or 'username' not in json:
-        raise WrongInputException('username not provided')
-    boost_member = search_member(guild, json['username'])
+                     member: discord.Member,
+                     username: str = Body(embed=True)):
+    boost_member = search_member(guild, username)
     if boost_member is None:
-        raise WrongInputException('user not found')
+        raise WrongInputException(detail='user not found')
 
     await module.boost_user(member, boost_member)
-    return jsonify({'msg': 'success'}), 200
+    return {'msg': 'success'}
 
 
 API_PAGES = [

@@ -1,12 +1,11 @@
 import discord
-from flask import jsonify, request
+from fastapi import Body
 
-from helpers.exceptions import WrongInputException
 from helpers.module_pages import has_permissions
 from helpers.tools import make_linear_gradient, html_color
 from webserver import Page
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from . import StoreModule
@@ -34,29 +33,26 @@ async def get_store(module: 'StoreModule',
             'to_foreground_color_html': html_color(to_foreground_color[0], to_foreground_color[1]),
             'to_background_color_html': html_color(to_background_color[0], to_background_color[1]),
         })
-    return jsonify({'msg': 'success', 'store': store}), 200
+    return {'msg': 'success', 'store': store}
 
 
 async def buy_offer(module: 'StoreModule',
                     guild: discord.Guild,
-                    member: discord.Member):
-    json = request.get_json()
-    if json is None or 'offer_id' not in json or 'amount' not in json:
-        raise WrongInputException('offer_id or amount not given')
-
-    await module.buy_offer(member, json['offer_id'], json['amount'])
-    return jsonify({'msg': 'success'}), 200
+                    member: discord.Member,
+                    offer_id: int = Body(embed=True),
+                    amount: float = Body(embed=True),
+                    ):
+    await module.buy_offer(member, int(offer_id), float(amount))
+    return {'msg': 'success'}
 
 
 @has_permissions(administrator=True)
 async def set_store(module: 'StoreModule',
                     guild: discord.Guild,
-                    member: discord.Member):
-    json = request.get_json()
-    if json is None or 'store' not in json:
-        raise WrongInputException('store not given')
-    module.bot.db.set_store(guild.id, json['store'])
-    return jsonify({'msg': 'success'}), 200
+                    member: discord.Member,
+                    store: Any = Body(embed=True)):
+    module.bot.db.set_store(guild.id, store)
+    return {'msg': 'success'}
 
 
 API_PAGES = [

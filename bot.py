@@ -1,9 +1,7 @@
 import functools
 import os
 import asyncio
-import subprocess
 import sys
-import shutil
 import time
 
 import logging
@@ -69,8 +67,8 @@ class DiscordBot:
         return wrapper
 
     def __init__(self,
-                 db: Database,
-                 i18n: I18nManager = None,
+                 db: Database = Database('sqlite:///'),
+                 i18n: I18nManager = I18nManager(data={}),
                  current_dir='',
                  interval_time=-1,
                  description='',
@@ -78,12 +76,10 @@ class DiscordBot:
                  super_admins=None,
                  logging_level=logging.WARNING,
                  max_sync_commands_tries=5,
+                 loop=None,
                  ):
         self.current_dir = current_dir
         self.db = db
-
-        if i18n is None:
-            i18n = I18nManager(data={})
         self.i18n = i18n
 
         self.max_sync_commands_tries = max_sync_commands_tries
@@ -115,6 +111,7 @@ class DiscordBot:
             intents=intents,
             help_command=None,
             auto_sync_commands=False,
+            loop=loop,
         )
 
         self.module_manager = ModuleManager(self)
@@ -283,7 +280,6 @@ class DiscordBot:
 def main():
     from settings import GLOBAL_SETTINGS
     from helpers.settings_manager import GlobalSettingsValidator
-    from webserver import WebServer
 
     logging.basicConfig()
 
@@ -307,66 +303,6 @@ def main():
                                    )),
         logging_level=global_settings['LOGGING_LEVEL']
     )
-
-    if global_settings['ACTIVATE_WEBSERVER']:
-        webserver_static_path = os.path.join(current_dir, global_settings['WEBSERVER_STATIC_PATH'])
-        if not os.path.exists(webserver_static_path):
-            os.mkdir(webserver_static_path)
-
-        build_frontend = False
-        skip_check = False
-        install = False
-
-        if '--install' in sys.argv[1:]:
-            install = True
-
-        if '--skip-check' in sys.argv[1:]:
-            skip_check = True
-
-        if not build_frontend and '--build' in sys.argv[1:]:
-            build_frontend = True
-
-        if not skip_check and not build_frontend and len(os.listdir(webserver_static_path)) == 0:
-            i = input('webserver path ({}) is empty. Do you want to build the frontend into that folder? [y/N] '
-                      .format(webserver_static_path))
-            if i.upper() == 'Y':
-                build_frontend = True
-
-        if build_frontend:
-            if install:
-                print('installing node packages...')
-                code = subprocess.Popen('npm i',
-                                        cwd=os.path.join(current_dir, 'frontend'),
-                                        shell=True).wait()
-                if code != 0:
-                    print('An error occurred while installing!')
-                    quit(code)
-
-            print('building frontend...')
-
-            code = subprocess.Popen('npm run build',
-                                    cwd=os.path.join(current_dir, 'frontend'),
-                                    shell=True).wait()
-            if code != 0:
-                print('An error occurred while building!')
-                quit(code)
-
-            if os.path.join(current_dir, 'frontend', 'dist') != webserver_static_path:
-                shutil.rmtree(webserver_static_path)
-                shutil.copytree(os.path.join(current_dir, 'frontend', 'dist'), webserver_static_path)
-
-        web = WebServer(
-            oauth2_client_id=global_settings['APPLICATION_ID'],
-            oauth2_client_secret=global_settings['APPLICATION_SECRET'],
-            oauth2_redirect_uri=global_settings['OAUTH2_REDIRECT_URI'],
-            webserver_secret=global_settings['WEBSERVER_SECRET'],
-            discord_bot=b,
-            static_path=webserver_static_path,
-            port=global_settings['WEBSERVER_PORT'],
-            debug=global_settings['WEBSERVER_DEBUG'],
-            logging_level=global_settings['WEBSERVER_LOGGING_LEVEL']
-        )
-        web.start()
 
     b.run(global_settings['TOKEN'])
 

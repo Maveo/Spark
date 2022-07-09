@@ -1,12 +1,11 @@
 import json
 from typing import TYPE_CHECKING
 
-import discord
-from flask.json import JSONEncoder
 from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message, Permissions
+from fastapi.responses import JSONResponse
 
 from helpers.db import InventoryItemType, WheelspinProbability
-from helpers.dummys import RoleDummy, MemberDummy
+from helpers.dummys import MemberDummy
 from datetime import datetime
 from imagestack_svg.imageresolve import ImageStackResolveString
 
@@ -16,11 +15,12 @@ if TYPE_CHECKING:
     from bot import DiscordBot
 
 
-def create_json_encoder(bot: 'DiscordBot'):
-    class DiscordJSONEncoder(JSONEncoder):
+def create_custom_json_response_class(bot: 'DiscordBot'):
+    class CustomEncoder(json.JSONEncoder):
         def default(self, o):
             if isinstance(o, datetime):
-                return datetime.timestamp(o)*1000
+                return datetime.timestamp(o) * 1000
+
             if isinstance(o, Member) or isinstance(o, MemberDummy):
                 return {
                     'id': str(o.id),
@@ -60,7 +60,7 @@ def create_json_encoder(bot: 'DiscordBot'):
                     'uses': o.uses,
                 }
             if isinstance(o, Permissions):
-                return {perm: getattr(o, perm) for perm in discord.Permissions.VALID_FLAGS.keys()}
+                return {perm: getattr(o, perm) for perm in Permissions.VALID_FLAGS.keys()}
             if isinstance(o, TextChannel) or isinstance(o, VoiceChannel):
                 return {
                     'id': str(o.id),
@@ -117,6 +117,17 @@ def create_json_encoder(bot: 'DiscordBot'):
                     'amount': o.amount,
                     'sound': o.sound,
                 }
+            return json.JSONEncoder.default(self, o)
 
-            return JSONEncoder.default(self, o)
-    return DiscordJSONEncoder
+    class CustomJSONResponse(JSONResponse):
+        def render(self, content) -> bytes:
+            return json.dumps(
+                content,
+                cls=CustomEncoder,
+                ensure_ascii=False,
+                allow_nan=False,
+                indent=None,
+                separators=(",", ":"),
+            ).encode("utf-8")
+
+    return CustomJSONResponse

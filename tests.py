@@ -1,4 +1,3 @@
-import asyncio
 import random
 import unittest
 
@@ -13,10 +12,7 @@ from modules.wheelspin import WheelspinModule
 class Tests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bot = DiscordBot(
-            Database('sqlite:///'),
-            I18nManager(data={})
-        )
+        cls.bot = DiscordBot()
 
     async def test_activate_module(self):
         g = GuildDummy()
