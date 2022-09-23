@@ -5,12 +5,13 @@ from io import BytesIO
 
 import discord
 from discord import PCMAudio, ActivityType, Status, Activity
+from discord.utils import get
 from fastapi import Body, UploadFile, File, Form
 from imagestack_svg.helpers import is_emoji, from_char
 
 from helpers.exceptions import WrongInputException, MethodNotAvailableException
 from helpers.module_pages import has_permissions
-from helpers.tools import search_text_channel, search_voice_channel
+from helpers.tools import search_text_channel, search_voice_channel, give_role, remove_role
 from webserver import Page
 
 from typing import TYPE_CHECKING, Any, Union
@@ -173,6 +174,37 @@ async def voice_channels(module: 'GeneralModule',
 
 
 @has_permissions(administrator=True)
+async def get_roles(module: 'GeneralModule',
+                    guild: discord.Guild,
+                    member: discord.Member):
+    return {
+        'roles': guild.roles
+    }
+
+
+@has_permissions(administrator=True)
+async def set_role(module: 'GeneralModule',
+                   guild: discord.Guild,
+                   member: discord.Member,
+                   give: bool = Body(embed=True),
+                   role_id: str = Body(embed=True),
+                   user_id: str = Body(embed=True),
+                   ):
+    member = get(guild.members, id=int(user_id))
+    if member is None:
+        raise WrongInputException(detail='Member not found')
+
+    if give:
+        asyncio.run_coroutine_threadsafe(give_role(guild, member, int(role_id)), module.bot.bot.loop).result()
+    else:
+        asyncio.run_coroutine_threadsafe(remove_role(guild, member, int(role_id)), module.bot.bot.loop).result()
+
+    return {
+        'msg': 'success',
+    }
+
+
+@has_permissions(administrator=True)
 async def send_msg_channel(module: 'GeneralModule',
                            guild: discord.Guild,
                            member: discord.Member,
@@ -317,6 +349,8 @@ API_PAGES = [
     Page(path='invite-link', view_func=invite_link, methods=['POST']),
     Page(path='text-channels', view_func=text_channels),
     Page(path='voice-channels', view_func=voice_channels),
+    Page(path='roles', view_func=get_roles),
+    Page(path='set-role', view_func=set_role, methods=['POST']),
     Page(path='send-message', view_func=send_msg_channel, methods=['POST']),
     Page(path='messages', view_func=get_messages),
     Page(path='nickname', view_func=set_nickname, methods=['POST']),

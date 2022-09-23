@@ -307,7 +307,10 @@
   "WATCH": "Watch",
   "CLICK_TO_WATCH": "Click to watch",
   "AUTO_REFRESH": "Auto Refresh",
+  "GIVE_ROLE": "Give role",
+  "GIVE": "Give",
   "GIVE_A": "Give a",
+  "REMOVE": "Remove",
 
   "SIGN_IN_DISCORD": "Sign In with Discord",
   "HELP": "Help",
