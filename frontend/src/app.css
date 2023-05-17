@@ -117,13 +117,13 @@
     position: fixed;
     left: 0;
 	top: 0;
+    overflow-x: hidden;
     overflow-y: scroll;
     width: inherit;
     height: inherit;
     background-color: #303237;
     padding: 1rem;
     z-index: 1;
-    overflow: hidden;
 }
 
 .spark-sidebar-container {
