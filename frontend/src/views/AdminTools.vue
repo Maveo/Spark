@@ -116,6 +116,33 @@
                     </div>
                 </div>
             </div>
+
+            <div class="spark-rounded bg-gray2 py-2 px-4 mb-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="me-3">
+                        <h5 class="mb-0">{{ $filters.i18n('GIVE_ROLE') }}:</h5>
+                    </div>
+                    <div class="my-2 d-flex align-items-center flex-grow-1">
+                        <select class="me-2 form-select form-select-sm" v-model="selected_give_role" style="max-width: 180px;" required>
+                            <option value="0" hidden>{{ $filters.i18n('LOADING_ROLES') }}</option>
+                            <option v-for="option in roles_options" :key="option.id" :value="option.id">
+                                {{ option.name}}
+                            </option>
+                        </select>
+                        <div class="me-3 flex-grow-1">
+                            <input type="text" class="form-control form-control-sm" :placeholder="$filters.i18n('USER_ID')" v-model="role_user_id" required>
+                        </div>
+                        <div class="my-2 d-flex align-items-center">
+                            <button class="me-2 btn btn-info btn-sm text-nowrap" @click="set_user_role(true)">
+                                {{ $filters.i18n('GIVE') }}
+                            </button>
+                            <button class="btn btn-info btn-sm text-nowrap" @click="set_user_role(false)">
+                                {{ $filters.i18n('REMOVE') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -160,6 +187,9 @@ export default defineComponent({
         watch_auto_refresh: false,
         auto_refresh_intervall: undefined as number | undefined,
         nickname: '',
+        roles_options: [],
+        selected_give_role: '0',
+        role_user_id: '',
     }
   },
   created() {
@@ -174,6 +204,13 @@ export default defineComponent({
       api.get_voice_channels().then((response: AxiosResponse) => {
           this.voice_channel_options = response.data.voice_channels;
           this.selected_voice_channel = (this.voice_channel_options[0] as any).id;
+      }).catch((error) => {
+          console.log(error);
+      });
+
+      api.get_roles().then((response: AxiosResponse) => {
+          this.roles_options = response.data.roles;
+          this.selected_give_role = (this.roles_options[0] as any).id;
       }).catch((error) => {
           console.log(error);
       });
@@ -360,6 +397,21 @@ export default defineComponent({
                 text: error.response.data.description,
             });
         });
+    },
+    set_user_role(give: boolean) {
+        if (this.role_user_id !== '') {
+            api.set_role(give, this.selected_give_role, this.role_user_id).then(() => {
+                Toast.fire({
+                    icon: 'success',
+                    text: this.filters.i18n('SUCCESSFUL'),
+                });
+            }).catch((error) => {
+                Toast.fire({
+                    icon: 'error',
+                    text: error.response.data.description,
+                });
+            });
+        }
     }
   }
 });

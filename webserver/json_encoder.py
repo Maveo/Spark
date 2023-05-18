@@ -1,7 +1,7 @@
 import json
 from typing import TYPE_CHECKING
 
-from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message, Permissions
+from discord import Member, ClientUser, User, Guild, Invite, TextChannel, VoiceChannel, Message, Permissions, Role
 from fastapi.responses import JSONResponse
 
 from helpers.db import InventoryItemType, WheelspinProbability
@@ -62,6 +62,11 @@ def create_custom_json_response_class(bot: 'DiscordBot'):
             if isinstance(o, Permissions):
                 return {perm: getattr(o, perm) for perm in Permissions.VALID_FLAGS.keys()}
             if isinstance(o, TextChannel) or isinstance(o, VoiceChannel):
+                return {
+                    'id': str(o.id),
+                    'name': str(o.name),
+                }
+            if isinstance(o, Role):
                 return {
                     'id': str(o.id),
                     'name': str(o.name),

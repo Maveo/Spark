@@ -569,6 +569,35 @@ function use_item(item_type_id: number, amount: number): Promise<AxiosResponse> 
     });
 }
 
+function get_roles(): Promise<AxiosResponse> {
+    return axios.get(process.env.VUE_APP_API_BASE_URL + '/roles',
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
+function set_role(give: boolean, role_id: string, user_id: string): Promise<AxiosResponse> {
+    return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-role',
+    {
+        give: give,
+        role_id: role_id,
+        user_id: user_id,
+    },
+    {
+        params: {
+            'guild_id': store.state.selected_server.id,
+        },
+        headers: {
+            'Authorization': store.state.persistant.token
+        }
+    });
+}
+
 
 const api = {
     get_i18n,
@@ -615,7 +644,9 @@ const api = {
     get_store,
     buy_offer,
     get_inventory,
-    use_item
+    use_item,
+    get_roles,
+    set_role,
 };
 
 export default api;
