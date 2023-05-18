@@ -16,7 +16,7 @@ class MessageReactionsModule(SparkModule):
         super().__init__(bot)
 
         @bot.has_permissions(administrator=True)
-        async def get_reactions(ctx: discord.ApplicationContext, *args):
+        async def get_reactions(ctx: discord.ApplicationContext):
             reactions = self.bot.db.get_message_reactions(ctx.guild.id)
             embed = discord.Embed(title=self.bot.i18n.get('MESSAGE_REACTIONS_TITLE'), color=discord.Color.green())
 

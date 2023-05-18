@@ -108,7 +108,7 @@ class EmojiReactionsModule(SparkModule):
             await ctx.respond(view=paginator.view(), ephemeral=True)
 
         @bot.has_permissions(administrator=True)
-        async def get_emoji_reactions(ctx: discord.ApplicationContext, *args):
+        async def get_emoji_reactions(ctx: discord.ApplicationContext):
             reactions = self.bot.db.get_emoji_reactions(ctx.guild.id)
             embed = discord.Embed(title=self.bot.i18n.get('EMOJI_REACTIONS_TITLE'), color=discord.Color.green())
 

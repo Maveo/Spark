@@ -15,10 +15,10 @@ class GamesModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def tic_tac_toe(ctx: discord.ApplicationContext, *args):
+        async def tic_tac_toe(ctx: discord.ApplicationContext):
             await TicTacToeViewHolder(bot, ctx).start()
 
-        async def chess(ctx: discord.ApplicationContext, *args):
+        async def chess(ctx: discord.ApplicationContext):
             await ChessViewHolder(self.bot, ctx).start()
 
         self.commands = [

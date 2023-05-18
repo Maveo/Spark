@@ -19,9 +19,8 @@ class LuckyModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def coinflip(ctx: discord.ApplicationContext, *args):
+        async def coinflip(ctx: discord.ApplicationContext):
             res = random.choice(['heads', 'tails'])
-
             message = await ctx.respond(file=discord.File(
                 os.path.join(self.bot.current_dir, 'images', '{}.gif'.format(res))))
 
@@ -36,7 +35,7 @@ class LuckyModule(SparkModule):
 
             await ctx.edit(file=discord.File(os.path.join(self.bot.current_dir, 'images', '{}.png'.format(res))))
 
-        async def dice(ctx: discord.ApplicationContext, *args):
+        async def dice(ctx: discord.ApplicationContext):
             await ctx.respond(file=discord.File(
                 os.path.join(self.bot.current_dir, 'images', '{}.gif'.format(random.randint(1, 6)))))
 

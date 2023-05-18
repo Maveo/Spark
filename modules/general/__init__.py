@@ -184,7 +184,7 @@ class GeneralModule(SparkModule):
                                     color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def get_active_modules(ctx: discord.ApplicationContext, *args):
+        async def get_active_modules(ctx: discord.ApplicationContext):
             return await ctx.respond(
                 embed=discord.Embed(title=self.bot.i18n.get('ACTIVE_MODULES_TITLE'),
                                     description='\n'.join(

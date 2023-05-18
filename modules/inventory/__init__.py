@@ -23,12 +23,12 @@ class InventoryModule(SparkModule):
     def __init__(self, bot):
         super().__init__(bot)
 
-        async def get_inventory(ctx: discord.ApplicationContext, *args):
+        async def get_inventory(ctx: discord.ApplicationContext):
             return await ctx.respond(file=await self.create_inventory_image(
                 ctx.author.guild.id, (await self.get_inventory(ctx.author)).values()),
                                      ephemeral=True)
 
-        async def list_inventory(ctx: discord.ApplicationContext, *args):
+        async def list_inventory(ctx: discord.ApplicationContext):
             embed = discord.Embed(title=bot.i18n.get('INVENTORY_USER_TITLE').format(ctx.author.display_name),
                                   description='',
                                   color=discord.Color.gold())
