@@ -21,7 +21,6 @@ class LuckyModule(SparkModule):
 
         async def coinflip(ctx: discord.ApplicationContext):
             res = random.choice(['heads', 'tails'])
-
             message = await ctx.respond(file=discord.File(
                 os.path.join(self.bot.current_dir, 'images', '{}.gif'.format(res))))
 

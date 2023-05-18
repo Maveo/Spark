@@ -14,7 +14,7 @@ class MessagingModule(SparkModule):
         super().__init__(bot)
 
         @bot.has_permissions(administrator=True)
-        async def send(ctx: discord.commands.context.ApplicationContext,
+        async def send(ctx: discord.ApplicationContext,
                        channel: discord.commands.Option(
                            discord.TextChannel,
                            description=bot.i18n.get('MESSAGING_SEND_CHANNEL_OPTION'),

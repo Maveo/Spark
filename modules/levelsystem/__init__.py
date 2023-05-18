@@ -47,11 +47,11 @@ class LevelsystemModule(SparkModule):
         super().__init__(bot)
 
         @bot.has_permissions(administrator=True)
-        async def get_levelsystem(ctx: discord.commands.context.ApplicationContext):
+        async def get_levelsystem(ctx: discord.ApplicationContext):
             return await ctx.respond(embed=await self.lvlsys_get_embed(ctx.guild))
 
         @bot.has_permissions(administrator=True)
-        async def set_levelsystem(ctx: discord.commands.context.ApplicationContext,
+        async def set_levelsystem(ctx: discord.ApplicationContext,
                                   level: discord.commands.Option(
                                       int,
                                       description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_ROLE_LEVEL_OPTION'),
@@ -68,7 +68,7 @@ class LevelsystemModule(SparkModule):
             return await ctx.respond(embed=await self.lvlsys_get_embed(ctx.guild))
 
         @bot.has_permissions(administrator=True)
-        async def remove_levelsystem(ctx: discord.commands.context.ApplicationContext,
+        async def remove_levelsystem(ctx: discord.ApplicationContext,
                                      level: discord.commands.Option(
                                          int,
                                          description=bot.i18n.get('LEVELSYSTEM_REMOVE_LEVEL_ROLE_LEVEL_OPTION'),
@@ -80,7 +80,7 @@ class LevelsystemModule(SparkModule):
             return await ctx.respond(embed=await self.lvlsys_get_embed(ctx.guild))
 
         @bot.has_permissions(administrator=True)
-        async def boost_add(ctx: discord.commands.context.ApplicationContext,
+        async def boost_add(ctx: discord.ApplicationContext,
                             member: discord.commands.Option(
                                 discord.Member,
                                 description=bot.i18n.get('LEVELSYSTEM_BOOST_ADD_MEMBER_OPTION'),
@@ -99,7 +99,7 @@ class LevelsystemModule(SparkModule):
                                                   color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def set_level(ctx: discord.commands.context.ApplicationContext,
+        async def set_level(ctx: discord.ApplicationContext,
                             member: discord.commands.Option(
                                 discord.Member,
                                 description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_MEMBER_OPTION'),
@@ -120,7 +120,7 @@ class LevelsystemModule(SparkModule):
                                                   color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def blacklist_user(ctx: discord.commands.context.ApplicationContext,
+        async def blacklist_user(ctx: discord.ApplicationContext,
                                  member: discord.commands.Option(
                                      discord.Member,
                                      description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
@@ -147,7 +147,7 @@ class LevelsystemModule(SparkModule):
                                         color=discord.Color.green()))
 
         @bot.has_permissions(administrator=True)
-        async def blacklisted_users(ctx: discord.commands.context.ApplicationContext):
+        async def blacklisted_users(ctx: discord.ApplicationContext):
             description = []
             for user in self.bot.db.get_blacklisted_level_users(ctx.guild.id, True):
                 member = get(ctx.guild.members, id=int(user.user_id))
@@ -158,7 +158,7 @@ class LevelsystemModule(SparkModule):
                 description='\n'.join(description),
                 color=discord.Color.green()))
 
-        async def leaderboard(ctx: discord.commands.context.ApplicationContext):
+        async def leaderboard(ctx: discord.ApplicationContext):
             await ctx.defer()
 
             await ctx.respond(file=await self.create_leaderboard_image(ctx.author))

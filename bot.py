@@ -254,7 +254,8 @@ class DiscordBot:
                                                                                             command.name))
                 self.bot.add_application_command(command)
         try:
-            await self.bot.sync_commands()
+            # TODO: do we use force or not?
+            await self.bot.sync_commands(force=True)
             self.logger.info('synced bot command modules {}'.format(modules_to_guilds))
         except discord.HTTPException as e:
             if tried < self.max_sync_commands_tries:
