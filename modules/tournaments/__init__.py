@@ -101,6 +101,8 @@ class TournamentsModule(SparkModule):
                         break
                 await msg.edit('Winner: {}'.format(winner))
             
+        default_voting_emoji1 = '🅰'
+        default_voting_emoji2 = '🅱'
 
         async def vote_tournament_list(ctx: discord.ApplicationContext,
                                        options: discord.Option(
@@ -114,12 +116,12 @@ class TournamentsModule(SparkModule):
                                        ),
                                        voting_emoji1: discord.Option(
                                         str,
-                                        default='🅰',
+                                        default=default_voting_emoji1,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI1_OPTION'),
                                        ),
                                        voting_emoji2: discord.Option(
                                         str,
-                                        default='🅱',
+                                        default=default_voting_emoji2,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI2_OPTION'),
                                        ),
                                     ):
@@ -137,12 +139,12 @@ class TournamentsModule(SparkModule):
                                        ),
                                        voting_emoji1: discord.Option(
                                         str,
-                                        default='🅰',
+                                        default=default_voting_emoji1,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI1_OPTION'),
                                        ),
                                        voting_emoji2: discord.Option(
                                         str,
-                                        default='🅱',
+                                        default=default_voting_emoji2,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI2_OPTION'),
                                        ),
                                     ):
