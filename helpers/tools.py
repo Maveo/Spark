@@ -106,6 +106,15 @@ def search_voice_channel(guild, search):
     return search_channel(guild, search, discord.ChannelType.voice)
 
 
+def is_valid_emoji(emoji):
+    t = discord.PartialEmoji.from_str(emoji)
+    if t.is_custom_emoji():
+        return True
+    if len(emoji) == len(only_emojis(emoji)) == 1:
+        return True
+    return False
+
+
 def only_emojis(text):
     # TO-DO: don't hardcode this
     text = text.replace('️', '')

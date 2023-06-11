@@ -237,7 +237,21 @@
   "INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION": "What item to create",
   "GIVE_WHEELSPINS_AMOUNT_DESCRIPTION": "How many wheelspins to give",
   "CUSTOM_PROFILE_CARD_TEMPLATE_DESCRIPTION": "Custom Profile Card",
-
+  "VOTE_COMMAND": "vote",
+  "VOTE_DESCRIPTION": "Create a Survey to vote!",
+  "VOTE_TOURNAMENT_COMMAND": "ko",
+  "VOTE_TOURNAMENT_DESCRIPTION": "Survey in K.O. tournament style",
+  "VOTE_TOURNAMENT_LIST_COMMAND": "list",
+  "VOTE_TOURNAMENT_LIST_DESCRIPTION": "Provide options as list",
+  "VOTE_TOURNAMENT_LIST_OPTIONS": "Options, seperated by ,",
+  "VOTE_TOURNAMENT_ROUND_TIME_OPTION": "time of a voting round in seconds",
+  "VOTE_TOURNAMENT_EMOJI1_OPTION": "the emoji used for voting option one",
+  "VOTE_TOURNAMENT_EMOJI2_OPTION": "the emoji used for voting option two",
+  "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_COMMAND": "spotify",
+  "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_DESCRIPTION": "Provide spotify playlist url",
+  "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_OPTIONS": "spotify playlist url",
+  
+  
   "CHOOSE_SERVER_TITLE": "Choose Server",
   "CHOOSE_SERVER_SUBTITLE": "Choose a server on which you will click.",
   "HELP_SUBTITLE": "I need help.",
