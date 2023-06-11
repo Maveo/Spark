@@ -44,12 +44,12 @@ class GeneralModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def set_setting(ctx: discord.ApplicationContext,
-                              key: discord.commands.Option(
+                              key: discord.Option(
                                   str,
                                   description=bot.i18n.get('SET_SETTING_KEY_OPTION'),
                                   autocomplete=setting_key_autocomplete,
                               ),
-                              value: discord.commands.Option(
+                              value: discord.Option(
                                   str,
                                   description=bot.i18n.get('SET_SETTING_VALUE_OPTION'),
                               )):
@@ -67,7 +67,7 @@ class GeneralModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def get_setting(ctx: discord.ApplicationContext,
-                              key: discord.commands.Option(
+                              key: discord.Option(
                                   str,
                                   description=bot.i18n.get('GET_SETTING_KEY_OPTION'),
                                   autocomplete=setting_key_autocomplete_get,
@@ -88,7 +88,7 @@ class GeneralModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def reset_setting(ctx: discord.ApplicationContext,
-                                key: discord.commands.Option(
+                                key: discord.Option(
                                     str,
                                     description=bot.i18n.get('RESET_SETTING_KEY_OPTION'),
                                     autocomplete=setting_key_autocomplete,
@@ -136,7 +136,7 @@ class GeneralModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def activate_module(ctx: discord.ApplicationContext,
-                                  module: discord.commands.Option(
+                                  module: discord.Option(
                                       type=str,
                                       description=bot.i18n.get('MODULE_ACTIVATE_OPTION'),
                                       autocomplete=activate_module_autocomplete,
@@ -163,7 +163,7 @@ class GeneralModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def deactivate_module(ctx: discord.ApplicationContext,
-                                    module: discord.commands.Option(
+                                    module: discord.Option(
                                         str,
                                         description=bot.i18n.get('MODULE_DEACTIVATE_OPTION'),
                                         autocomplete=deactivate_module_autocomplete,

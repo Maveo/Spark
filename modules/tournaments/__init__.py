@@ -103,21 +103,21 @@ class TournamentsModule(SparkModule):
             
 
         async def vote_tournament_list(ctx: discord.ApplicationContext,
-                                       options: discord.commands.Option(
+                                       options: discord.Option(
                                         str,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_LIST_OPTIONS'),
                                        ),
-                                       round_time_seconds: discord.commands.Option(
+                                       round_time_seconds: discord.Option(
                                         int,
                                         default=60,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_ROUND_TIME_OPTION'),
                                        ),
-                                       voting_emoji1: discord.commands.Option(
+                                       voting_emoji1: discord.Option(
                                         str,
                                         default='🅰',
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI1_OPTION'),
                                        ),
-                                       voting_emoji2: discord.commands.Option(
+                                       voting_emoji2: discord.Option(
                                         str,
                                         default='🅱',
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI2_OPTION'),
@@ -126,21 +126,21 @@ class TournamentsModule(SparkModule):
             await ko_tournament(ctx, options.split(','), round_time_seconds, voting_emoji1, voting_emoji2)
 
         async def vote_tournament_spotify_playlist(ctx: discord.ApplicationContext,
-                                       playlist_url: discord.commands.Option(
+                                       playlist_url: discord.Option(
                                         str,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_OPTIONS'),
                                        ),
-                                       round_time_seconds: discord.commands.Option(
+                                       round_time_seconds: discord.Option(
                                         int,
                                         default=60,
                                         description=bot.i18n.get('VOTE_TOURNAMENT_ROUND_TIME_OPTION'),
                                        ),
-                                       voting_emoji1: discord.commands.Option(
+                                       voting_emoji1: discord.Option(
                                         str,
                                         default='🅰',
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI1_OPTION'),
                                        ),
-                                       voting_emoji2: discord.commands.Option(
+                                       voting_emoji2: discord.Option(
                                         str,
                                         default='🅱',
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI2_OPTION'),

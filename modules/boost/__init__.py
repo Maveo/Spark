@@ -145,7 +145,7 @@ class BoostModule(SparkModule):
         super().__init__(bot)
 
         async def boost(ctx: discord.ApplicationContext,
-                        member: discord.commands.Option(
+                        member: discord.Option(
                             discord.Member,
                             description=bot.i18n.get('BOOST_MEMBER_OPTION'),
                             default=None

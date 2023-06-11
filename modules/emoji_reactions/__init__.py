@@ -154,7 +154,7 @@ class EmojiReactionsModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def remove_emoji_reaction(ctx: discord.ApplicationContext,
-                                        reaction: discord.commands.Option(
+                                        reaction: discord.Option(
                                             str,
                                             description=bot.i18n.get('REMOVE_REACTION_OPTION'),
                                             autocomplete=remove_emoji_reaction_autocomplete,

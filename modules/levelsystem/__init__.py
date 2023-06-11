@@ -52,11 +52,11 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def set_levelsystem(ctx: discord.ApplicationContext,
-                                  level: discord.commands.Option(
+                                  level: discord.Option(
                                       int,
                                       description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_ROLE_LEVEL_OPTION'),
                                   ),
-                                  role: discord.commands.Option(
+                                  role: discord.Option(
                                       discord.Role,
                                       description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_ROLE_ROLE_OPTION'),
                                   )):
@@ -69,7 +69,7 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def remove_levelsystem(ctx: discord.ApplicationContext,
-                                     level: discord.commands.Option(
+                                     level: discord.Option(
                                          int,
                                          description=bot.i18n.get('LEVELSYSTEM_REMOVE_LEVEL_ROLE_LEVEL_OPTION'),
                                      )):
@@ -81,11 +81,11 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def boost_add(ctx: discord.ApplicationContext,
-                            member: discord.commands.Option(
+                            member: discord.Option(
                                 discord.Member,
                                 description=bot.i18n.get('LEVELSYSTEM_BOOST_ADD_MEMBER_OPTION'),
                             ),
-                            amount: discord.commands.Option(
+                            amount: discord.Option(
                                 float,
                                 description=bot.i18n.get('LEVELSYSTEM_BOOST_ADD_AMOUNT_OPTION'),
                             )):
@@ -100,11 +100,11 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def set_level(ctx: discord.ApplicationContext,
-                            member: discord.commands.Option(
+                            member: discord.Option(
                                 discord.Member,
                                 description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_MEMBER_OPTION'),
                             ),
-                            level: discord.commands.Option(
+                            level: discord.Option(
                                 float,
                                 description=bot.i18n.get('LEVELSYSTEM_SET_LEVEL_LEVEL_OPTION'),
                             )):
@@ -121,11 +121,11 @@ class LevelsystemModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def blacklist_user(ctx: discord.ApplicationContext,
-                                 member: discord.commands.Option(
+                                 member: discord.Option(
                                      discord.Member,
                                      description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_MEMBER_OPTION'),
                                  ),
-                                 blacklist: discord.commands.Option(
+                                 blacklist: discord.Option(
                                      bool,
                                      description=bot.i18n.get('LEVELSYSTEM_BLACKLIST_BLACKLIST_OPTION'),
                                  )):

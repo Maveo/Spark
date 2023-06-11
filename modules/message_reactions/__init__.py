@@ -27,11 +27,11 @@ class MessageReactionsModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def set_reaction(ctx: discord.ApplicationContext,
-                               trigger: discord.commands.Option(
+                               trigger: discord.Option(
                                    str,
                                    description=bot.i18n.get('MESSAGE_REACTIONS_TRIGGER_OPTION_DESCRIPTION'),
                                ),
-                               reaction: discord.commands.Option(
+                               reaction: discord.Option(
                                    str,
                                    description=bot.i18n.get('MESSAGE_REACTIONS_REACTION_OPTION_DESCRIPTION'),
                                )):
@@ -49,7 +49,7 @@ class MessageReactionsModule(SparkModule):
 
         @bot.has_permissions(administrator=True)
         async def remove_reaction(ctx: discord.ApplicationContext,
-                                  trigger: discord.commands.Option(
+                                  trigger: discord.Option(
                                       str,
                                       description=bot.i18n.get('MESSAGE_REACTIONS_TRIGGER_OPTION_DESCRIPTION'),
                                       autocomplete=reaction_trigger_autocomplete

@@ -61,7 +61,7 @@ class InventoryModule(SparkModule):
                 self.bot.db.get_user_useable_items(ctx.interaction.guild.id, ctx.interaction.user.id))))
 
         async def use_item(ctx: discord.ApplicationContext,
-                           item: discord.commands.Option(
+                           item: discord.Option(
                                str,
                                description=bot.i18n.get('INVENTORY_USE_ITEM_OPTION'),
                                autocomplete=use_item_autocomplete
@@ -88,7 +88,7 @@ class InventoryModule(SparkModule):
                 self.bot.db.get_user_equippable_items(ctx.interaction.guild.id, ctx.interaction.user.id))))
 
         async def equip_item(ctx: discord.ApplicationContext,
-                             item: discord.commands.Option(
+                             item: discord.Option(
                                  str,
                                  description=bot.i18n.get('INVENTORY_EQUIP_ITEM_OPTION'),
                                  autocomplete=equip_item_autocomplete
@@ -115,7 +115,7 @@ class InventoryModule(SparkModule):
                 self.bot.db.get_user_equipped_items(ctx.interaction.guild.id, ctx.interaction.user.id))))
 
         async def unequip_item(ctx: discord.ApplicationContext,
-                               item: discord.commands.Option(
+                               item: discord.Option(
                                    str,
                                    description=bot.i18n.get('INVENTORY_UNEQUIP_ITEM_OPTION'),
                                    autocomplete=unequip_item_autocomplete
@@ -140,7 +140,7 @@ class InventoryModule(SparkModule):
         @bot.has_permissions(administrator=True)
         async def admin_give_item(ctx: discord.ApplicationContext,
                                   member: discord.Member,
-                                  item_type: discord.commands.Option(
+                                  item_type: discord.Option(
                                       str,
                                       description=bot.i18n.get('INVENTORY_ADMIN_GIVE_ITEM_OPTION_DESCRIPTION'),
                                       autocomplete=admin_item_type_autocomplete
