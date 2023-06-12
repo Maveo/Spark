@@ -89,7 +89,7 @@ class TournamentsModule(SparkModule):
                 return
             
             random.shuffle(options)
-            tree = ([[None, None]] * (len(options) - 1)) + [[x, None] for x in options]
+            tree = [[None, None] for _ in range(len(options) - 1)] + [[x, None] for x in options]
             msg = await ctx.respond('Winner: -')
             for ti in range(len(tree)-1, 0, -2):
                 winner, count1, count2 = await ko_round(ctx, tree[ti-1][0], tree[ti][0], round_time_seconds, voting_emoji1, voting_emoji2)
