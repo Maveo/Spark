@@ -20,6 +20,21 @@ class TournamentsModule(SparkModule):
     api_pages = API_PAGES
     settings = SETTINGS
 
+    async def create_ko_tournament_image_by_template(self, tree, template):
+        rounds = []
+        i = 1
+        while i <= len(tree):
+            rounds.append(tree[i-1:i*2-1])
+            i *= 2
+
+        img_buf = await self.bot.image_creator.create_bytes(template(rounds=rounds))
+        return discord.File(filename="tournament.png", fp=img_buf)
+    
+    async def create_ko_tournament_image(self, guild_id, tree):
+        return await self.create_ko_tournament_image_by_template(tree,
+            self.bot.module_manager.settings.get(guild_id, 'KO_TOURNAMENT_IMAGE'))
+
+
     def __init__(self, bot):
         super().__init__(bot)
 
@@ -90,16 +105,14 @@ class TournamentsModule(SparkModule):
             
             random.shuffle(options)
             tree = [[None, None] for _ in range(len(options) - 1)] + [[x, None] for x in options]
-            msg = await ctx.respond('Winner: -')
+            await ctx.respond(file=await self.create_ko_tournament_image(ctx.guild_id, tree))
             for ti in range(len(tree)-1, 0, -2):
                 winner, count1, count2 = await ko_round(ctx, tree[ti-1][0], tree[ti][0], round_time_seconds, voting_emoji1, voting_emoji2)
                 tree[ti-1][1] = count1
                 tree[ti  ][1] = count2
-                for i in range(ti-1, -1, -1):
-                    if tree[i][0] is None:
-                        tree[i][0] = winner
-                        break
-                await msg.edit('Winner: {}'.format(winner))
+                tree[int((ti-1)/2)][0] = winner
+
+                await ctx.edit(file=await self.create_ko_tournament_image(ctx.guild_id, tree))
             
         default_voting_emoji1 = '🅰'
         default_voting_emoji2 = '🅱'
@@ -125,6 +138,7 @@ class TournamentsModule(SparkModule):
                                         description=bot.i18n.get('VOTE_TOURNAMENT_EMOJI2_OPTION'),
                                        ),
                                     ):
+            await ctx.defer()
             await ko_tournament(ctx, options.split(','), round_time_seconds, voting_emoji1, voting_emoji2)
 
         async def vote_tournament_spotify_playlist(ctx: discord.ApplicationContext,
