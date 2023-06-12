@@ -4,7 +4,6 @@ from helpers.settings_manager import Setting
 
 ko_tournament_image = ImageStackResolveString('''
 {% if rounds[0][0][0] is not none %}
-    <rect x="0" y="0" width="400" height="40" rx="0" ry="0" fill="rgb(48, 50, 55)" />
     <text x="0" y="30" text-anchor="start" font-family="Calibri" font-size="30" fill="rgb(255, 255, 255)">Winner: {{ rounds[0][0][0] }}</text>
 {% endif %}
 {% set rounds_len = (rounds | length) - 1 %}

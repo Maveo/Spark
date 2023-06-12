@@ -52,11 +52,12 @@ class TournamentsModule(SparkModule):
             await msg.add_reaction(voting_emoji2)
             start_time = time.time()
             while True:
-                await asyncio.sleep(1)
                 remaining_time = round_time_seconds - time.time() + start_time
                 if remaining_time < 0:
                     break
                 await msg.edit('{:.0f} seconds remaining...'.format(remaining_time))
+                await asyncio.sleep(5)
+
 
             msg = await msg.channel.fetch_message(msg.id)
             count1 = 0
@@ -103,16 +104,16 @@ class TournamentsModule(SparkModule):
                                                       color=discord.Color.red()), ephemeral=True)
                 return
             
+            await ctx.respond('Tournament')
             random.shuffle(options)
             tree = [[None, None] for _ in range(len(options) - 1)] + [[x, None] for x in options]
-            await ctx.respond(file=await self.create_ko_tournament_image(ctx.guild_id, tree))
+            msg = await ctx.send(file=await self.create_ko_tournament_image(ctx.guild_id, tree))
             for ti in range(len(tree)-1, 0, -2):
                 winner, count1, count2 = await ko_round(ctx, tree[ti-1][0], tree[ti][0], round_time_seconds, voting_emoji1, voting_emoji2)
                 tree[ti-1][1] = count1
                 tree[ti  ][1] = count2
                 tree[int((ti-1)/2)][0] = winner
-
-                await ctx.edit(file=await self.create_ko_tournament_image(ctx.guild_id, tree))
+                await msg.edit(attachments=[], file=await self.create_ko_tournament_image(ctx.guild_id, tree))
             
         default_voting_emoji1 = '🅰'
         default_voting_emoji2 = '🅱'
