@@ -27,7 +27,8 @@ class MessagingModule(SparkModule):
             return await ctx.respond(
                 embed=discord.Embed(title='',
                                     description=self.bot.i18n.get('MESSAGING_SEND_SUCCESSFUL'),
-                                    color=discord.Color.green()))
+                                    color=discord.Color.green()),
+                ephemeral=True)
 
         self.commands = [
             discord.SlashCommand(
