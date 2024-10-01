@@ -105,21 +105,21 @@ SETTINGS = {
         value=level_up_image,
         description='Template to create a level up image upon',
         itype='text',
-        categories=['Image'],
+        categories=['Levelsystem', 'Image'],
         preview_call='level-up-image'
     ),
     'RANK_UP_IMAGE': Setting(
         value=rank_up_image,
         description='Template to create a rank up image upon',
         itype='text',
-        categories=['Image'],
+        categories=['Levelsystem', 'Image'],
         preview_call='rank-up-image'
     ),
     'RANKING_IMAGE': Setting(
         value=ranking_image,
         description='Template to create a ranking image upon',
         itype='text',
-        categories=['Image'],
+        categories=['Levelsystem', 'Image'],
         preview_call='ranking-image'
     ),
     'LEADERBOARD_AMOUNT': Setting(
