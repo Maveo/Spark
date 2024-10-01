@@ -27,7 +27,8 @@ jobs:
         python ./webserver/gen_openapi.py
     - name: Commit openapi.json
       run: |
-        git config --global user.name "Build Runner"
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git pull
         git add --force ./docs/openapi.json
         git diff-index --quiet HEAD || git commit -m "Automated openapi.json build" && git push
