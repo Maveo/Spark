@@ -250,6 +250,9 @@
   "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_COMMAND": "spotify",
   "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_DESCRIPTION": "Provide spotify playlist url",
   "VOTE_TOURNAMENT_SPOTIFY_PLAYLIST_OPTIONS": "spotify playlist url",
+
+  "ACTIVITY_LEADERBOARD_COMMAND": "active-leaderboard",
+  "ACTIVITY_LEADERBOARD_COMMAND_DESCRIPTION": "Check out who is the most active",
   
   
   "CHOOSE_SERVER_TITLE": "Choose Server",

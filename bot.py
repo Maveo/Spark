@@ -149,7 +149,11 @@ class DiscordBot:
         @self.bot.event
         async def on_application_command_error(ctx: discord.ApplicationContext, error: discord.ApplicationCommandError):
             self.logger.info('command error from {}: {}'.format(ctx.author, error))
-            await self.module_manager.on_application_command_error(ctx, error)
+            res = await self.module_manager.on_application_command_error(ctx, error)
+            if res is None:
+                await ctx.respond(embed=discord.Embed(title='',
+                                                      description='command error from: {}'.format(error),
+                                                      color=discord.Color.red()))
 
         @self.bot.event
         async def on_interaction(interaction: discord.Interaction):

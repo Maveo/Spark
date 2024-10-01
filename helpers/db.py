@@ -42,6 +42,18 @@ class Setting(Base):
     key = db.Column(db.String, primary_key=True)
     value = db.Column(db.String, nullable=False)
 
+class ActiveTrackedUser(Base):
+    __tablename__ = 'active_tracked_user'
+    guild_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
+    last_muted = db.Column(db.Integer)
+    interval_muted_time = db.Column(db.Integer, nullable=False)
+    muted_time = db.Column(db.Integer, nullable=False)
+
+class ActivityMessage(Base):
+    __tablename__ = 'activity_message'
+    guild_id = db.Column(db.Integer, primary_key=True)
+    last_sent = db.Column(db.Integer, nullable=False)
 
 class LevelSystem(Base):
     __tablename__ = 'level_system'
@@ -227,6 +239,31 @@ class Database:
         stmt = db.delete(Setting).where(db.and_(Setting.guild_id == guild_id, Setting.key == key))
         session.execute(stmt)
         session.commit()
+
+    def get_activity_message(self, guild_id) -> ActivityMessage:
+        session = self.Session()
+        stmt = db.select(ActivityMessage).where(ActivityMessage.guild_id == guild_id)
+        return session.scalars(stmt).first()
+
+    def update_activity_message(self, guild_id, kwargs):
+        session = self.Session()
+        session.merge(ActivityMessage(guild_id=guild_id, **kwargs))
+        session.commit()
+
+    def update_active_tracked_user(self, guild_id, user_id, kwargs):
+        session = self.Session()
+        session.merge(ActiveTrackedUser(guild_id=guild_id, user_id=user_id, **kwargs))
+        session.commit()
+
+    def get_active_tracked_user(self, guild_id, user_id) -> ActiveTrackedUser:
+        session = self.Session()
+        stmt = db.select(ActiveTrackedUser).where(db.and_(ActiveTrackedUser.guild_id == guild_id, ActiveTrackedUser.user_id == user_id))
+        return session.scalars(stmt).first()
+
+    def get_active_tracked_users(self, guild_id) -> List[ActiveTrackedUser]:
+        session = self.Session()
+        stmt = db.select(ActiveTrackedUser).where(ActiveTrackedUser.guild_id == guild_id)
+        return session.scalars(stmt).all()
 
     def get_levelsystem(self, guild_id) -> List[LevelSystem]:
         session = self.Session()

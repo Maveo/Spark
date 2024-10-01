@@ -5,6 +5,21 @@ import discord
 from discord.utils import get
 
 
+def previous_timestamp_unix(start_time_unix: int, interval_seconds: int, current_time_unix: int) -> int:
+    if interval_seconds == 0:
+        return current_time_unix
+    # Calculate time difference from start_time_unix to current_time_unix
+    time_diff = current_time_unix - start_time_unix
+    
+    # Calculate the number of full intervals
+    n = time_diff // interval_seconds
+    
+    # Previous and next timestamps in Unix time
+    previous_timestamp = start_time_unix + n * interval_seconds
+    
+    return previous_timestamp
+    
+
 def autocomplete_match(s: str, li: List[str]):
     sl = s.lower()
     return filter(lambda s2: sl in s2.lower(), li)
