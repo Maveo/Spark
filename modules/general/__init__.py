@@ -137,7 +137,7 @@ class GeneralModule(SparkModule):
         @bot.has_permissions(administrator=True)
         async def activate_module(ctx: discord.ApplicationContext,
                                   module: discord.Option(
-                                      type=str,
+                                      str,
                                       description=bot.i18n.get('MODULE_ACTIVATE_OPTION'),
                                       autocomplete=activate_module_autocomplete,
                                   )):

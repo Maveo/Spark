@@ -90,16 +90,16 @@ async def get_modules(module: 'GeneralModule',
 
 
 @has_permissions(administrator=True)
-async def set_module(x_module: 'GeneralModule',
+async def set_module(module: 'GeneralModule',
                      guild: discord.Guild,
                      member: discord.Member,
-                     module: str = Body(embed=True),
+                     target_module: str = Body(embed=True),
                      activate: bool = Body(embed=True),
                      ):
     if activate:
-        await x_module.bot.module_manager.activate_module(guild.id, module, True)
+        await module.bot.module_manager.activate_module(guild.id, target_module, True)
     else:
-        await x_module.bot.module_manager.deactivate_module(guild.id, module, True)
+        await module.bot.module_manager.deactivate_module(guild.id, target_module, True)
     return {'msg': 'success'}
 
 

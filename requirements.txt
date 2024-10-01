@@ -1,5 +1,5 @@
 MarkupSafe>=2.0.1
-py-cord>=2.4.1
+py-cord>=2.6.1
 requests>=2.25.1
 fastapi>=0.78.0
 python-multipart>=0.0.5

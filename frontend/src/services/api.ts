@@ -68,7 +68,7 @@ function get_modules(): Promise<AxiosResponse> {
 
 function set_module(modul: string, activate: boolean): Promise<AxiosResponse> {
     return axios.post(process.env.VUE_APP_API_BASE_URL + '/set-module', {
-        'module': modul,
+        'target_module': modul,
         'activate': activate
     },
     {

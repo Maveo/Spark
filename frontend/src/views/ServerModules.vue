@@ -110,18 +110,10 @@ export default defineComponent({
         }).catch((error) => {
             modul.error = true;
             modul.loading = false;
-
-            if (activate) {
-                Toast.fire({
-                    icon: 'error',
-                    title: error.response.data.description
-                });
-            } else {
-                Toast.fire({
-                    icon: 'error',
-                    title: error.response.data.description
-                });
-            }
+            Toast.fire({
+                icon: 'error',
+                title: error.response.data.detail
+            });
         });
     }
   }
