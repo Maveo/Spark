@@ -148,7 +148,7 @@ class ActiveTrackerModule(SparkModule):
         last_interval = 0
         current_duration = 0
         if activity_message is not None:
-            last_interval = activity_message.last_interval
+            last_interval = activity_message.last_sent
             current_duration = time.time() - last_interval
         img_buf = await self.bot.image_creator.create_bytes(template(users=data_obj, last_interval=last_interval, current_duration=current_duration), max_size=(-1, 8000))
         return discord.File(filename="activity.png", fp=img_buf)
