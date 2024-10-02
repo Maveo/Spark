@@ -53,7 +53,7 @@ class ActiveTrackerModule(SparkModule):
 
         wanted_last_message = int(previous_timestamp_unix(interval_start, interval, current_time))
 
-        if activity_message.last_sent == wanted_last_message:
+        if activity_message is not None and activity_message.last_sent == wanted_last_message:
             return
 
         await channel.send(file=await self.create_activity_leaderboard_image(guild))
@@ -144,8 +144,12 @@ class ActiveTrackerModule(SparkModule):
 
     async def create_activity_image_by_template(self, guild, activity_users, template):
         data_obj = await self.users_get_advanced_infos(guild, activity_users)
-        last_interval = self.bot.db.get_activity_message(guild.id).last_sent
-        current_duration = time.time() - last_interval
+        activity_message = self.bot.db.get_activity_message(guild.id)
+        last_interval = 0
+        current_duration = 0
+        if activity_message is not None:
+            last_interval = activity_message.last_interval
+            current_duration = time.time() - last_interval
         img_buf = await self.bot.image_creator.create_bytes(template(users=data_obj, last_interval=last_interval, current_duration=current_duration), max_size=(-1, 8000))
         return discord.File(filename="activity.png", fp=img_buf)
 
