@@ -1,4 +1,6 @@
 /settings.py
+/settings_*.py
+!/settings_example.py
 
 .idea/
 webserver/static/

@@ -21,6 +21,7 @@ profile_image = ImageStackResolveString('''<defs>
 <rect x="150" y="115" width="{{ xp_percentage * 410 + 20 }}" height="20" rx="10" ry="10" fill="url(#color2)" />
 <text id="userName" x="200" y="48" font-family="Product Sans" font-size="35" fill="rgb{{ color }}">{{ name }}</text>
 <text id="userTitle" x="150" y="76" font-family="Product Sans" font-size="20" fill="white"></text>
+<rect x="500" y="18" width="100" height="40" rx="0" ry="0" fill="rgb(48, 50, 55)"></rect>
 <text x="150" y="108" font-family="Product Sans" font-size="22" fill="rgb(103, 103, 103)">Lvl.</text>
 <text id="userLevel" x="188" y="108" font-family="Product Sans" font-size="28" fill="rgb(255, 255, 255)">{{lvl}}</text>
 <text id="userRank" x="578" y="48" text-anchor="end" font-family="Product Sans" font-weight="bold" font-size="35" fill="rgb{{ color }}">#{{rank}}</text>
